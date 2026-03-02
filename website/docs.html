@@ -81,22 +81,23 @@
             </a>
             <div class="docs-nav-group">
               <a href="#claude-ai" class="docs-nav-group-title">Claude AI</a>
-              <a href="#claude-permissions" class="docs-nav-link" style="padding-left:28px;font-size:13px;">Permissions</a>
-              <a href="#claude-profile" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
-                <span data-lang="fr">Profil &amp; Skills</span>
-                <span data-lang="en">Profile &amp; Skills</span>
+              <a href="#claude-general" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
+                <span data-lang="fr">General</span>
+                <span data-lang="en">General</span>
               </a>
-              <a href="#claude-md" class="docs-nav-link" style="padding-left:28px;font-size:13px;">CLAUDE.md</a>
-              <a href="#claude-history" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
-                <span data-lang="fr">Historique</span>
-                <span data-lang="en">History</span>
+              <a href="#claude-security" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
+                <span data-lang="fr">Securite &amp; Sandbox</span>
+                <span data-lang="en">Security &amp; Sandbox</span>
               </a>
-              <a href="#claude-library" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
-                <span data-lang="fr">Bibliotheque</span>
-                <span data-lang="en">Library</span>
+              <a href="#claude-agents" class="docs-nav-link" style="padding-left:28px;font-size:13px;">Agents &amp; Skills</a>
+              <a href="#claude-integrations" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
+                <span data-lang="fr">Integrations</span>
+                <span data-lang="en">Integrations</span>
               </a>
-              <a href="#claude-mcp" class="docs-nav-link" style="padding-left:28px;font-size:13px;">MCP</a>
-              <a href="#claude-workflow" class="docs-nav-link" style="padding-left:28px;font-size:13px;">Workflow</a>
+              <a href="#claude-memory" class="docs-nav-link" style="padding-left:28px;font-size:13px;">
+                <span data-lang="fr">Memoire</span>
+                <span data-lang="en">Memory</span>
+              </a>
             </div>
             <a href="#autoclaude" class="docs-nav-link">AutoClaude</a>
             <a href="#git" class="docs-nav-link">Git</a>
@@ -117,6 +118,7 @@
             <a href="#database" class="docs-nav-link">Database Explorer</a>
             <a href="#code-analysis" class="docs-nav-link">Code Analysis</a>
             <a href="#api-tester" class="docs-nav-link">API Tester</a>
+            <a href="#health-checks" class="docs-nav-link">Health Checks</a>
             <a href="#updates" class="docs-nav-link">
               <span data-lang="fr">Mises a jour</span>
               <span data-lang="en">Updates</span>
@@ -737,8 +739,8 @@
           <h2>Claude AI</h2>
           <div class="docs-text">
             <p>
-              <span data-lang="fr">Mirehub offre une integration complete avec Claude Code, le copilote IA le plus puissant du marche. Au-dela du terminal, un tableau de bord dedie avec sept onglets permet de controler finement le comportement de l'agent : Permissions, Profil &amp; Skills, CLAUDE.md, Historique, Bibliotheque, MCP et Workflow.</span>
-              <span data-lang="en">Mirehub offers complete integration with Claude Code, the most powerful AI copilot on the market. Beyond the terminal, a dedicated dashboard with seven tabs lets you finely control the agent's behavior: Permissions, Profile &amp; Skills, CLAUDE.md, History, Library, MCP and Workflow.</span>
+              <span data-lang="fr">Mirehub offre une integration complete avec Claude Code, le copilote IA le plus puissant du marche. Au-dela du terminal, un tableau de bord dedie avec cinq onglets permet de controler finement le comportement de l'agent : General, Securite &amp; Sandbox, Agents &amp; Skills, Integrations et Memoire.</span>
+              <span data-lang="en">Mirehub offers complete integration with Claude Code, the most powerful AI copilot on the market. Beyond the terminal, a dedicated dashboard with five tabs lets you finely control the agent's behavior: General, Security &amp; Sandbox, Agents &amp; Skills, Integrations and Memory.</span>
             </p>
           </div>
 
@@ -749,16 +751,25 @@
             </div>
           </div>
 
-          <!-- Claude Permissions -->
-          <div id="claude-permissions">
+          <!-- Claude General -->
+          <div id="claude-general">
             <h3>
-              <span data-lang="fr">Onglet Permissions</span>
-              <span data-lang="en">Permissions tab</span>
+              <span data-lang="fr">Onglet General</span>
+              <span data-lang="en">General tab</span>
             </h3>
             <div class="docs-text">
               <p>
-                <span data-lang="fr">L'onglet Permissions vous donne un controle granulaire sur ce que Claude peut faire dans votre workspace. Configurez les outils autorises et bloques, le mode d'approbation et les hooks d'activite.</span>
-                <span data-lang="en">The Permissions tab gives you granular control over what Claude can do in your workspace. Configure allowed and blocked tools, approval mode and activity hooks.</span>
+                <span data-lang="fr">L'onglet General est le centre de controle principal de Claude. Configurez le mode de permission, choisissez le modele d'IA, ajustez les performances et activez les fonctionnalites avancees comme les equipes d'agents.</span>
+                <span data-lang="en">The General tab is Claude's main control center. Configure the permission mode, choose the AI model, adjust performance and enable advanced features like agent teams.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Hooks d'activite</span>
+                <span data-lang="en">Activity hooks</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Installez, mettez a jour ou supprimez les hooks d'activite qui s'executent automatiquement a des moments cles de l'activite de Claude (avant/apres une action, a la fin d'une session, etc.). Un badge indique l'etat actuel des hooks (installe, a jour, a mettre a jour).</span>
+                <span data-lang="en">Install, update or remove activity hooks that run automatically at key moments during Claude's activity (before/after an action, at the end of a session, etc.). A badge indicates the current hook status (installed, up to date, needs update).</span>
               </p>
 
               <h4>
@@ -766,8 +777,8 @@
                 <span data-lang="en">Permission mode</span>
               </h4>
               <p>
-                <span data-lang="fr">Quatre modes disponibles pour controler le niveau d'autonomie de Claude :</span>
-                <span data-lang="en">Four modes available to control Claude's autonomy level:</span>
+                <span data-lang="fr">Cinq modes disponibles pour controler le niveau d'autonomie de Claude :</span>
+                <span data-lang="en">Five modes available to control Claude's autonomy level:</span>
               </p>
               <ul>
                 <li>
@@ -777,6 +788,10 @@
                 <li>
                   <span data-lang="fr"><strong>Accept Edits</strong> — Claude demande une approbation uniquement pour les modifications de fichiers</span>
                   <span data-lang="en"><strong>Accept Edits</strong> — Claude asks for approval only for file modifications</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Don't Ask</strong> — Claude ne pose pas de questions et agit directement</span>
+                  <span data-lang="en"><strong>Don't Ask</strong> — Claude doesn't ask questions and acts directly</span>
                 </li>
                 <li>
                   <span data-lang="fr"><strong>Plan</strong> — Claude propose un plan d'action avant d'executer quoi que ce soit</span>
@@ -789,204 +804,174 @@
               </ul>
 
               <h4>
-                <span data-lang="fr">Outils autorises et bloques</span>
-                <span data-lang="en">Allowed and blocked tools</span>
+                <span data-lang="fr">Modele &amp; Performance</span>
+                <span data-lang="en">Model &amp; Performance</span>
               </h4>
               <p>
-                <span data-lang="fr">Selectionnez individuellement les outils que Claude peut utiliser : Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Task, NotebookEdit. Vous pouvez aussi bloquer des outils specifiques pour limiter les capacites de l'agent.</span>
-                <span data-lang="en">Individually select which tools Claude can use: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Task, NotebookEdit. You can also block specific tools to limit the agent's capabilities.</span>
+                <span data-lang="fr">Choisissez le modele d'IA parmi Default, Sonnet, Opus, Haiku ou Sonnet 1M. Ajustez le niveau d'effort (Low, Medium, High) et activez les fonctionnalites avancees :</span>
+                <span data-lang="en">Choose the AI model from Default, Sonnet, Opus, Haiku or Sonnet 1M. Adjust the effort level (Low, Medium, High) and enable advanced features:</span>
+              </p>
+              <ul>
+                <li>
+                  <span data-lang="fr"><strong>Auto Approve</strong> — Approbation automatique des actions</span>
+                  <span data-lang="en"><strong>Auto Approve</strong> — Automatic action approval</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Extended Thinking</strong> — Reflexion approfondie pour les problemes complexes</span>
+                  <span data-lang="en"><strong>Extended Thinking</strong> — Deep reasoning for complex problems</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Fast Mode</strong> — Mode accelere pour les taches simples</span>
+                  <span data-lang="en"><strong>Fast Mode</strong> — Faster mode for simple tasks</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Prompt Caching</strong> — Mise en cache pour reduire les couts</span>
+                  <span data-lang="en"><strong>Prompt Caching</strong> — Caching to reduce costs</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Extended Context (1M)</strong> — Contexte etendu a 1 million de tokens</span>
+                  <span data-lang="en"><strong>Extended Context (1M)</strong> — Extended context up to 1 million tokens</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Auto Memory</strong> — Memorisation automatique entre les sessions</span>
+                  <span data-lang="en"><strong>Auto Memory</strong> — Automatic memory between sessions</span>
+                </li>
+              </ul>
+              <p>
+                <span data-lang="fr">Des curseurs permettent d'ajuster le budget de reflexion (Thinking Budget, 0 a 128 000 tokens) et la limite de sortie (Output Limit, 1 000 a 64 000 tokens).</span>
+                <span data-lang="en">Sliders let you adjust the Thinking Budget (0 to 128,000 tokens) and Output Limit (1,000 to 64,000 tokens).</span>
               </p>
 
               <h4>
-                <span data-lang="fr">Hooks d'activite</span>
-                <span data-lang="en">Activity hooks</span>
+                <span data-lang="fr">Equipes d'agents</span>
+                <span data-lang="en">Agent Teams</span>
               </h4>
               <p>
-                <span data-lang="fr">Configurez des scripts qui s'executent automatiquement a des moments cles de l'activite de Claude (avant/apres une action, a la fin d'une session, etc.).</span>
-                <span data-lang="en">Configure scripts that run automatically at key moments during Claude's activity (before/after an action, at the end of a session, etc.).</span>
-              </p>
-            </div>
-
-            <div class="docs-screenshot">
-              <img src="screenshots/screenshot-claude.png" alt="Claude AI — Onglet Permissions" loading="lazy">
-              <p class="docs-screenshot-caption">
-                <span data-lang="fr">Onglet Permissions de Claude AI : hooks d'activite, mode de permission (Bypass, Accept Edits, Plan, Default), outils autorises et outils bloques. Controle total sur le comportement de l'agent.</span>
-                <span data-lang="en">Claude AI Permissions tab: activity hooks, permission mode (Bypass, Accept Edits, Plan, Default), allowed tools and blocked tools. Full control over agent behavior.</span>
-              </p>
-            </div>
-          </div>
-
-          <hr class="docs-separator">
-
-          <!-- Claude Profile & Skills -->
-          <div id="claude-profile">
-            <h3>
-              <span data-lang="fr">Onglet Profil &amp; Skills</span>
-              <span data-lang="en">Profile &amp; Skills tab</span>
-            </h3>
-            <div class="docs-text">
-              <p>
-                <span data-lang="fr">Visualisez votre CLAUDE.md parse et mis en forme, avec toutes ses sections structurees (Project Overview, Language, Agent Team Configuration, etc.). Chaque section est copiable individuellement. Gerez les profils et skills de votre agent directement depuis l'interface.</span>
-                <span data-lang="en">View your CLAUDE.md parsed and formatted, with all its structured sections (Project Overview, Language, Agent Team Configuration, etc.). Each section is individually copyable. Manage your agent profiles and skills directly from the interface.</span>
+                <span data-lang="fr">Activez les equipes d'agents (experimental) pour orchestrer plusieurs agents specialises. Configurez la liste de taches, les taches en arriere-plan, le mode d'affichage des coequipiers (Default, Compact, Hidden) et le modele par defaut des sous-agents (Inherit, Sonnet, Opus, Haiku).</span>
+                <span data-lang="en">Enable agent teams (experimental) to orchestrate multiple specialized agents. Configure the task list, background tasks, teammate display mode (Default, Compact, Hidden) and subagent default model (Inherit, Sonnet, Opus, Haiku).</span>
               </p>
             </div>
 
             <div class="docs-callout docs-callout--tip">
               <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
               <div class="docs-callout-content">
-                <p><span data-lang="fr">Cliquez sur le bouton de copie a cote de chaque section pour copier son contenu. Pratique pour partager une partie de votre configuration avec un collegue ou pour la reutiliser dans un autre projet.</span><span data-lang="en">Click the copy button next to each section to copy its content. Convenient for sharing part of your configuration with a colleague or reusing it in another project.</span></p>
+                <p><span data-lang="fr">Importez et exportez votre configuration complete pour la partager entre machines ou avec votre equipe. Le bouton d'import/export se trouve en haut de l'onglet General.</span><span data-lang="en">Import and export your complete configuration to share between machines or with your team. The import/export button is at the top of the General tab.</span></p>
               </div>
             </div>
 
             <div class="docs-screenshot">
-              <img src="screenshots/screenshot-claude-profil.png" alt="Claude AI — Profil et Skills" loading="lazy">
+              <img src="screenshots/screenshot-claude.png" alt="Claude AI — Onglet General" loading="lazy">
               <p class="docs-screenshot-caption">
-                <span data-lang="fr">Vue Profil &amp; Skills : votre CLAUDE.md parse et affiche avec ses sections. Chaque section est copiable individuellement. Les configurations d'agents et les instructions d'equipe sont structurees et lisibles.</span>
-                <span data-lang="en">Profile &amp; Skills view: your CLAUDE.md parsed and displayed with its sections. Each section is individually copyable. Agent configurations and team instructions are structured and readable.</span>
+                <span data-lang="fr">Onglet General : hooks d'activite, mode de permission, selection du modele d'IA (Sonnet, Opus, Haiku, Sonnet 1M), fonctionnalites avancees (Extended Thinking, Fast Mode, Prompt Caching, Extended Context 1M, Auto Memory), curseurs de tokens et configuration des equipes d'agents.</span>
+                <span data-lang="en">General tab: activity hooks, permission mode, AI model selection (Sonnet, Opus, Haiku, Sonnet 1M), advanced features (Extended Thinking, Fast Mode, Prompt Caching, Extended Context 1M, Auto Memory), token sliders and agent teams configuration.</span>
               </p>
             </div>
           </div>
 
           <hr class="docs-separator">
 
-          <!-- Claude CLAUDE.md -->
-          <div id="claude-md">
+          <!-- Claude Security & Sandbox -->
+          <div id="claude-security">
             <h3>
-              <span data-lang="fr">Onglet CLAUDE.md</span>
-              <span data-lang="en">CLAUDE.md tab</span>
+              <span data-lang="fr">Onglet Securite &amp; Sandbox</span>
+              <span data-lang="en">Security &amp; Sandbox tab</span>
             </h3>
             <div class="docs-text">
               <p>
-                <span data-lang="fr">Editez votre fichier CLAUDE.md directement dans l'application, sans ouvrir un editeur externe. Les modifications sont sauvegardees immediatement. Le CLAUDE.md est le fichier central qui definit le comportement de Claude pour votre projet : conventions de code, instructions specifiques, architecture, regles de commit, etc.</span>
-                <span data-lang="en">Edit your CLAUDE.md file directly in the application, without opening an external editor. Changes are saved immediately. The CLAUDE.md is the central file that defines Claude's behavior for your project: code conventions, specific instructions, architecture, commit rules, etc.</span>
+                <span data-lang="fr">L'onglet Securite &amp; Sandbox vous donne un controle granulaire sur les outils et l'acces de Claude. Configurez individuellement chaque outil, activez le sandboxing et definissez les domaines et repertoires autorises.</span>
+                <span data-lang="en">The Security &amp; Sandbox tab gives you granular control over Claude's tools and access. Configure each tool individually, enable sandboxing and define allowed domains and directories.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Outils autorises et bloques</span>
+                <span data-lang="en">Allowed and blocked tools</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Chaque outil dispose d'un selecteur a trois etats (defaut, autoriser, bloquer) : Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Task, NotebookEdit. Si des serveurs MCP sont configures, leurs outils apparaissent egalement dans cette liste.</span>
+                <span data-lang="en">Each tool has a three-state toggle (default, allow, deny): Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Task, NotebookEdit. If MCP servers are configured, their tools also appear in this list.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Configuration du sandbox</span>
+                <span data-lang="en">Sandbox configuration</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Activez ou desactivez le sandbox pour isoler l'environnement d'execution de Claude. Options disponibles :</span>
+                <span data-lang="en">Enable or disable the sandbox to isolate Claude's execution environment. Available options:</span>
+              </p>
+              <ul>
+                <li>
+                  <span data-lang="fr"><strong>Sandbox</strong> — Active/desactive l'isolation de l'environnement d'execution</span>
+                  <span data-lang="en"><strong>Sandbox</strong> — Enable/disable execution environment isolation</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Auto Allow Bash If Sandboxed</strong> — Autorise automatiquement le Bash quand le sandbox est actif</span>
+                  <span data-lang="en"><strong>Auto Allow Bash If Sandboxed</strong> — Automatically allow Bash when sandbox is active</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Commandes exclues</strong> — Liste des commandes exclues du sandbox</span>
+                  <span data-lang="en"><strong>Excluded commands</strong> — List of commands excluded from the sandbox</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Domaines autorises</strong> — Liste des domaines reseau accessibles par Claude</span>
+                  <span data-lang="en"><strong>Allowed domains</strong> — List of network domains accessible by Claude</span>
+                </li>
+              </ul>
+
+              <h4>
+                <span data-lang="fr">Repertoires supplementaires</span>
+                <span data-lang="en">Additional directories</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Ajoutez des repertoires supplementaires auxquels Claude peut acceder en dehors du projet courant. Utile pour partager des fichiers de configuration ou des bibliotheques internes entre projets.</span>
+                <span data-lang="en">Add additional directories that Claude can access outside the current project. Useful for sharing configuration files or internal libraries across projects.</span>
               </p>
             </div>
 
             <div class="docs-callout docs-callout--warning">
               <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <div class="docs-callout-content">
-                <p><span data-lang="fr">Le fichier CLAUDE.md est lu par Claude a chaque session. Des instructions claires et bien structurees ameliorent significativement la qualite des reponses. Prenez le temps de le rediger soigneusement.</span><span data-lang="en">The CLAUDE.md file is read by Claude at each session. Clear and well-structured instructions significantly improve response quality. Take the time to write it carefully.</span></p>
+                <p><span data-lang="fr">Le sandbox est recommande pour limiter l'acces de Claude au systeme de fichiers et au reseau. En mode sandbox, seuls les domaines et repertoires explicitement autorises sont accessibles.</span><span data-lang="en">The sandbox is recommended to limit Claude's access to the file system and network. In sandbox mode, only explicitly allowed domains and directories are accessible.</span></p>
               </div>
-            </div>
-
-            <div class="docs-screenshot">
-              <img src="screenshots/screenshot-claude-md.png" alt="Claude AI — Editeur CLAUDE.md" loading="lazy">
-              <p class="docs-screenshot-caption">
-                <span data-lang="fr">Editeur CLAUDE.md integre : modifiez les instructions de votre agent sans quitter Mirehub. Bouton Enregistrer en haut a droite.</span>
-                <span data-lang="en">Built-in CLAUDE.md editor: modify your agent instructions without leaving Mirehub. Save button in the top right.</span>
-              </p>
             </div>
           </div>
 
           <hr class="docs-separator">
 
-          <!-- Claude History -->
-          <div id="claude-history">
+          <!-- Claude Agents & Skills -->
+          <div id="claude-agents">
             <h3>
-              <span data-lang="fr">Onglet Historique</span>
-              <span data-lang="en">History tab</span>
+              <span data-lang="fr">Onglet Agents &amp; Skills</span>
+              <span data-lang="en">Agents &amp; Skills tab</span>
             </h3>
             <div class="docs-text">
               <p>
-                <span data-lang="fr">Retrouvez l'historique complet de toutes vos sessions Claude. Filtrez par date, reprenez une conversation passee ou analysez les resultats d'une session precedente. Chaque session affiche un resume, la date et la duree.</span>
-                <span data-lang="en">Access the complete history of all your Claude sessions. Filter by date, resume a past conversation or analyze previous session results. Each session displays a summary, date and duration.</span>
+                <span data-lang="fr">Gerez vos agents specialises et vos skills (slash commands) depuis une interface unifiee. Creez, editez, dupliquez et activez/desactivez des agents et skills adaptes a vos besoins.</span>
+                <span data-lang="en">Manage your specialized agents and skills (slash commands) from a unified interface. Create, edit, duplicate and enable/disable agents and skills tailored to your needs.</span>
               </p>
-            </div>
 
-            <div class="docs-callout docs-callout--tip">
-              <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              <div class="docs-callout-content">
-                <p><span data-lang="fr">Utilisez l'historique pour retrouver une solution que Claude a proposee dans une session precedente, ou pour reprendre un travail interrompu exactement la ou vous l'avez laisse.</span><span data-lang="en">Use history to find a solution that Claude proposed in a previous session, or to resume interrupted work exactly where you left off.</span></p>
-              </div>
-            </div>
-
-            <div class="docs-screenshot">
-              <img src="screenshots/screenshot-claude-history.png" alt="Claude AI — Historique des sessions" loading="lazy">
-              <p class="docs-screenshot-caption">
-                <span data-lang="fr">Historique des sessions Claude : retrouvez n'importe quelle conversation passee et reprenez exactement la ou vous vous etiez arrete.</span>
-                <span data-lang="en">Claude session history: find any past conversation and resume exactly where you left off.</span>
-              </p>
-            </div>
-          </div>
-
-          <hr class="docs-separator">
-
-          <!-- Claude Library -->
-          <div id="claude-library">
-            <h3>
-              <span data-lang="fr">Onglet Bibliotheque</span>
-              <span data-lang="en">Library tab</span>
-            </h3>
-            <div class="docs-text">
-              <p>
-                <span data-lang="fr">La Bibliotheque centralise des profils et skills pre-configures que vous pouvez deployer en un clic sur n'importe quel workspace. C'est le moyen le plus rapide de configurer Claude pour un cas d'usage specifique.</span>
-                <span data-lang="en">The Library centralizes pre-configured profiles and skills that you can deploy in one click to any workspace. It's the fastest way to configure Claude for a specific use case.</span>
-              </p>
-            </div>
-
-            <div class="docs-text">
               <h4>
-                <span data-lang="fr">Profils disponibles</span>
-                <span data-lang="en">Available profiles</span>
+                <span data-lang="fr">Agents par defaut</span>
+                <span data-lang="en">Default agents</span>
               </h4>
-            </div>
-            <div class="docs-feature-overview">
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong><span data-lang="fr">Revue de code</span><span data-lang="en">Code Review</span></strong>
-                  <span data-lang="fr">Audit qualite, bonnes pratiques et optimisations</span><span data-lang="en">Quality audit, best practices and optimizations</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong>Debugger</strong>
-                  <span data-lang="fr">Diagnostic et resolution de bugs</span><span data-lang="en">Bug diagnosis and resolution</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong>Refactoring</strong>
-                  <span data-lang="fr">Restructuration et amelioration du code</span><span data-lang="en">Code restructuring and improvement</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong><span data-lang="fr">Auditeur Securite</span><span data-lang="en">Security Auditor</span></strong>
-                  <span data-lang="fr">Detection de vulnerabilites et failles de securite</span><span data-lang="en">Vulnerability and security flaw detection</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong><span data-lang="fr">Designer Frontend</span><span data-lang="en">Frontend Designer</span></strong>
-                  <span data-lang="fr">UI/UX et composants visuels</span><span data-lang="en">UI/UX and visual components</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong><span data-lang="fr">Planificateur de Projet</span><span data-lang="en">Project Planner</span></strong>
-                  <span data-lang="fr">Organisation, planification et roadmap</span><span data-lang="en">Organization, planning and roadmap</span>
-                </div>
-              </div>
-              <div class="docs-feature-item">
-                <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                  <strong><span data-lang="fr">Redacteur Doc</span><span data-lang="en">Doc Writer</span></strong>
-                  <span data-lang="fr">Generation de documentation et commentaires</span><span data-lang="en">Documentation and comment generation</span>
-                </div>
-              </div>
-            </div>
+              <p>
+                <span data-lang="fr">Mirehub fournit des agents pre-configures (Architecte, Testeur, Designer Frontend, etc.) que vous pouvez personnaliser ou restaurer a leur configuration d'origine. Chaque agent est defini par un fichier Markdown avec un frontmatter YAML decrivant son role, ses responsabilites et sa methodologie.</span>
+                <span data-lang="en">Mirehub provides pre-configured agents (Architect, Tester, Frontend Designer, etc.) that you can customize or restore to their default configuration. Each agent is defined by a Markdown file with a YAML frontmatter describing its role, responsibilities and methodology.</span>
+              </p>
 
-            <div class="docs-text">
+              <h4>
+                <span data-lang="fr">Agents personnalises</span>
+                <span data-lang="en">Custom agents</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Creez vos propres agents a partir d'un modele vierge ou d'un template existant. Chaque agent dispose d'une fiche affichant son nom et son etat (actif/desactive). Actions disponibles : editer, dupliquer, supprimer, activer/desactiver.</span>
+                <span data-lang="en">Create your own agents from a blank template or an existing one. Each agent has a card showing its name and status (enabled/disabled). Available actions: edit, duplicate, delete, enable/disable.</span>
+              </p>
+
               <h4>Skills</h4>
               <p>
-                <span data-lang="fr">Des slash commands pre-configurees que Claude peut utiliser dans vos sessions :</span>
-                <span data-lang="en">Pre-configured slash commands that Claude can use in your sessions:</span>
+                <span data-lang="fr">Les skills sont des slash commands reutilisables que Claude peut executer dans vos sessions. Gerez-les avec la meme interface que les agents : creation, edition, duplication et suppression. Exemples de skills :</span>
+                <span data-lang="en">Skills are reusable slash commands that Claude can execute in your sessions. Manage them with the same interface as agents: creation, editing, duplication and deletion. Skill examples:</span>
               </p>
               <ul>
                 <li><code>/commit</code> — <span data-lang="fr">Generer un commit structure avec message conventionnel</span><span data-lang="en">Generate a structured commit with conventional message</span></li>
@@ -994,121 +979,151 @@
                 <li><code>/pr-review</code> — <span data-lang="fr">Revue complete de pull request</span><span data-lang="en">Complete pull request review</span></li>
                 <li><code>/refactor</code> — <span data-lang="fr">Guide de refactoring structure</span><span data-lang="en">Structured refactoring guide</span></li>
                 <li><code>/test</code> — <span data-lang="fr">Generer des tests unitaires et d'integration</span><span data-lang="en">Generate unit and integration tests</span></li>
-                <li><code>/explain-code</code> — <span data-lang="fr">Expliquer un morceau de code en detail</span><span data-lang="en">Explain a piece of code in detail</span></li>
-                <li><code>/debug</code> — <span data-lang="fr">Diagnostiquer un probleme avec analyse methodique</span><span data-lang="en">Diagnose a problem with methodical analysis</span></li>
-                <li><code>/doc-generate</code> — <span data-lang="fr">Generer de la documentation technique</span><span data-lang="en">Generate technical documentation</span></li>
                 <li><code>/security-scan</code> — <span data-lang="fr">Scanner le code pour les vulnerabilites</span><span data-lang="en">Scan code for vulnerabilities</span></li>
-                <li><code>/deploy-checklist</code> — <span data-lang="fr">Generer une checklist de deploiement</span><span data-lang="en">Generate a deployment checklist</span></li>
               </ul>
-              <p>
-                <span data-lang="fr">Filtrez les profils et skills par categorie (Design, DevOps, Development, Documentation, Git, Planning, Quality, Security) et deployez en un clic vers n'importe quel workspace.</span>
-                <span data-lang="en">Filter profiles and skills by category (Design, DevOps, Development, Documentation, Git, Planning, Quality, Security) and deploy in one click to any workspace.</span>
-              </p>
             </div>
 
-            
-          <div class="docs-text">
-            <h3>
-              <span data-lang="fr">Guide : deployer un profil et des skills</span>
-              <span data-lang="en">Guide: deploying a profile and skills</span>
-            </h3>
-            <ol class="docs-steps">
-              <li>
-                <span data-lang="fr">Ouvrez l'onglet Bibliotheque dans le tableau de bord Claude AI</span>
-                <span data-lang="en">Open the Library tab in the Claude AI dashboard</span>
-              </li>
-              <li>
-                <span data-lang="fr">Parcourez les profils disponibles et selectionnez celui adapte a votre besoin (ex: "Revue de code" pour un audit qualite)</span>
-                <span data-lang="en">Browse available profiles and select the one suited to your need (e.g., "Code Review" for a quality audit)</span>
-              </li>
-              <li>
-                <span data-lang="fr">Cliquez sur "Deployer" pour l'appliquer au workspace actif. Le profil est injecte dans votre CLAUDE.md</span>
-                <span data-lang="en">Click "Deploy" to apply it to the active workspace. The profile is injected into your CLAUDE.md</span>
-              </li>
-              <li>
-                <span data-lang="fr">Passez aux skills et selectionnez ceux que vous souhaitez (ex: <code>/commit</code>, <code>/test</code>, <code>/refactor</code>)</span>
-                <span data-lang="en">Switch to skills and select the ones you want (e.g., <code>/commit</code>, <code>/test</code>, <code>/refactor</code>)</span>
-              </li>
-              <li>
-                <span data-lang="fr">Deployez les skills : ils sont copies dans <code>.claude/commands/</code> de votre projet</span>
-                <span data-lang="en">Deploy skills: they are copied to <code>.claude/commands/</code> in your project</span>
-              </li>
-              <li>
-                <span data-lang="fr">Lancez une session Claude Code et utilisez les slash commands (ex: tapez <code>/commit</code> dans la conversation)</span>
-                <span data-lang="en">Launch a Claude Code session and use the slash commands (e.g., type <code>/commit</code> in the conversation)</span>
-              </li>
-            </ol>
-          </div>
-
-          <div class="docs-callout docs-callout--info">
-            <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <div class="docs-callout-content">
-              <p><span data-lang="fr">Filtrez les profils et skills par categorie en utilisant les boutons de filtre en haut de la Bibliotheque. Les categories disponibles sont : Design, DevOps, Development, Documentation, Git, Planning, Quality, Security.</span><span data-lang="en">Filter profiles and skills by category using the filter buttons at the top of the Library. Available categories are: Design, DevOps, Development, Documentation, Git, Planning, Quality, Security.</span></p>
+            <div class="docs-text">
+              <h3>
+                <span data-lang="fr">Guide : creer un agent personnalise</span>
+                <span data-lang="en">Guide: creating a custom agent</span>
+              </h3>
+              <ol class="docs-steps">
+                <li>
+                  <span data-lang="fr">Ouvrez l'onglet Agents &amp; Skills dans le tableau de bord Claude AI</span>
+                  <span data-lang="en">Open the Agents &amp; Skills tab in the Claude AI dashboard</span>
+                </li>
+                <li>
+                  <span data-lang="fr">Cliquez sur "Add Agent" et choisissez de creer a partir d'un modele vierge ou d'un template existant</span>
+                  <span data-lang="en">Click "Add Agent" and choose to create from a blank template or an existing one</span>
+                </li>
+                <li>
+                  <span data-lang="fr">Renseignez le frontmatter YAML : nom, role, description et metadata</span>
+                  <span data-lang="en">Fill in the YAML frontmatter: name, role, description and metadata</span>
+                </li>
+                <li>
+                  <span data-lang="fr">Redigez les instructions de l'agent en Markdown : responsabilites, methodologie, contraintes</span>
+                  <span data-lang="en">Write the agent's instructions in Markdown: responsibilities, methodology, constraints</span>
+                </li>
+                <li>
+                  <span data-lang="fr">Sauvegardez. L'agent apparait dans la grille et peut etre active/desactive, duplique ou supprime</span>
+                  <span data-lang="en">Save. The agent appears in the grid and can be enabled/disabled, duplicated or deleted</span>
+                </li>
+              </ol>
             </div>
-          </div>
 
-<div class="docs-screenshot">
-              <img src="screenshots/screenshot-claude-bibliotheque.png" alt="Claude AI — Bibliotheque de profils et skills" loading="lazy">
+            <div class="docs-callout docs-callout--tip">
+              <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <div class="docs-callout-content">
+                <p><span data-lang="fr">Utilisez l'editeur integre pour modifier le frontmatter YAML et le contenu Markdown de chaque agent ou skill. Les agents desactives ont l'extension <code>.md.disabled</code> et ne seront pas charges par Claude.</span><span data-lang="en">Use the built-in editor to modify the YAML frontmatter and Markdown content of each agent or skill. Disabled agents have the <code>.md.disabled</code> extension and will not be loaded by Claude.</span></p>
+              </div>
+            </div>
+
+            <div class="docs-screenshot">
+              <img src="screenshots/screenshot-claude-profil.png" alt="Claude AI — Agents et Skills" loading="lazy">
               <p class="docs-screenshot-caption">
-                <span data-lang="fr">Bibliotheque Claude : profils pre-configures et skills (slash commands) deployables en un clic. Filtrage par categorie.</span>
-                <span data-lang="en">Claude Library: pre-configured profiles and skills (slash commands) deployable in one click. Filter by category.</span>
+                <span data-lang="fr">Onglet Agents &amp; Skills : agents par defaut et personnalises, skills (slash commands) deployables en un clic. Creation, edition, duplication et activation/desactivation depuis une interface unifiee.</span>
+                <span data-lang="en">Agents &amp; Skills tab: default and custom agents, skills (slash commands) deployable in one click. Creation, editing, duplication and enable/disable from a unified interface.</span>
               </p>
             </div>
           </div>
 
           <hr class="docs-separator">
 
-          <!-- Claude MCP -->
-          <div id="claude-mcp">
+          <!-- Claude Integrations -->
+          <div id="claude-integrations">
             <h3>
-              <span data-lang="fr">Onglet MCP</span>
-              <span data-lang="en">MCP tab</span>
+              <span data-lang="fr">Onglet Integrations</span>
+              <span data-lang="en">Integrations tab</span>
             </h3>
             <div class="docs-text">
               <p>
-                <span data-lang="fr">Le panneau MCP (Model Context Protocol) permet de donner a Claude des super-pouvoirs en connectant des serveurs d'outils externes. Mirehub fournit un catalogue de serveurs pre-configures et la possibilite d'en ajouter manuellement.</span>
-                <span data-lang="en">The MCP (Model Context Protocol) panel lets you give Claude superpowers by connecting external tool servers. Mirehub provides a pre-configured server catalog and the ability to add custom ones.</span>
+                <span data-lang="fr">L'onglet Integrations centralise la connexion avec les services externes : serveurs MCP, workflows d'orchestration et variables d'environnement. Trois sections depliables organisent les differentes configurations.</span>
+                <span data-lang="en">The Integrations tab centralizes connections with external services: MCP servers, orchestration workflows and environment variables. Three collapsible sections organize the different configurations.</span>
               </p>
-            </div>
 
-            <div class="docs-text">
               <h4>
-                <span data-lang="fr">Catalogue de serveurs</span>
-                <span data-lang="en">Server catalog</span>
+                <span data-lang="fr">Serveurs MCP</span>
+                <span data-lang="en">MCP Servers</span>
               </h4>
               <p>
-                <span data-lang="fr">Parcourez un catalogue de serveurs MCP classes par categorie. Chaque serveur affiche son nom, sa description, un badge "officiel" le cas echeant, et la liste de ses fonctionnalites. Installation en un clic — Mirehub configure automatiquement la commande et les arguments.</span>
-                <span data-lang="en">Browse an MCP server catalog organized by category. Each server shows its name, description, an "official" badge where applicable, and its feature list. One-click install — Mirehub automatically configures the command and arguments.</span>
-              </p>
-              <p>
-                <span data-lang="fr">Categories disponibles :</span>
-                <span data-lang="en">Available categories:</span>
+                <span data-lang="fr">Le panneau MCP (Model Context Protocol) permet de donner a Claude des super-pouvoirs en connectant des serveurs d'outils externes. Parcourez un catalogue de serveurs pre-configures classes par categorie ou ajoutez un serveur manuellement. Deux types de serveurs sont supportes :</span>
+                <span data-lang="en">The MCP (Model Context Protocol) panel lets you give Claude superpowers by connecting external tool servers. Browse a pre-configured server catalog organized by category or add a server manually. Two server types are supported:</span>
               </p>
               <ul>
-                <li><strong>Database</strong> — <span data-lang="fr">Acces aux bases de donnees via MCP</span><span data-lang="en">Database access via MCP</span></li>
-                <li><strong>File System</strong> — <span data-lang="fr">Lecture, ecriture et navigation de fichiers</span><span data-lang="en">Read, write and browse files</span></li>
-                <li><strong>Web</strong> — <span data-lang="fr">Scraping, fetch, navigation web</span><span data-lang="en">Scraping, fetch, web navigation</span></li>
-                <li><strong>AI</strong> — <span data-lang="fr">Integration avec d'autres modeles d'IA</span><span data-lang="en">Integration with other AI models</span></li>
-                <li><strong>Dev Tools</strong> — <span data-lang="fr">Outils de developpement (linting, formatting, etc.)</span><span data-lang="en">Development tools (linting, formatting, etc.)</span></li>
-                <li><strong>Cloud</strong> — <span data-lang="fr">Services cloud (AWS, GCP, Azure)</span><span data-lang="en">Cloud services (AWS, GCP, Azure)</span></li>
-                <li><strong>Communication</strong> — <span data-lang="fr">Slack, email, notifications</span><span data-lang="en">Slack, email, notifications</span></li>
-                <li><strong>Utilities</strong> — <span data-lang="fr">Outils generaux (PDF, images, etc.)</span><span data-lang="en">General tools (PDF, images, etc.)</span></li>
+                <li>
+                  <span data-lang="fr"><strong>Local/Commande</strong> — Serveur lance par une commande locale avec arguments et variables d'environnement</span>
+                  <span data-lang="en"><strong>Local/Command</strong> — Server launched by a local command with arguments and environment variables</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>HTTP</strong> — Serveur distant accessible via URL, avec en-tetes optionnels</span>
+                  <span data-lang="en"><strong>HTTP</strong> — Remote server accessible via URL, with optional headers</span>
+                </li>
               </ul>
+              <p>
+                <span data-lang="fr">Categories du catalogue : Database, File System, Web, AI, Dev Tools, Cloud, Communication, Utilities. Chaque serveur affiche son nom, sa description, un badge "officiel" le cas echeant, et la liste de ses fonctionnalites. Installation en un clic.</span>
+                <span data-lang="en">Catalog categories: Database, File System, Web, AI, Dev Tools, Cloud, Communication, Utilities. Each server shows its name, description, an "official" badge where applicable, and its feature list. One-click install.</span>
+              </p>
+            </div>
+
+            <div class="docs-text">
+              <h4>Workflow</h4>
+              <p>
+                <span data-lang="fr">Configurez un workflow d'orchestration complet pour Claude. Cinq axes configurables definissent comment Claude travaille sur vos projets :</span>
+                <span data-lang="en">Configure a comprehensive orchestration workflow for Claude. Five configurable axes define how Claude works on your projects:</span>
+              </p>
+              <ul>
+                <li>
+                  <span data-lang="fr"><strong>Mode Plan</strong> — Entrer en mode plan pour toute tache non triviale (3+ etapes ou decisions architecturales)</span>
+                  <span data-lang="en"><strong>Plan Mode</strong> — Enter plan mode for any non-trivial task (3+ steps or architectural decisions)</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Strategie sous-agents</strong> — Deleguer recherche et analyse en parallele via des sous-agents dedies</span>
+                  <span data-lang="en"><strong>Subagent strategy</strong> — Delegate research and analysis in parallel via dedicated subagents</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Boucle d'amelioration</strong> — Mettre a jour les lecons apprises apres toute correction</span>
+                  <span data-lang="en"><strong>Improvement loop</strong> — Update lessons learned after any correction</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Verification avant completion</strong> — Prouver le fonctionnement avant de terminer une tache</span>
+                  <span data-lang="en"><strong>Pre-completion verification</strong> — Prove it works before marking a task as done</span>
+                </li>
+                <li>
+                  <span data-lang="fr"><strong>Correction autonome</strong> — Corriger directement bugs et tests CI en echec sans intervention</span>
+                  <span data-lang="en"><strong>Autonomous fixing</strong> — Fix bugs and failing CI tests directly without intervention</span>
+                </li>
+              </ul>
+              <p>
+                <span data-lang="fr">Deployez le workflow sur un projet specifique ou sur tous vos projets en un clic. Le workflow est injecte dans votre fichier CLAUDE.md via un marqueur dedie.</span>
+                <span data-lang="en">Deploy the workflow to a specific project or to all your projects in one click. The workflow is injected into your CLAUDE.md file via a dedicated marker.</span>
+              </p>
             </div>
 
             <div class="docs-text">
               <h4>
-                <span data-lang="fr">Installation d'un serveur MCP</span>
-                <span data-lang="en">Installing an MCP server</span>
+                <span data-lang="fr">Variables d'environnement</span>
+                <span data-lang="en">Environment variables</span>
               </h4>
+              <p>
+                <span data-lang="fr">Definissez des variables d'environnement personnalisees (cles API, tokens, configuration) qui seront disponibles pour Claude et les serveurs MCP pendant les sessions. Interface d'ajout/suppression avec paires cle-valeur.</span>
+                <span data-lang="en">Define custom environment variables (API keys, tokens, configuration) that will be available to Claude and MCP servers during sessions. Add/remove interface with key-value pairs.</span>
+              </p>
+            </div>
+
+            <div class="docs-text">
+              <h3>
+                <span data-lang="fr">Guide : installer un serveur MCP</span>
+                <span data-lang="en">Guide: installing an MCP server</span>
+              </h3>
               <ol class="docs-steps">
                 <li>
-                  <span data-lang="fr">Naviguez vers l'onglet MCP dans le tableau de bord Claude AI</span>
-                  <span data-lang="en">Navigate to the MCP tab in the Claude AI dashboard</span>
+                  <span data-lang="fr">Naviguez vers l'onglet Integrations dans le tableau de bord Claude AI</span>
+                  <span data-lang="en">Navigate to the Integrations tab in the Claude AI dashboard</span>
                 </li>
                 <li>
-                  <span data-lang="fr">Parcourez le catalogue ou filtrez par categorie pour trouver le serveur souhaite</span>
-                  <span data-lang="en">Browse the catalog or filter by category to find the desired server</span>
+                  <span data-lang="fr">Ouvrez la section MCP et parcourez le catalogue ou filtrez par categorie</span>
+                  <span data-lang="en">Open the MCP section and browse the catalog or filter by category</span>
                 </li>
                 <li>
                   <span data-lang="fr">Cliquez sur "Installer". Mirehub configure automatiquement la commande et les arguments</span>
@@ -1125,28 +1140,6 @@
               </ol>
             </div>
 
-            <div class="docs-text">
-              <h4>
-                <span data-lang="fr">Configuration &amp; variables d'environnement</span>
-                <span data-lang="en">Configuration &amp; environment variables</span>
-              </h4>
-              <p>
-                <span data-lang="fr">Chaque serveur MCP peut etre configure avec des arguments personnalises et des variables d'environnement (cles API, tokens d'authentification, etc.). Vous pouvez aussi ajouter un serveur MCP manuellement en specifiant la commande, les arguments et les variables d'environnement.</span>
-                <span data-lang="en">Each MCP server can be configured with custom arguments and environment variables (API keys, auth tokens, etc.). You can also add a custom MCP server manually by specifying the command, arguments and environment variables.</span>
-              </p>
-            </div>
-
-            <div class="docs-text">
-              <h4>
-                <span data-lang="fr">Documentation integree</span>
-                <span data-lang="en">Built-in documentation</span>
-              </h4>
-              <p>
-                <span data-lang="fr">Consultez la documentation de chaque serveur MCP directement dans Mirehub. Le bouton "Aide" affiche la sortie d'aide du serveur, copiable en un clic. Pratique pour verifier les commandes disponibles sans quitter l'application.</span>
-                <span data-lang="en">View each MCP server's documentation directly in Mirehub. The "Help" button shows the server's help output, copyable in one click. Convenient for checking available commands without leaving the app.</span>
-              </p>
-            </div>
-
             <div class="docs-callout docs-callout--info">
               <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               <div class="docs-callout-content">
@@ -1157,50 +1150,74 @@
 
           <hr class="docs-separator">
 
-          <!-- Claude Workflow -->
-          <div id="claude-workflow">
+          <!-- Claude Memory -->
+          <div id="claude-memory">
             <h3>
-              <span data-lang="fr">Onglet Workflow</span>
-              <span data-lang="en">Workflow tab</span>
+              <span data-lang="fr">Onglet Memoire</span>
+              <span data-lang="en">Memory tab</span>
             </h3>
             <div class="docs-text">
               <p>
-                <span data-lang="fr">Configurez un workflow d'orchestration complet pour Claude. Cinq axes configurables definissent comment Claude travaille sur vos projets :</span>
-                <span data-lang="en">Configure a comprehensive orchestration workflow for Claude. Five configurable axes define how Claude works on your projects:</span>
+                <span data-lang="fr">L'onglet Memoire centralise toutes les instructions et regles qui definissent le comportement de Claude. Cinq sous-onglets organisent les differentes sources de configuration :</span>
+                <span data-lang="en">The Memory tab centralizes all instructions and rules that define Claude's behavior. Five sub-tabs organize the different configuration sources:</span>
               </p>
-              <ul>
-                <li>
-                  <span data-lang="fr"><strong>Mode Plan</strong> — Entrer en mode plan pour toute tache non triviale (3+ etapes ou decisions architecturales). Re-planifier si quelque chose deraille</span>
-                  <span data-lang="en"><strong>Plan Mode</strong> — Enter plan mode for any non-trivial task (3+ steps or architectural decisions). Re-plan if something goes off track</span>
-                </li>
-                <li>
-                  <span data-lang="fr"><strong>Strategie sous-agents</strong> — Utiliser les sous-agents pour garder le contexte propre, deleguer recherche et analyse en parallele. Une tache par sous-agent</span>
-                  <span data-lang="en"><strong>Subagent strategy</strong> — Use subagents to keep context clean, delegate research and analysis in parallel. One task per subagent</span>
-                </li>
-                <li>
-                  <span data-lang="fr"><strong>Boucle d'amelioration</strong> — Apres toute correction, mettre a jour les lecons apprises et ecrire des regles preventives. Iterer sans relache</span>
-                  <span data-lang="en"><strong>Improvement loop</strong> — After any correction, update lessons learned and write preventive rules. Iterate relentlessly</span>
-                </li>
-                <li>
-                  <span data-lang="fr"><strong>Verification avant completion</strong> — Ne jamais marquer une tache terminee sans preuve de fonctionnement (tests, logs, demonstration)</span>
-                  <span data-lang="en"><strong>Pre-completion verification</strong> — Never mark a task as done without proof it works (tests, logs, demonstration)</span>
-                </li>
-                <li>
-                  <span data-lang="fr"><strong>Correction autonome de bugs</strong> — Corriger directement les bugs et les tests CI en echec sans intervention humaine</span>
-                  <span data-lang="en"><strong>Autonomous bug fixing</strong> — Fix bugs and failing CI tests directly without human intervention</span>
-                </li>
-              </ul>
+
+              <h4>Rules</h4>
               <p>
-                <span data-lang="fr">Deployez le workflow sur un projet specifique ou sur tous vos projets en un clic.</span>
-                <span data-lang="en">Deploy the workflow to a specific project or to all your projects in one click.</span>
+                <span data-lang="fr">Le gestionnaire de regles offre une interface hierarchique pour organiser vos fichiers de regles. Naviguez dans l'arborescence, faites du glisser-deposer pour reorganiser, recherchez et filtrez les regles disponibles. Liez des regles partagees depuis <code>.claude/ai-rules/</code>, importez/exportez et synchronisez avec des templates upstream. Un editeur integre permet de modifier chaque regle directement avec affichage du badge auteur.</span>
+                <span data-lang="en">The rules manager provides a hierarchical interface to organize your rule files. Browse the tree, drag and drop to reorganize, search and filter available rules. Link shared rules from <code>.claude/ai-rules/</code>, import/export and sync with upstream templates. A built-in editor lets you modify each rule directly with author badge display.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Memoire Projet (CLAUDE.md)</span>
+                <span data-lang="en">Project Memory (CLAUDE.md)</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Editez le fichier <code>CLAUDE.md</code> de votre projet directement dans l'application. Ce fichier definit les instructions specifiques au projet : conventions de code, architecture, regles de commit, configuration d'equipe d'agents. Les modifications sont sauvegardees immediatement.</span>
+                <span data-lang="en">Edit your project's <code>CLAUDE.md</code> file directly in the application. This file defines project-specific instructions: code conventions, architecture, commit rules, agent team configuration. Changes are saved immediately.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Memoire Utilisateur (~/.claude/CLAUDE.md)</span>
+                <span data-lang="en">User Memory (~/.claude/CLAUDE.md)</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Vos instructions personnelles qui s'appliquent a tous vos projets. Definissez vos preferences globales, votre style de code et vos outils preferes dans <code>~/.claude/CLAUDE.md</code>.</span>
+                <span data-lang="en">Your personal instructions that apply to all your projects. Define your global preferences, coding style and favorite tools in <code>~/.claude/CLAUDE.md</code>.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Memoire Locale (CLAUDE.local.md)</span>
+                <span data-lang="en">Local Memory (CLAUDE.local.md)</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Surcharges locales non versionnees (non commitees dans Git). Ideal pour les configurations specifiques a votre machine ou vos cles API locales.</span>
+                <span data-lang="en">Local overrides not tracked by version control (not committed to Git). Ideal for machine-specific configurations or local API keys.</span>
+              </p>
+
+              <h4>
+                <span data-lang="fr">Memoire Geree</span>
+                <span data-lang="en">Managed Memory</span>
+              </h4>
+              <p>
+                <span data-lang="fr">Vue en lecture seule des instructions gerees par le systeme. Ces instructions sont generees automatiquement et ne peuvent pas etre modifiees manuellement.</span>
+                <span data-lang="en">Read-only view of system-managed instructions. These instructions are automatically generated and cannot be manually edited.</span>
               </p>
             </div>
 
-            <div class="docs-callout docs-callout--tip">
-              <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div class="docs-callout docs-callout--warning">
+              <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <div class="docs-callout-content">
-                <p><span data-lang="fr">Le workflow est injecte dans votre fichier CLAUDE.md. Activez les cinq axes pour une experience d'agent completement autonome qui planifie, execute, verifie et apprend de ses erreurs.</span><span data-lang="en">The workflow is injected into your CLAUDE.md file. Enable all five axes for a fully autonomous agent experience that plans, executes, verifies and learns from its mistakes.</span></p>
+                <p><span data-lang="fr">Le fichier CLAUDE.md est lu par Claude a chaque session. Des instructions claires et bien structurees ameliorent significativement la qualite des reponses. Utilisez le gestionnaire de regles pour organiser vos instructions par domaine et technologie.</span><span data-lang="en">The CLAUDE.md file is read by Claude at each session. Clear and well-structured instructions significantly improve response quality. Use the rules manager to organize your instructions by domain and technology.</span></p>
               </div>
+            </div>
+
+            <div class="docs-screenshot">
+              <img src="screenshots/screenshot-claude-md.png" alt="Claude AI — Onglet Memoire" loading="lazy">
+              <p class="docs-screenshot-caption">
+                <span data-lang="fr">Onglet Memoire : gestionnaire de regles hierarchique, editeur CLAUDE.md integre (projet, utilisateur, local), memoire geree en lecture seule. Toutes les instructions de Claude centralisees en un seul endroit.</span>
+                <span data-lang="en">Memory tab: hierarchical rules manager, built-in CLAUDE.md editor (project, user, local), read-only managed memory. All Claude instructions centralized in one place.</span>
+              </p>
             </div>
           </div>
         </section>
@@ -1281,7 +1298,7 @@
           <div class="docs-callout docs-callout--tip">
             <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             <div class="docs-callout-content">
-              <p><span data-lang="fr">AutoClaude est un point de depart. Apres avoir genere le fichier, personnalisez-le dans l'onglet CLAUDE.md pour l'adapter aux specificites de votre projet.</span><span data-lang="en">AutoClaude is a starting point. After generating the file, customize it in the CLAUDE.md tab to adapt it to your project's specifics.</span></p>
+              <p><span data-lang="fr">AutoClaude est un point de depart. Apres avoir genere le fichier, personnalisez-le dans l'onglet Memoire pour l'adapter aux specificites de votre projet.</span><span data-lang="en">AutoClaude is a starting point. After generating the file, customize it in the Memory tab to adapt it to your project's specifics.</span></p>
             </div>
           </div>
         </section>
@@ -2557,8 +2574,8 @@
           <h2>API Tester</h2>
           <div class="docs-text">
             <p>
-              <span data-lang="fr">Un client API complet integre directement dans Mirehub. Organisez vos requetes en collections, gerez plusieurs environnements, validez vos reponses avec des assertions automatiques et surveillez vos endpoints avec des health checks. Fini les allers-retours avec Postman ou Insomnia.</span>
-              <span data-lang="en">A full API client built right into Mirehub. Organize requests into collections, manage multiple environments, validate responses with automated assertions, and monitor your endpoints with health checks. No more switching to Postman or Insomnia.</span>
+              <span data-lang="fr">Un client API complet integre directement dans Mirehub. Organisez vos requetes en collections, gerez plusieurs environnements et validez vos reponses avec des assertions automatiques. Fini les allers-retours avec Postman ou Insomnia.</span>
+              <span data-lang="en">A full API client built right into Mirehub. Organize requests into collections, manage multiple environments and validate responses with automated assertions. No more switching to Postman or Insomnia.</span>
             </p>
           </div>
 
@@ -2677,18 +2694,10 @@
           </div>
 
           <div class="docs-text">
-            <h3>Health checks</h3>
-            <p>
-              <span data-lang="fr">Surveillez la disponibilite de vos endpoints avec des health checks dedies. Configurez l'URL et le code de statut attendu, puis lancez-les individuellement ou tous d'un coup. Chaque health check affiche un indicateur visuel (vert = OK, rouge = echec) avec le code de statut, le temps de reponse et l'horodatage.</span>
-              <span data-lang="en">Monitor your endpoint availability with dedicated health checks. Configure the URL and expected status code, then run them individually or all at once. Each health check shows a visual indicator (green = OK, red = failure) with status code, response time, and timestamp.</span>
-            </p>
-          </div>
-
-          <div class="docs-text">
             <h3>Import / Export</h3>
             <p>
-              <span data-lang="fr">Exportez l'integralite de vos tests API (collections, environnements, health checks) vers un fichier pour le partager avec votre equipe ou le versionner dans Git. Importez un fichier existant pour reprendre le travail d'un collegue.</span>
-              <span data-lang="en">Export your entire API test suite (collections, environments, health checks) to a file to share with your team or version in Git. Import an existing file to pick up a colleague's work.</span>
+              <span data-lang="fr">Exportez l'integralite de vos tests API (collections et environnements) vers un fichier pour le partager avec votre equipe ou le versionner dans Git. Importez un fichier existant pour reprendre le travail d'un collegue.</span>
+              <span data-lang="en">Export your entire API test suite (collections and environments) to a file to share with your team or version in Git. Import an existing file to pick up a colleague's work.</span>
             </p>
           </div>
 
@@ -2714,10 +2723,6 @@
               <li>
                 <span data-lang="fr"><strong>Ajoutez des assertions</strong> — Par exemple, status code = 200 et body contains "ok"</span>
                 <span data-lang="en"><strong>Add assertions</strong> — For example, status code = 200 and body contains "ok"</span>
-              </li>
-              <li>
-                <span data-lang="fr"><strong>Configurez un health check</strong> — Ajoutez l'URL dans la section health checks pour surveiller la disponibilite</span>
-                <span data-lang="en"><strong>Set up a health check</strong> — Add the URL in the health checks section to monitor availability</span>
               </li>
               <li>
                 <span data-lang="fr"><strong>Exportez</strong> — Exportez la collection pour la partager avec votre equipe ou la versionner dans Git</span>
@@ -2761,8 +2766,172 @@
 <div class="docs-screenshot">
             <img src="screenshots/screenshot-api.png" alt="API Tester — Client API complet" loading="lazy">
             <p class="docs-screenshot-caption">
-              <span data-lang="fr">Client API integre : collections de requetes dans la barre laterale, configuration des headers et body, reponses JSON formatees avec assertions automatiques, environnements multiples et health checks.</span>
-              <span data-lang="en">Built-in API client: request collections in the sidebar, header and body configuration, formatted JSON responses with automated assertions, multiple environments and health checks.</span>
+              <span data-lang="fr">Client API integre : collections de requetes dans la barre laterale, configuration des headers et body, reponses JSON formatees avec assertions automatiques et environnements multiples.</span>
+              <span data-lang="en">Built-in API client: request collections in the sidebar, header and body configuration, formatted JSON responses with automated assertions and multiple environments.</span>
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================ -->
+        <!-- HEALTH CHECKS                                -->
+        <!-- ============================================ -->
+        <section class="docs-section" id="health-checks">
+          <h2>Health Checks</h2>
+          <div class="docs-text">
+            <p>
+              <span data-lang="fr">Surveillez la disponibilite de vos endpoints en continu. Mirehub embarque un moniteur de sante dedie avec scheduler integre, historique detaille et detection automatique des incidents. Configure par projet, il tourne en arriere-plan et vous alerte des qu'un service tombe.</span>
+              <span data-lang="en">Monitor your endpoints' availability continuously. Mirehub ships a dedicated health monitor with a built-in scheduler, detailed history and automatic incident detection. Configured per project, it runs in the background and alerts you as soon as a service goes down.</span>
+            </p>
+          </div>
+
+          <div class="docs-text">
+            <h3>
+              <span data-lang="fr">Configuration des checks</span>
+              <span data-lang="en">Check configuration</span>
+            </h3>
+          </div>
+          <div class="docs-feature-overview">
+            <div class="docs-feature-item">
+              <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div>
+                <strong><span data-lang="fr">Nom et URL</span><span data-lang="en">Name and URL</span></strong>
+                <span data-lang="fr">Nommez chaque check et specifiez l'URL a surveiller</span><span data-lang="en">Name each check and specify the URL to monitor</span>
+              </div>
+            </div>
+            <div class="docs-feature-item">
+              <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div>
+                <strong><span data-lang="fr">Methode HTTP</span><span data-lang="en">HTTP method</span></strong>
+                <span data-lang="fr">GET ou HEAD — choisissez la methode adaptee a votre endpoint</span><span data-lang="en">GET or HEAD — choose the method suited to your endpoint</span>
+              </div>
+            </div>
+            <div class="docs-feature-item">
+              <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div>
+                <strong><span data-lang="fr">Code de statut attendu</span><span data-lang="en">Expected status code</span></strong>
+                <span data-lang="fr">Definissez le code HTTP attendu (par defaut 200). Tout autre code est considere comme un echec</span><span data-lang="en">Define the expected HTTP code (default 200). Any other code is considered a failure</span>
+              </div>
+            </div>
+            <div class="docs-feature-item">
+              <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div>
+                <strong>Headers</strong>
+                <span data-lang="fr">Ajoutez des headers personnalises (authentification, tokens, etc.) avec activation individuelle</span><span data-lang="en">Add custom headers (authentication, tokens, etc.) with individual enable/disable toggle</span>
+              </div>
+            </div>
+            <div class="docs-feature-item">
+              <svg class="docs-feature-item-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div>
+                <strong><span data-lang="fr">Notification en cas de panne</span><span data-lang="en">Down notification</span></strong>
+                <span data-lang="fr">Activez l'option pour etre alerte quand un endpoint tombe</span><span data-lang="en">Enable the option to be alerted when an endpoint goes down</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="docs-text">
+            <h3>Scheduler</h3>
+            <p>
+              <span data-lang="fr">Chaque check peut etre execute manuellement ou planifie via le scheduler integre. Configurez l'intervalle de verification (en secondes, minutes ou heures) et optionnellement un intervalle different quand le service est en panne. Demarrez ou arretez le scheduler d'un clic — un badge dans la barre laterale indique l'etat en temps reel.</span>
+              <span data-lang="en">Each check can be run manually or scheduled via the built-in scheduler. Configure the check interval (in seconds, minutes or hours) and optionally a different interval when the service is down. Start or stop the scheduler with one click — a badge in the sidebar shows real-time status.</span>
+            </p>
+          </div>
+
+          <div class="docs-callout docs-callout--tip">
+            <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div class="docs-callout-content">
+              <p><span data-lang="fr">Utilisez un intervalle court pour le "down interval" (ex. 10 secondes) et un intervalle plus long pour le check normal (ex. 5 minutes). Ainsi, vous detectez rapidement quand un service remonte apres une panne sans surcharger vos endpoints en temps normal.</span><span data-lang="en">Use a short interval for the "down interval" (e.g. 10 seconds) and a longer one for the normal check (e.g. 5 minutes). This way, you quickly detect when a service recovers from an outage without overloading your endpoints during normal operation.</span></p>
+            </div>
+          </div>
+
+          <div class="docs-text">
+            <h3>
+              <span data-lang="fr">Historique &amp; incidents</span>
+              <span data-lang="en">History &amp; incidents</span>
+            </h3>
+            <p>
+              <span data-lang="fr">Chaque execution est enregistree dans un historique pagine : code de statut, temps de reponse, succes ou echec, et message d'erreur le cas echeant. Les incidents sont detectes automatiquement — quand un check echoue consecutivement, un incident est ouvert avec horodatage, compteur d'echecs et duree. Quand le service remonte, l'incident est automatiquement clos.</span>
+              <span data-lang="en">Every execution is logged in a paginated history: status code, response time, success or failure, and error message when applicable. Incidents are detected automatically — when a check fails consecutively, an incident is opened with timestamp, failure count and duration. When the service recovers, the incident is automatically closed.</span>
+            </p>
+          </div>
+
+          <div class="docs-text">
+            <h3>
+              <span data-lang="fr">Indicateurs visuels</span>
+              <span data-lang="en">Visual indicators</span>
+            </h3>
+            <p>
+              <span data-lang="fr">Chaque check dans la barre laterale affiche un indicateur colore en temps reel :</span>
+              <span data-lang="en">Each check in the sidebar displays a real-time color indicator:</span>
+            </p>
+            <ul>
+              <li>
+                <span data-lang="fr"><strong>Vert (up)</strong> — L'endpoint repond avec le code attendu</span>
+                <span data-lang="en"><strong>Green (up)</strong> — The endpoint responds with the expected code</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Rouge (down)</strong> — L'endpoint est en echec ou inaccessible</span>
+                <span data-lang="en"><strong>Red (down)</strong> — The endpoint is failing or unreachable</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Bleu (checking)</strong> — Verification en cours</span>
+                <span data-lang="en"><strong>Blue (checking)</strong> — Check in progress</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Gris (unknown)</strong> — Aucun check execute ou scheduler arrete</span>
+                <span data-lang="en"><strong>Grey (unknown)</strong> — No check executed or scheduler stopped</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="docs-text">
+            <h3>Import / Export</h3>
+            <p>
+              <span data-lang="fr">Exportez vos configurations de health checks vers un fichier JSON pour les partager avec votre equipe ou les versionner dans Git. Importez un fichier existant pour reprendre la configuration d'un collegue. L'historique et les incidents sont inclus dans l'export.</span>
+              <span data-lang="en">Export your health check configurations to a JSON file to share with your team or version in Git. Import an existing file to pick up a colleague's configuration. History and incidents are included in the export.</span>
+            </p>
+          </div>
+
+          <div class="docs-text">
+            <h3>
+              <span data-lang="fr">Guide : configurer votre premier health check</span>
+              <span data-lang="en">Guide: setting up your first health check</span>
+            </h3>
+            <ol class="docs-steps">
+              <li>
+                <span data-lang="fr"><strong>Creez un check</strong> — Cliquez sur le bouton "+" dans la barre laterale pour ajouter un nouveau health check</span>
+                <span data-lang="en"><strong>Create a check</strong> — Click the "+" button in the sidebar to add a new health check</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Configurez l'endpoint</strong> — Donnez un nom, entrez l'URL (ex. <code>https://api.example.com/health</code>), selectionnez la methode (GET ou HEAD) et le code attendu (200)</span>
+                <span data-lang="en"><strong>Configure the endpoint</strong> — Give it a name, enter the URL (e.g. <code>https://api.example.com/health</code>), select the method (GET or HEAD) and expected code (200)</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Planifiez les verifications</strong> — Activez le schedule, definissez l'intervalle (ex. 5 minutes) et optionnellement un intervalle accelere quand le service est down</span>
+                <span data-lang="en"><strong>Schedule checks</strong> — Enable the schedule, set the interval (e.g. 5 minutes) and optionally a faster interval when the service is down</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Demarrez le scheduler</strong> — Cliquez sur "Demarrer les checks" dans la barre laterale pour lancer la surveillance en arriere-plan</span>
+                <span data-lang="en"><strong>Start the scheduler</strong> — Click "Start checks" in the sidebar to begin background monitoring</span>
+              </li>
+              <li>
+                <span data-lang="fr"><strong>Suivez les resultats</strong> — Consultez l'historique et les incidents dans le panneau principal pour chaque check</span>
+                <span data-lang="en"><strong>Track results</strong> — Review history and incidents in the main panel for each check</span>
+              </li>
+            </ol>
+          </div>
+
+          <div class="docs-callout docs-callout--note">
+            <svg class="docs-callout-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div class="docs-callout-content">
+              <p><span data-lang="fr">Le scheduler demarre automatiquement a l'ouverture du projet si des checks avec un schedule actif existent. Vous n'avez pas besoin de le relancer manuellement a chaque session.</span><span data-lang="en">The scheduler starts automatically when the project opens if checks with an active schedule exist. You don't need to restart it manually each session.</span></p>
+            </div>
+          </div>
+
+          <div class="docs-screenshot">
+            <img src="screenshots/screenshot-healthcheck.png" alt="Health Checks — Moniteur de sante" loading="lazy">
+            <p class="docs-screenshot-caption">
+              <span data-lang="fr">Moniteur de sante integre : liste des checks dans la barre laterale avec indicateurs de statut, scheduler configurable, historique des executions et detection automatique des incidents.</span>
+              <span data-lang="en">Built-in health monitor: check list in the sidebar with status indicators, configurable scheduler, execution history and automatic incident detection.</span>
             </p>
           </div>
         </section>

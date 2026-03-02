@@ -900,7 +900,7 @@ function KanbanCard({
   onDelete,
   onContextMenu,
   onDoubleClick,
-  onGoToTerminal: _onGoToTerminal,
+  onGoToTerminal,
   projects: _projects,
 }: {
   task: KanbanTask
@@ -987,6 +987,15 @@ function KanbanCard({
             </span>
           ))}
         </div>
+      )}
+      {onGoToTerminal && (
+        <button
+          className="kanban-card-terminal-btn"
+          onClick={(e) => { e.stopPropagation(); onGoToTerminal() }}
+          title={t('kanban.goToTerminal')}
+        >
+          &#9002; {t('kanban.terminal')}
+        </button>
       )}
     </div>
   )

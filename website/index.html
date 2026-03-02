@@ -219,8 +219,8 @@
                 <span data-lang="en">Claude AI under control</span>
               </h3>
               <p>
-                <span data-lang="fr">L'IA la plus puissante du marche, avec un tableau de bord complet : permissions granulaires, editeur CLAUDE.md integre, profils et skills configurables, serveurs MCP, workflows d'orchestration, historique de toutes vos sessions. Vous decidez exactement ce que Claude peut faire.</span>
-                <span data-lang="en">The most powerful AI on the market, with a complete dashboard: granular permissions, built-in CLAUDE.md editor, configurable profiles and skills, MCP servers, orchestration workflows, full session history. You decide exactly what Claude can do.</span>
+                <span data-lang="fr">L'IA la plus puissante du marche, avec un tableau de bord complet en cinq onglets : modele et performances, securite et sandbox, agents et skills personnalisables, integrations MCP et workflows, memoire et regles hierarchiques. Vous decidez exactement ce que Claude peut faire.</span>
+                <span data-lang="en">The most powerful AI on the market, with a complete five-tab dashboard: model and performance, security and sandbox, customizable agents and skills, MCP integrations and workflows, memory and hierarchical rules. You decide exactly what Claude can do.</span>
               </p>
             </div>
             <div class="feature-highlight-img">
@@ -347,8 +347,21 @@
             </div>
             <h3>API Tester</h3>
             <p>
-              <span data-lang="fr">Un vrai client API integre, pas un gadget. Collections de requetes, environnements avec substitution de variables, assertions automatiques (status, body, headers, JSON path, temps de reponse), chaines de requetes, health checks avec monitoring — le tout sauvegarde par projet. Postman peut prendre sa retraite.</span>
-              <span data-lang="en">A real built-in API client, not a toy. Request collections, environments with variable substitution, automated assertions (status, body, headers, JSON path, response time), request chains, health checks with monitoring — all saved per project. Postman can retire.</span>
+              <span data-lang="fr">Un vrai client API integre, pas un gadget. Collections de requetes, environnements avec substitution de variables, assertions automatiques (status, body, headers, JSON path, temps de reponse), chaines de requetes — le tout sauvegarde par projet. Postman peut prendre sa retraite.</span>
+              <span data-lang="en">A real built-in API client, not a toy. Request collections, environments with variable substitution, automated assertions (status, body, headers, JSON path, response time), request chains — all saved per project. Postman can retire.</span>
+            </p>
+          </div>
+          <!-- Health Checks -->
+          <div class="feature-card" data-screenshot="healthcheck">
+            <div class="feature-icon feature-icon--success">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <h3>Health Checks</h3>
+            <p>
+              <span data-lang="fr">Surveillance continue de vos endpoints. Scheduler integre avec intervalles configurables, detection automatique des incidents, historique detaille et indicateurs de statut en temps reel. Alerte des qu'un service tombe, resolution tracee quand il remonte.</span>
+              <span data-lang="en">Continuous endpoint monitoring. Built-in scheduler with configurable intervals, automatic incident detection, detailed history and real-time status indicators. Alert when a service goes down, resolution tracked when it recovers.</span>
             </p>
           </div>
         </div>
@@ -371,10 +384,9 @@
           <button class="tab" data-tab="terminal" role="tab" aria-selected="false">Terminal</button>
           <button class="tab" data-tab="git" role="tab" aria-selected="false">Git</button>
           <button class="tab" data-tab="claude" role="tab" aria-selected="false">Claude AI</button>
-          <button class="tab" data-tab="claude-md" role="tab" aria-selected="false">CLAUDE.md</button>
-          <button class="tab" data-tab="claude-history" role="tab" aria-selected="false">
-            <span data-lang="fr">Historique</span>
-            <span data-lang="en">History</span>
+          <button class="tab" data-tab="claude-memory" role="tab" aria-selected="false">
+            <span data-lang="fr">Memoire</span>
+            <span data-lang="en">Memory</span>
           </button>
           <button class="tab" data-tab="npm" role="tab" aria-selected="false">Packages</button>
           <button class="tab" data-tab="todos" role="tab" aria-selected="false">TODOs</button>
@@ -383,6 +395,7 @@
           <button class="tab" data-tab="database" role="tab" aria-selected="false">Database</button>
           <button class="tab" data-tab="code-analysis" role="tab" aria-selected="false">Code Analysis</button>
           <button class="tab" data-tab="api" role="tab" aria-selected="false">API Tester</button>
+          <button class="tab" data-tab="healthcheck" role="tab" aria-selected="false">Health Checks</button>
         </div>
         <div class="screenshot-viewer animate-in">
           <div class="screenshot-panel active" id="tab-kanban" role="tabpanel">
@@ -407,24 +420,17 @@
             </p>
           </div>
           <div class="screenshot-panel" id="tab-claude" role="tabpanel">
-            <img src="screenshots/screenshot-claude-profil.png" alt="Vue Claude AI" loading="lazy">
+            <img src="screenshots/screenshot-claude.png" alt="Vue Claude AI — General" loading="lazy">
             <p class="screenshot-caption">
-              <span data-lang="fr">Profils Claude complets : votre CLAUDE.md parse et affiche proprement, configuration des permissions, gestion des outils autorises et bloques. Le copilote IA le plus configurable du marche.</span>
-              <span data-lang="en">Full Claude profiles: your CLAUDE.md parsed and displayed cleanly, permission configuration, allowed and blocked tools management. The most configurable AI copilot on the market.</span>
+              <span data-lang="fr">Tableau de bord Claude AI : cinq onglets (General, Securite &amp; Sandbox, Agents &amp; Skills, Integrations, Memoire). Selection du modele, permissions, fonctionnalites avancees et equipes d'agents. Le copilote IA le plus configurable du marche.</span>
+              <span data-lang="en">Claude AI dashboard: five tabs (General, Security &amp; Sandbox, Agents &amp; Skills, Integrations, Memory). Model selection, permissions, advanced features and agent teams. The most configurable AI copilot on the market.</span>
             </p>
           </div>
-          <div class="screenshot-panel" id="tab-claude-md" role="tabpanel">
-            <img src="screenshots/screenshot-claude-md.png" alt="Vue CLAUDE.md" loading="lazy">
+          <div class="screenshot-panel" id="tab-claude-memory" role="tabpanel">
+            <img src="screenshots/screenshot-claude-md.png" alt="Vue Memoire Claude" loading="lazy">
             <p class="screenshot-caption">
-              <span data-lang="fr">Editeur CLAUDE.md integre : modifiez les instructions de votre agent directement dans l'app. Plus besoin d'ouvrir un editeur a cote — tout reste dans Mirehub.</span>
-              <span data-lang="en">Built-in CLAUDE.md editor: modify your agent instructions directly in the app. No need to open a separate editor — everything stays in Mirehub.</span>
-            </p>
-          </div>
-          <div class="screenshot-panel" id="tab-claude-history" role="tabpanel">
-            <img src="screenshots/screenshot-claude-history.png" alt="Vue Historique Claude" loading="lazy">
-            <p class="screenshot-caption">
-              <span data-lang="fr">Historique complet de vos sessions Claude. Retrouvez n'importe quelle conversation passee, filtrez et reprenez exactement la ou vous vous etiez arrete.</span>
-              <span data-lang="en">Complete history of your Claude sessions. Find any past conversation, filter and resume exactly where you left off.</span>
+              <span data-lang="fr">Onglet Memoire : gestionnaire de regles hierarchique, editeurs CLAUDE.md (projet, utilisateur, local) et memoire geree. Toutes les instructions de Claude centralisees en un seul endroit.</span>
+              <span data-lang="en">Memory tab: hierarchical rules manager, CLAUDE.md editors (project, user, local) and managed memory. All Claude instructions centralized in one place.</span>
             </p>
           </div>
           <div class="screenshot-panel" id="tab-npm" role="tabpanel">
@@ -472,8 +478,15 @@
           <div class="screenshot-panel" id="tab-api" role="tabpanel">
             <img src="screenshots/screenshot-api.png" alt="Vue API Tester" loading="lazy">
             <p class="screenshot-caption">
-              <span data-lang="fr">Client API complet : collections de requetes organisees, environnements avec variables, assertions automatiques (status, JSON path, temps de reponse), health checks avec indicateurs visuels. Import/export pour partager vos tests avec l'equipe.</span>
-              <span data-lang="en">Full API client: organized request collections, environments with variables, automated assertions (status, JSON path, response time), health checks with visual indicators. Import/export to share your tests with the team.</span>
+              <span data-lang="fr">Client API complet : collections de requetes organisees, environnements avec variables, assertions automatiques (status, JSON path, temps de reponse) et indicateurs visuels de reponse. Import/export pour partager vos tests avec l'equipe.</span>
+              <span data-lang="en">Full API client: organized request collections, environments with variables, automated assertions (status, JSON path, response time) and visual response indicators. Import/export to share your tests with the team.</span>
+            </p>
+          </div>
+          <div class="screenshot-panel" id="tab-healthcheck" role="tabpanel">
+            <img src="screenshots/screenshot-healthcheck.png" alt="Vue Health Checks" loading="lazy">
+            <p class="screenshot-caption">
+              <span data-lang="fr">Moniteur de sante : checks dans la barre laterale avec indicateurs de statut en temps reel, scheduler configurable (secondes, minutes, heures), historique pagine des executions et detection automatique des incidents.</span>
+              <span data-lang="en">Health monitor: checks in the sidebar with real-time status indicators, configurable scheduler (seconds, minutes, hours), paginated execution history and automatic incident detection.</span>
             </p>
           </div>
         </div>
