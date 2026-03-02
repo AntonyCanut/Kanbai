@@ -68,21 +68,17 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  release-mac:
+  prepare-release:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [lint, typecheck, test, build]
-    runs-on: macos-latest
-    env:
-      NODE_OPTIONS: --max-old-space-size=4096
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
 
       - name: Determine next version
         id: version
@@ -107,15 +103,29 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Next version: $NEXT"
 
-      - name: Set version in package.json
-        run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version
-
       - name: Create and push tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.version.outputs.tag }}
           git push origin ${{ steps.version.outputs.tag }}
+
+  release-mac:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [prepare-release]
+    runs-on: macos-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set version in package.json
+        run: npm version ${{ needs.prepare-release.outputs.version }} --no-git-tag-version --allow-same-version
 
       - run: npm ci
 
@@ -148,34 +158,21 @@ jobs:
 
   release-win:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [lint, typecheck, test, build, release-mac]
+    needs: [prepare-release]
     runs-on: windows-latest
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Get latest tag
-        id: version
-        shell: bash
-        run: |
-          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -n1)
-          echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
-          echo "Latest tag: $LATEST"
-
       - name: Set version in package.json
         shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.tag }}"
-          VERSION="${VERSION#v}"
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
+        run: npm version ${{ needs.prepare-release.outputs.version }} --no-git-tag-version --allow-same-version
 
       - run: npm ci
 
@@ -190,31 +187,20 @@ jobs:
 
   finalize-release:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [release-mac, release-win]
+    needs: [prepare-release, release-mac, release-win]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get latest tag
-        id: version
-        run: |
-          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -n1)
-          echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
-          echo "Latest tag: $LATEST"
-
       - name: Clean up release assets (remove blockmaps)
         run: |
-          TAG="${{ steps.version.outputs.tag }}"
-          for asset in $(gh release view "$TAG" --json assets -q '.assets[].name' | grep '\.blockmap$'); do
+          TAG="${{ needs.prepare-release.outputs.tag }}"
+          for asset in $(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep '\.blockmap$'); do
             echo "Removing $asset"
-            gh release delete-asset "$TAG" "$asset" --yes
+            gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish release (draft → public)
-        run: gh release edit ${{ steps.version.outputs.tag }} --draft=false
+        run: gh release edit ${{ needs.prepare-release.outputs.tag }} --repo "$GITHUB_REPOSITORY" --draft=false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
