@@ -94,6 +94,7 @@ interface KanbanState {
   draggedTaskId: string | null
   currentWorkspaceId: string | null
   kanbanTabIds: Record<string, string>
+  kanbanPromptCwds: Record<string, string>
   backgroundTasks: Record<string, KanbanTask[]>
 }
 
@@ -132,6 +133,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
   draggedTaskId: null,
   currentWorkspaceId: null,
   kanbanTabIds: {},
+  kanbanPromptCwds: {},
   backgroundTasks: {},
 
   loadTasks: async (workspaceId: string) => {
@@ -180,7 +182,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
   },
 
   syncTasksFromFile: async () => {
-    const { currentWorkspaceId, tasks: oldTasks, kanbanTabIds } = get()
+    const { currentWorkspaceId, tasks: oldTasks, kanbanTabIds, kanbanPromptCwds } = get()
     if (!currentWorkspaceId) return
     try {
       const newTasks: KanbanTask[] = await window.kanbai.kanban.list(currentWorkspaceId)
@@ -250,6 +252,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           relaunchedTaskIds.delete(newTask.id) // allow future re-launch
           if (autoCloseEnabled) tabsToClose.push(tabId)
 
+          // Clean up prompt file now that the task is finished
+          const promptCwd = kanbanPromptCwds[newTask.id]
+          if (promptCwd) {
+            window.kanbai.kanban.cleanupPrompt(promptCwd, newTask.id).catch(() => { /* best-effort */ })
+          }
+
           // Push notification
           const t = useI18n.getState().t
           const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
@@ -264,6 +272,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id) // allow future re-launch
           if (autoCloseEnabled) tabsToClose.push(tabId)
+
+          // Clean up prompt file now that the task is finished
+          const promptCwd = kanbanPromptCwds[newTask.id]
+          if (promptCwd) {
+            window.kanbai.kanban.cleanupPrompt(promptCwd, newTask.id).catch(() => { /* best-effort */ })
+          }
 
           // Push notification
           const t = useI18n.getState().t
@@ -623,8 +637,8 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       // CTO mode: direct invocation, no back-and-forth — prompt piped from file
       initialCommand = `${unsetEnv}${exportEnv}cat "${relativePromptPath}" | ${providerConfig.cliCommand} ${providerConfig.nonInteractiveArgs.join(' ')} ; bash "$HOME/.kanbai/hooks/kanbai-terminal-recovery.sh"`
     } else {
-      // Regular tickets: interactive mode
-      const escapedPrompt = `Lis et execute les instructions du fichier ${relativePromptPath}`
+      // Regular tickets: interactive mode — with fallback to kanban JSON if prompt file is missing
+      const escapedPrompt = `Lis et execute les instructions du fichier ${relativePromptPath}. Si le fichier n'existe pas, lis le ticket id \`${task.id}\` dans \`${kanbanFilePath}\` et realise la tache decrite. Mets a jour le ticket (status DONE/FAILED/PENDING + result/error/question + updatedAt) a la fin.`
       initialCommand = `${unsetEnv}${exportEnv}${providerConfig.cliCommand} ${providerConfig.interactiveArgs.join(' ')} "${escapedPrompt}" ; bash "$HOME/.kanbai/hooks/kanbai-terminal-recovery.sh"`
     }
 
@@ -663,18 +677,16 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       })
     } catch { /* file update is best-effort */ }
 
-    // Cleanup prompt file after Claude has had time to read it.
-    // Use a generous delay: Claude Code can take 60s+ to initialize
-    // (loading context, reading CLAUDE.md, warming up).
-    // The file is a few KB — no cost to keeping it around longer.
+    // Store prompt cwd for cleanup when the task finishes (DONE/FAILED).
+    // We do NOT clean up on a timer — Claude Code can take arbitrarily long
+    // to initialize, and deleting the prompt file before it's read causes the
+    // AI to think it can't access the ticket.
     if (tabId) {
       const capturedCwd = cwd
       const capturedWorkspaceId = workspaceId
-      setTimeout(() => {
-        try {
-          window.kanbai.kanban.cleanupPrompt(capturedCwd!, task.id)
-        } catch { /* best-effort */ }
-      }, 120000)
+      set((state) => ({
+        kanbanPromptCwds: { ...state.kanbanPromptCwds, [task.id]: cwd! },
+      }))
 
       // Link the conversation JSONL file to the ticket for context recovery
       setTimeout(async () => {
@@ -706,7 +718,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     try {
       const newTasks: KanbanTask[] = await window.kanbai.kanban.list(wsId)
       const oldTasks = get().backgroundTasks[wsId] ?? []
-      const { kanbanTabIds } = get()
+      const { kanbanTabIds, kanbanPromptCwds } = get()
 
       let taskFinished = false
       const tabsToClose: string[] = []
@@ -763,6 +775,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           relaunchedTaskIds.delete(newTask.id)
           if (autoCloseEnabled) tabsToClose.push(tabId)
 
+          // Clean up prompt file now that the task is finished
+          const promptCwd = kanbanPromptCwds[newTask.id]
+          if (promptCwd) {
+            window.kanbai.kanban.cleanupPrompt(promptCwd, newTask.id).catch(() => { /* best-effort */ })
+          }
+
           const t = useI18n.getState().t
           const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
           const todoCount = newTasks.filter((tt) => tt.status === 'TODO' && !tt.disabled).length
@@ -776,6 +794,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id)
           if (autoCloseEnabled) tabsToClose.push(tabId)
+
+          // Clean up prompt file now that the task is finished
+          const promptCwd = kanbanPromptCwds[newTask.id]
+          if (promptCwd) {
+            window.kanbai.kanban.cleanupPrompt(promptCwd, newTask.id).catch(() => { /* best-effort */ })
+          }
 
           const t = useI18n.getState().t
           const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
