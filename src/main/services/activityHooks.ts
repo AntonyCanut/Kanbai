@@ -345,6 +345,17 @@ export async function installActivityHooks(
   const autoApproveScriptIncludes = IS_WIN ? 'kanbai-autoapprove.ps1' : 'kanbai-autoapprove.sh'
   const kanbanDoneScriptIncludes = IS_WIN ? 'kanban-done.ps1' : 'kanban-done.sh'
 
+  // Clean up legacy mirehub hook entries (renamed to kanbai)
+  const legacyPatterns = ['mirehub-activity', 'mirehub-autoapprove', '.mirehub/hooks/']
+  for (const eventName of ['PreToolUse', 'Stop', 'PermissionRequest', 'PostToolUse']) {
+    const eventHooks = hooks[eventName] as Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }> | undefined
+    if (eventHooks) {
+      hooks[eventName] = eventHooks.filter(
+        (h) => !h.hooks?.some((hk) => legacyPatterns.some((p) => hk.command?.includes(p))),
+      )
+    }
+  }
+
   // === PreToolUse hooks ===
   if (!hooks.PreToolUse) {
     hooks.PreToolUse = []

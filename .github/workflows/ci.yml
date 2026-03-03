@@ -84,13 +84,18 @@ jobs:
         id: version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          TAG="v${VERSION}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG already exists. Bump the version in package.json before merging."
-            exit 1
+          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[0-9]*$//')
+          LATEST_TAG=$(git tag -l "v${MAJOR_MINOR}.*" | sort -V | tail -1)
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_VERSION="$VERSION"
+          else
+            LATEST_PATCH=$(echo "$LATEST_TAG" | sed "s/v${MAJOR_MINOR}\.//")
+            NEXT_PATCH=$((LATEST_PATCH + 1))
+            NEXT_VERSION="${MAJOR_MINOR}.${NEXT_PATCH}"
           fi
+          TAG="v${NEXT_VERSION}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
           echo "Next version: $TAG"
 
       - name: Create and push tag

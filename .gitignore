@@ -32,8 +32,27 @@ npm-debug.log*
 *.p12
 *.pfx
 
-# Claude Code local settings
+# Claude Code — keep rules, agents, commands, settings.json tracked
 .claude/settings.local.json
+.claude/plans/
+.claude/plan-documentation.md
+
+# AI tools — local configs, not project shared
+.codex/
+.copilot/
+
+# Legacy tooling — replaced by current systems
+.mirehub/
+.workspaces/
+
+# Kanban runtime data
+.kanbai/
+
+# Generated reports
+megalinter-reports/
+
+# Local task tracking
+tasks/
 
 # IDE
 .idea/
