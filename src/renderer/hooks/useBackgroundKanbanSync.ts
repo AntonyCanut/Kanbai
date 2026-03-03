@@ -78,7 +78,7 @@ export function useBackgroundKanbanSync(): void {
         const hasWorking = tasks.some((t) => t.status === 'WORKING')
         if (!hasWorking) {
           const next = pickNextTask(tasks)
-          if (next) store.sendToClaude(next, wsId)
+          if (next) store.sendToAi(next, wsId)
         }
       }
 
@@ -93,13 +93,13 @@ export function useBackgroundKanbanSync(): void {
             (t) => t.status === 'WORKING' && !activeTabIds[t.id],
           )
           if (workingWithoutTerminal) {
-            freshStore.sendToClaude(workingWithoutTerminal)
+            freshStore.sendToAi(workingWithoutTerminal)
           } else {
             // If no WORKING task at all, pick the next TODO
             const hasWorking = activeTasks.some((t) => t.status === 'WORKING')
             if (!hasWorking) {
               const next = pickNextTask(activeTasks)
-              if (next) freshStore.sendToClaude(next)
+              if (next) freshStore.sendToAi(next)
             }
           }
         }

@@ -25,6 +25,7 @@ import { registerGitConfigHandlers } from './ipc/gitConfig'
 import { registerClaudeMemoryHandlers } from './ipc/claudeMemory'
 import { registerHealthCheckHandlers } from './ipc/healthcheck'
 import { registerCodexConfigHandlers } from './ipc/codexConfig'
+import { registerCopilotConfigHandlers } from './ipc/copilotConfig'
 import { registerAiProviderHandlers } from './ipc/aiProvider'
 import { cleanupTerminals } from './ipc/terminal'
 import { ensureActivityHookScript, ensureAutoApproveScript, ensureKanbanDoneScript, syncAllWorkspaceEnvHooks, startActivityWatcher } from './services/activityHooks'
@@ -333,6 +334,7 @@ app.whenReady().then(() => {
   registerClaudeMemoryHandlers(ipcMain)
   registerHealthCheckHandlers(ipcMain)
   registerCodexConfigHandlers(ipcMain)
+  registerCopilotConfigHandlers(ipcMain)
   registerAiProviderHandlers(ipcMain)
 
   // Ensure a Default namespace exists (first launch or migration)

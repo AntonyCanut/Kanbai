@@ -17,7 +17,7 @@
   --text-muted: #6c7086;
   --accent: #89b4fa;
   --accent-hover: #74c7ec;
-  --claude-color: #7c3aed;
+  --claude-color: #C15F3C;
   --border: #45475a;
   --danger: #f38ba8;
   --success: #a6e3a1;
@@ -35,7 +35,7 @@
   --text-muted: #8c8fa1;
   --accent: #1e66f5;
   --accent-hover: #209fb5;
-  --claude-color: #7c3aed;
+  --claude-color: #C15F3C;
   --border: #bcc0cc;
   --danger: #d20f39;
   --success: #40a02b;
@@ -1751,8 +1751,46 @@ body {
   color: var(--text-primary);
 }
 
+/* AI provider color tint on tabs */
+.tab--tinted {
+  background: color-mix(in srgb, var(--tab-tint-color) 10%, transparent);
+}
+
+.tab--tinted:hover {
+  background: color-mix(in srgb, var(--tab-tint-color) 18%, var(--bg-surface));
+}
+
+.tab--tinted.active {
+  background: color-mix(in srgb, var(--tab-tint-color) 22%, var(--bg-surface));
+}
+
 .tab-drag-over {
-  border-left: 2px solid var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.tab--dragging {
+  opacity: 0.4;
+  background: var(--bg-tertiary);
+  cursor: grabbing;
+}
+
+/* Tab tooltip — rendered as React element with position: fixed to avoid overflow clipping */
+.tab-tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 1002;
 }
 
 .tab-label {
@@ -1905,6 +1943,42 @@ body {
   color: var(--text-primary);
 }
 
+/* Custom instant tooltip */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1002;
+  transition: none;
+}
+
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* Hide tooltip during drag and when dropdown is visible */
+.tab--dragging[data-tooltip]::after,
+.tab-add-wrapper:hover .tab-add[data-tooltip]::after {
+  opacity: 0 !important;
+}
+
 .tab-add {
   margin-left: 4px;
   font-size: 16px;
@@ -1917,30 +1991,30 @@ body {
 .tab-add-dropdown {
   display: none;
   position: fixed;
-  min-width: 180px;
+  min-width: 200px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px;
   z-index: 1001;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
 }
-
 
 .tab-add-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 6px 10px;
+  padding: 7px 10px;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s ease;
+  transition: background 0.1s ease, color 0.1s ease;
 }
 
 .tab-add-dropdown-item:hover {
@@ -1949,8 +2023,8 @@ body {
 }
 
 .tab-add-dropdown-icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1959,7 +2033,7 @@ body {
   font-family: var(--font-mono, monospace);
   color: var(--text-muted);
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 5px;
   flex-shrink: 0;
 }
 
@@ -1977,6 +2051,16 @@ body {
   background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
+.tab-add-dropdown-icon--codex {
+  color: #a6e3a1;
+  background: color-mix(in srgb, #a6e3a1 15%, transparent);
+}
+
+.tab-add-dropdown-item:hover .tab-add-dropdown-icon--codex {
+  color: #a6e3a1;
+  background: color-mix(in srgb, #a6e3a1 25%, transparent);
+}
+
 /* Split Container / Panes */
 .terminal-tab-content {
   position: absolute;
@@ -1985,6 +2069,37 @@ body {
   right: 0;
   bottom: 0;
   display: flex;
+  flex-direction: column;
+}
+
+/* Terminal Kanban Notch — iPhone notch style */
+.terminal-kanban-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 18px;
+  background: #000;
+  border: none;
+  border-radius: 0 0 8px 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.terminal-kanban-notch:hover {
+  opacity: 0.85;
+}
+
+.terminal-kanban-notch-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--notch-color, var(--accent));
+  letter-spacing: 0.5px;
 }
 
 .split-container {
@@ -6125,34 +6240,6 @@ body {
 @keyframes workspace-flash-orange-bg {
   0%, 100% { background: transparent; }
   50% { background: rgba(250, 179, 135, 0.08); }
-}
-
-/* ========= Project Item: Claude terminal button ========= */
-
-.project-item-claude-btn {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 4px;
-  opacity: 0;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.project-item:hover .project-item-claude-btn {
-  opacity: 1;
-}
-
-.project-item-claude-btn:hover {
-  background: var(--claude-color);
-  color: white;
 }
 
 /* ========= Command Palette ========= */

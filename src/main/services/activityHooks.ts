@@ -304,6 +304,10 @@ export async function installActivityHooks(
     await installCodexActivityHooks(projectPath, workspaceName)
     return
   }
+  if (provider === 'copilot') {
+    await installCopilotActivityHooks(projectPath, workspaceName)
+    return
+  }
 
   const storage = new StorageService()
   const { autoApprove } = storage.getSettings()
@@ -458,6 +462,37 @@ async function installCodexActivityHooks(
     } else {
       fs.writeFileSync(configPath, `${notifyLine}\n`, 'utf-8')
     }
+  }
+}
+
+/**
+ * Installs activity hooks for Copilot provider.
+ * Copilot uses .copilot/ config directory — similar approach to Codex.
+ */
+async function installCopilotActivityHooks(
+  projectPath: string,
+  _workspaceName?: string,
+): Promise<void> {
+  ensureActivityHookScript()
+
+  const copilotDir = path.join(projectPath, '.copilot')
+  if (!fs.existsSync(copilotDir)) {
+    fs.mkdirSync(copilotDir, { recursive: true })
+  }
+
+  const hookScriptPath = path.join(os.homedir(), '.mirehub', 'hooks', 'mirehub-activity.sh')
+  const configPath = path.join(copilotDir, 'config.json')
+
+  let existingConfig: Record<string, unknown> = {}
+  if (fs.existsSync(configPath)) {
+    try {
+      existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+    } catch { /* ignore corrupt file */ }
+  }
+
+  if (!existingConfig.hooks) {
+    existingConfig.hooks = { notify: ['bash', hookScriptPath, 'working'] }
+    fs.writeFileSync(configPath, JSON.stringify(existingConfig, null, 2), 'utf-8')
   }
 }
 

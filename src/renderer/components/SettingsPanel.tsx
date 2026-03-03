@@ -34,8 +34,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 13,
   fontFamily: 'Menlo',
   scrollbackLines: 5000,
-  claudeDetectionColor: '#7c3aed',
+  claudeDetectionColor: '#C15F3C',
   codexDetectionColor: '#10a37f',
+  copilotDetectionColor: '#e2538a',
   defaultAiProvider: 'claude',
   autoClauderEnabled: false,
   notificationSound: true,
@@ -386,6 +387,12 @@ export function SettingsPanel() {
                       onClick={() => updateSetting('defaultAiProvider', 'codex')}
                     >
                       Codex
+                    </button>
+                    <button
+                      className={`settings-radio-btn${settings.defaultAiProvider === 'copilot' ? ' settings-radio-btn--active' : ''}`}
+                      onClick={() => updateSetting('defaultAiProvider', 'copilot')}
+                    >
+                      Copilot
                     </button>
                   </div>
                 </div>
@@ -772,6 +779,18 @@ export function SettingsPanel() {
                     type="color"
                     value={settings.codexDetectionColor}
                     onChange={(e) => updateSetting('codexDetectionColor', e.target.value)}
+                    className="settings-color-input"
+                  />
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{locale === 'fr' ? 'Couleur Copilot' : 'Copilot Color'}</label>
+                    <span className="settings-hint">{locale === 'fr' ? 'Couleur des indicateurs Copilot dans les terminaux' : 'Color of Copilot indicators in terminals'}</span>
+                  </div>
+                  <input
+                    type="color"
+                    value={settings.copilotDetectionColor}
+                    onChange={(e) => updateSetting('copilotDetectionColor', e.target.value)}
                     className="settings-color-input"
                   />
                 </div>

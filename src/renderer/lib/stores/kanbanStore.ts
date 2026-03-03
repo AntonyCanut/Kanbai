@@ -68,6 +68,9 @@ function buildCtoPrompt(task: KanbanTask, ticketLabel: string, kanbanFilePath: s
     task.description ? `- Description: ${task.description}` : '',
     previousContext,
     conversationHistory,
+    task.comments && task.comments.length > 0
+      ? `\n### Commentaires de l'utilisateur\n${task.comments.map((c) => `- **[${new Date(c.createdAt).toLocaleString('fr-FR')}]** : ${c.text}`).join('\n')}`
+      : '',
     childInfo,
     ``,
     `## Outils MCP`,
@@ -114,8 +117,6 @@ interface KanbanActions {
   setDragged: (taskId: string | null) => void
   getTasksByStatus: (status: KanbanStatus) => KanbanTask[]
   sendToAi: (task: KanbanTask, explicitWorkspaceId?: string) => Promise<void>
-  /** @deprecated Use sendToAi instead */
-  sendToClaude: (task: KanbanTask, explicitWorkspaceId?: string) => Promise<void>
   syncBackgroundWorkspace: (workspaceId: string) => Promise<void>
   attachFiles: (taskId: string) => Promise<void>
   attachFromClipboard: (taskId: string, dataBase64: string, filename: string, mimeType: string) => Promise<void>
@@ -518,18 +519,60 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         }
       }
 
+      // Detect reopening: ticket was previously completed or failed
+      const isReopening = !!(task.result || task.error)
+
       // Add previous conversation history for context recovery
       if (task.conversationHistoryPath) {
+        if (isReopening) {
+          promptParts.push(
+            ``,
+            `## Historique de la session precedente`,
+            `Ce ticket a deja ete traite dans une session precedente.`,
+            `Le fichier suivant contient l'historique complet de cette conversation :`,
+            `\`${task.conversationHistoryPath}\``,
+            ``,
+            `**IMPORTANT** : Lis ce fichier avec le tool Read pour comprendre ce qui a ete fait precedemment.`,
+          )
+        } else {
+          promptParts.push(
+            ``,
+            `## Historique de la session precedente`,
+            `Ce ticket a deja ete travaille dans une session precedente qui a ete interrompue.`,
+            `Le fichier suivant contient l'historique complet de cette conversation :`,
+            `\`${task.conversationHistoryPath}\``,
+            ``,
+            `**IMPORTANT** : Lis ce fichier avec le tool Read pour recuperer le contexte de ce qui a deja ete fait.`,
+            `Reprends le travail la ou il s'est arrete, sans refaire ce qui a deja ete accompli.`,
+          )
+        }
+      }
+
+      // Add reopening context (previous result/error) for tickets being resent
+      if (isReopening) {
+        promptParts.push(``, `## Contexte de reouverture`)
+        if (task.result) {
+          promptParts.push(`### Resultat precedent`, task.result)
+        }
+        if (task.error) {
+          promptParts.push(`### Erreur precedente`, task.error)
+        }
         promptParts.push(
           ``,
-          `## Historique de la session precedente`,
-          `Ce ticket a deja ete travaille dans une session precedente qui a ete interrompue.`,
-          `Le fichier suivant contient l'historique complet de cette conversation :`,
-          `\`${task.conversationHistoryPath}\``,
-          ``,
-          `**IMPORTANT** : Lis ce fichier avec le tool Read pour recuperer le contexte de ce qui a deja ete fait.`,
-          `Reprends le travail la ou il s'est arrete, sans refaire ce qui a deja ete accompli.`,
+          `L'utilisateur a rouvert ce ticket. Lis attentivement les commentaires ci-dessous pour comprendre ce qu'il attend de cette reprise.`,
         )
+      }
+
+      // Add user comments for context
+      if (task.comments && task.comments.length > 0) {
+        const commentsTitle = isReopening
+          ? `## INSTRUCTIONS DE REPRISE (commentaires de l'utilisateur)`
+          : `## Commentaires de l'utilisateur`
+        promptParts.push(``, commentsTitle)
+        for (const comment of task.comments) {
+          const date = new Date(comment.createdAt).toLocaleString('fr-FR')
+          promptParts.push(`- **[${date}]** : ${comment.text}`)
+        }
       }
 
       promptParts.push(
@@ -657,11 +700,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         }
       }, 20000)
     }
-  },
-
-  /** @deprecated Use sendToAi instead */
-  sendToClaude: async (task: KanbanTask, explicitWorkspaceId?: string) => {
-    return get().sendToAi(task, explicitWorkspaceId)
   },
 
   syncBackgroundWorkspace: async (wsId: string) => {

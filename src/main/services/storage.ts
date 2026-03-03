@@ -74,6 +74,10 @@ export class StorageService {
         data.settings.codexDetectionColor = '#10a37f'
         needsSave = true
       }
+      if (data.settings && !data.settings.copilotDetectionColor) {
+        data.settings.copilotDetectionColor = '#e2538a'
+        needsSave = true
+      }
       if (data.settings && !data.settings.defaultAiProvider) {
         data.settings.defaultAiProvider = 'claude'
         needsSave = true

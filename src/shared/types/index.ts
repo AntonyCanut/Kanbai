@@ -125,6 +125,12 @@ export interface KanbanAttachment {
   addedAt: number
 }
 
+export interface KanbanComment {
+  id: string
+  text: string
+  createdAt: number
+}
+
 export interface KanbanTask {
   id: string
   workspaceId: string
@@ -140,6 +146,7 @@ export interface KanbanTask {
   error?: string
   labels?: string[]
   attachments?: KanbanAttachment[]
+  comments?: KanbanComment[]
   dueDate?: number
   archived?: boolean
   disabled?: boolean
@@ -203,6 +210,7 @@ export interface AppSettings {
   scrollbackLines: number
   claudeDetectionColor: string
   codexDetectionColor: string
+  copilotDetectionColor: string
   defaultAiProvider: import('./ai-provider').AiProviderId
   autoClauderEnabled: boolean
   defaultAutoClauderTemplateId?: string
@@ -1156,6 +1164,23 @@ export const IPC_CHANNELS = {
   CODEX_READ_SKILL: 'codex:readSkill',
   CODEX_WRITE_SKILL: 'codex:writeSkill',
   CODEX_DELETE_SKILL: 'codex:deleteSkill',
+
+  // Copilot config
+  COPILOT_READ_CONFIG: 'copilot:readConfig',
+  COPILOT_WRITE_CONFIG: 'copilot:writeConfig',
+  COPILOT_CHECK_CONFIG: 'copilot:checkConfig',
+
+  // Copilot instructions (memory)
+  COPILOT_READ_INSTRUCTIONS: 'copilot:readInstructions',
+  COPILOT_WRITE_INSTRUCTIONS: 'copilot:writeInstructions',
+  COPILOT_READ_GLOBAL_INSTRUCTIONS: 'copilot:readGlobalInstructions',
+  COPILOT_WRITE_GLOBAL_INSTRUCTIONS: 'copilot:writeGlobalInstructions',
+
+  // Copilot skills (.agents/skills)
+  COPILOT_LIST_SKILLS: 'copilot:listSkills',
+  COPILOT_READ_SKILL: 'copilot:readSkill',
+  COPILOT_WRITE_SKILL: 'copilot:writeSkill',
+  COPILOT_DELETE_SKILL: 'copilot:deleteSkill',
 
   // AI Provider
   AI_PROVIDER_SET: 'ai:providerSet',

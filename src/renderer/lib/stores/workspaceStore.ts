@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/shallow'
 import type { Workspace, Project, Namespace } from '../../../shared/types/index'
 import type { AiProviderId } from '../../../shared/types/ai-provider'
+import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
 import { useTerminalTabStore } from './terminalTabStore'
 import { useViewStore } from './viewStore'
 
@@ -224,8 +225,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         // Create a single split tab: AI (left) + Terminal (right)
         const termStore = useTerminalTabStore.getState()
         const selectedProvider = aiProvider ?? project.aiProvider
-        const aiCmd = selectedProvider === 'codex' ? 'codex' : 'claude'
-        const aiLabel = selectedProvider === 'codex' ? 'Codex + Terminal' : 'Claude + Terminal'
+        const providerConfig = AI_PROVIDERS[selectedProvider ?? 'claude']
+        const aiCmd = providerConfig.cliCommand
+        const aiLabel = `${providerConfig.displayName} + Terminal`
         termStore.createSplitTab(workspace.id, cwd, aiLabel, aiCmd, null)
       } else {
         set({ activeWorkspaceId: workspace.id })
@@ -290,8 +292,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
 
         const termStore = useTerminalTabStore.getState()
         const selectedProvider = aiProvider ?? project.aiProvider
-        const aiCmd = selectedProvider === 'codex' ? 'codex' : 'claude'
-        const aiLabel = selectedProvider === 'codex' ? 'Codex + Terminal' : 'Claude + Terminal'
+        const providerCfg = AI_PROVIDERS[selectedProvider ?? 'claude']
+        const aiCmd = providerCfg.cliCommand
+        const aiLabel = `${providerCfg.displayName} + Terminal`
         termStore.createSplitTab(workspace.id, cwd, aiLabel, aiCmd, null)
       } else {
         set({ activeWorkspaceId: workspace.id })
@@ -532,8 +535,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
         const workspaceTabs = termStore.tabs.filter((t) => t.workspaceId === id)
         if (workspaceTabs.length === 0) {
           // Auto-create split tab (AI + Terminal) if none exist for this workspace
-          const aiCmd = firstProject.aiProvider === 'codex' ? 'codex' : 'claude'
-          const aiLabel = firstProject.aiProvider === 'codex' ? 'Codex + Terminal' : 'Claude + Terminal'
+          const providerCfg2 = AI_PROVIDERS[firstProject.aiProvider ?? 'claude']
+          const aiCmd = providerCfg2.cliCommand
+          const aiLabel = `${providerCfg2.displayName} + Terminal`
           getWorkspaceCwd(workspace.name, workspaceProjects, id)
             .then((cwd) => {
               termStore.createSplitTab(id, cwd, aiLabel, aiCmd, null)

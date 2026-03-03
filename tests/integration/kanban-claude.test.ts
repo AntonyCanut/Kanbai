@@ -95,7 +95,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
     })
   })
 
-  describe('sendToClaude', () => {
+  describe('sendToAi (kanban → AI terminal)', () => {
     it('lance Claude en mode interactif (sans -p)', async () => {
       const { useWorkspaceStore } = await import('../../src/renderer/lib/stores/workspaceStore')
       useWorkspaceStore.setState({
@@ -110,7 +110,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // Prompt file was written
       expect(mockKanbanWritePrompt).toHaveBeenCalledWith('/tmp/workspace-env', 'task-1', expect.stringContaining('Fix bug in auth'))
@@ -129,8 +129,8 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       expect(initialCommand).toContain('.kanban-prompt-task-1.md')
       expect(initialCommand).not.toMatch(/\s-p\s/)
 
-      // Tab color set to provider detection color (Claude = #7c3aed)
-      expect(mockSetTabColor).toHaveBeenCalledWith('tab-new-1', '#7c3aed')
+      // Tab color set to provider detection color (Claude = #C15F3C)
+      expect(mockSetTabColor).toHaveBeenCalledWith('tab-new-1', '#C15F3C')
     })
 
     it('utilise le chemin du projet cible si targetProjectId est defini', async () => {
@@ -150,7 +150,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/backend/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // Should use the target project path, NOT workspace env
       expect(mockKanbanWritePrompt).toHaveBeenCalledWith('/tmp/backend', 'task-1', expect.any(String))
@@ -178,7 +178,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // Should call workspaceEnv.setup for workspace-level cwd
       expect(mockWorkspaceEnvSetup).toHaveBeenCalledWith('Test WS', ['/tmp/project'], 'ws-1')
@@ -204,7 +204,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // The initialCommand is passed to createTab — Terminal component handles PTY writing
       const initialCommand = mockCreateTab.mock.calls[0]![3] as string
@@ -228,7 +228,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const initialCommand = mockCreateTab.mock.calls[0]![3] as string
 
@@ -261,7 +261,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const updatedTask = useKanbanStore.getState().tasks.find((t) => t.id === 'task-1')
       expect(updatedTask?.status).toBe('WORKING')
@@ -289,7 +289,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       expect(useKanbanStore.getState().kanbanTabIds['task-1']).toBe('tab-new-1')
     })
@@ -311,7 +311,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
         kanbanTabIds: { 'task-1': 'tab-existing' },
       })
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // Should activate existing tab, not create new one
       expect(mockSetActiveTab).toHaveBeenCalledWith('tab-existing')
@@ -322,7 +322,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
     it('ne fait rien sans workspaceId', async () => {
       useKanbanStore.setState({ currentWorkspaceId: null, tasks: [makeTask()] })
 
-      await useKanbanStore.getState().sendToClaude(makeTask())
+      await useKanbanStore.getState().sendToAi(makeTask())
 
       expect(mockKanbanWritePrompt).not.toHaveBeenCalled()
       expect(mockCreateTab).not.toHaveBeenCalled()
@@ -342,7 +342,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const writtenPrompt = mockKanbanWritePrompt.mock.calls[0]![2] as string
       expect(writtenPrompt).toContain('PENDING')
@@ -363,7 +363,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const initialCommand = mockCreateTab.mock.calls[0]![3] as string
       expect(initialCommand).toContain('MIREHUB_KANBAN_TASK_ID="task-1"')
@@ -385,7 +385,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       // Should NOT switch view — user stays on kanban to keep writing tickets
       expect(mockSetViewMode).not.toHaveBeenCalled()
@@ -471,7 +471,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       // Advance past the setTimeout(500)
       await vi.advanceTimersByTimeAsync(600)
 
-      // Only one sendToClaude call (writePrompt is called once per sendToClaude)
+      // Only one sendToAi call (writePrompt is called once per sendToAi)
       expect(mockKanbanWritePrompt).toHaveBeenCalledTimes(1)
 
       vi.useRealTimers()
@@ -525,7 +525,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
 
       await useKanbanStore.getState().createTask('ws-1', 'New task', 'desc', 'critical')
 
-      // Should NOT send to Claude because a WORKING task exists
+      // Should NOT send to AI because a WORKING task exists
       expect(mockKanbanWritePrompt).not.toHaveBeenCalled()
       expect(mockCreateTab).not.toHaveBeenCalled()
     })
@@ -753,7 +753,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const writtenPrompt = mockKanbanWritePrompt.mock.calls[0]![2] as string
       expect(writtenPrompt).toContain('Fichiers joints')
@@ -777,7 +777,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       const writtenPrompt = mockKanbanWritePrompt.mock.calls[0]![2] as string
       expect(writtenPrompt).not.toContain('Fichiers joints')
@@ -799,7 +799,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
-      await useKanbanStore.getState().sendToClaude(task)
+      await useKanbanStore.getState().sendToAi(task)
 
       expect(mockSetViewMode).not.toHaveBeenCalled()
     })

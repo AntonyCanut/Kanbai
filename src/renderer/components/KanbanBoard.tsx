@@ -6,7 +6,7 @@ import { useWorkspaceStore } from '../lib/stores/workspaceStore'
 import { useI18n } from '../lib/i18n'
 import { ContextMenu } from './ContextMenu'
 import type { ContextMenuItem } from './ContextMenu'
-import type { KanbanStatus, KanbanTask, PromptTemplate } from '../../shared/types/index'
+import type { KanbanStatus, KanbanTask, KanbanComment, PromptTemplate, AiDefaults } from '../../shared/types/index'
 import { AI_PROVIDERS } from '../../shared/types/ai-provider'
 import type { AiProviderId } from '../../shared/types/ai-provider'
 import '../styles/kanban.css'
@@ -90,7 +90,7 @@ export function KanbanBoard() {
     duplicateTask,
     draggedTaskId,
     setDragged,
-    sendToClaude,
+    sendToAi,
     attachFiles,
     attachFromClipboard,
     removeAttachment,
@@ -99,6 +99,7 @@ export function KanbanBoard() {
   const terminalTabs = useTerminalTabStore((s) => s.tabs)
   const setActiveTerminalTab = useTerminalTabStore((s) => s.setActiveTab)
   const setViewMode = useViewStore((s) => s.setViewMode)
+  const pendingKanbanTaskId = useViewStore((s) => s.pendingKanbanTaskId)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDesc, setNewDesc] = useState('')
@@ -119,6 +120,7 @@ export function KanbanBoard() {
   const [editPriority, setEditPriority] = useState<(typeof PRIORITIES)[number]>('medium')
   const [editTargetProjectId, setEditTargetProjectId] = useState('')
   const [editLabels, setEditLabels] = useState<string[]>([])
+  const [editAiProvider, setEditAiProvider] = useState<AiProviderId | ''>('')
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; task: KanbanTask } | null>(null)
@@ -141,13 +143,22 @@ export function KanbanBoard() {
       if (s.defaultAiProvider) setAppDefaultAiProvider(s.defaultAiProvider as AiProviderId)
     }).catch(() => {})
   }, [])
-  const workspaceDefaultAiProvider: AiProviderId = workspaceProjects[0]?.aiProvider ?? appDefaultAiProvider
+  const workspaceDefaultAiProvider: AiProviderId = workspaceProjects[0]?.aiDefaults?.kanban ?? workspaceProjects[0]?.aiProvider ?? appDefaultAiProvider
 
   useEffect(() => {
     if (activeWorkspaceId) {
       loadTasks(activeWorkspaceId)
     }
   }, [activeWorkspaceId, loadTasks])
+
+  // Consume pending kanban task selection (from terminal notch navigation)
+  useEffect(() => {
+    if (pendingKanbanTaskId && tasks.length > 0) {
+      const task = tasks.find((t) => t.id === pendingKanbanTaskId)
+      if (task) setSelectedTask(task)
+      useViewStore.setState({ pendingKanbanTaskId: null })
+    }
+  }, [pendingKanbanTaskId, tasks])
 
   // File watcher: instant sync when kanban.json changes on disk (replaces 5s polling)
   const hasWorkingTasks = tasks.some((t) => t.status === 'WORKING')
@@ -355,10 +366,10 @@ export function KanbanBoard() {
     (status: KanbanStatus) => {
       if (draggedTaskId) {
         if (status === 'WORKING') {
-          // When dropping into "En cours", launch a Claude terminal (sendToClaude also sets WORKING status)
+          // When dropping into "En cours", launch an AI terminal (sendToAi also sets WORKING status)
           const task = tasks.find((t) => t.id === draggedTaskId)
           if (task) {
-            sendToClaude(task)
+            sendToAi(task)
           }
         } else {
           updateTaskStatus(draggedTaskId, status)
@@ -366,12 +377,12 @@ export function KanbanBoard() {
         setDragged(null)
       }
     },
-    [draggedTaskId, tasks, updateTaskStatus, sendToClaude, setDragged],
+    [draggedTaskId, tasks, updateTaskStatus, sendToAi, setDragged],
   )
 
-  const handleSendToClaude = useCallback((task: KanbanTask) => {
-    sendToClaude(task)
-  }, [sendToClaude])
+  const handleSendToAi = useCallback((task: KanbanTask) => {
+    sendToAi(task)
+  }, [sendToAi])
 
   const hasActiveCtoTicket = useMemo(() => {
     return tasks.some((t) => t.isCtoTicket && !t.archived && (t.status === 'WORKING' || t.status === 'TODO'))
@@ -397,10 +408,10 @@ export function KanbanBoard() {
       { label: '', action: () => {}, separator: true },
       ...statusItems,
       { label: '', action: () => {}, separator: true },
-      { label: t('kanban.sendToClaude'), action: () => handleSendToClaude(task) },
-      ...(hasExistingTab || task.status === 'WORKING' ? [{ label: t('kanban.relaunchTask'), action: () => handleSendToClaude(task) }] : []),
+      { label: t('kanban.sendToAi'), action: () => handleSendToAi(task) },
+      ...(hasExistingTab || task.status === 'WORKING' ? [{ label: t('kanban.relaunchTask'), action: () => handleSendToAi(task) }] : []),
     ]
-  }, [t, updateTaskStatus, updateTask, duplicateTask, handleSendToClaude])
+  }, [t, updateTaskStatus, updateTask, duplicateTask, handleSendToAi])
 
   const handleRestoreFromArchive = useCallback((task: KanbanTask) => {
     updateTask(task.id, { archived: false })
@@ -423,6 +434,7 @@ export function KanbanBoard() {
     setEditPriority(task.priority)
     setEditTargetProjectId(task.targetProjectId || '')
     setEditLabels(task.labels || [])
+    setEditAiProvider(task.aiProvider || '')
   }, [])
 
   const handleCloseEditModal = useCallback(() => {
@@ -439,11 +451,13 @@ export function KanbanBoard() {
     if (newTargetProject !== editingTask.targetProjectId) updates.targetProjectId = newTargetProject
     const currentLabels = editingTask.labels || []
     if (JSON.stringify([...editLabels].sort()) !== JSON.stringify([...currentLabels].sort())) updates.labels = editLabels
+    const newProvider = editAiProvider || undefined
+    if (newProvider !== editingTask.aiProvider) updates.aiProvider = newProvider
     if (Object.keys(updates).length > 0) {
       await updateTask(editingTask.id, updates)
     }
     setEditingTask(null)
-  }, [editingTask, editTitle, editDesc, editPriority, editTargetProjectId, editLabels, updateTask])
+  }, [editingTask, editTitle, editDesc, editPriority, editTargetProjectId, editLabels, editAiProvider, updateTask])
 
   const hasActiveFilters = filterPriority !== 'all' || filterLabels.length > 0 || filterScope !== 'all' || searchQuery !== ''
 
@@ -751,6 +765,16 @@ export function KanbanBoard() {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
+                <select
+                  className="kanban-select"
+                  value={editAiProvider}
+                  onChange={(e) => setEditAiProvider(e.target.value as AiProviderId | '')}
+                >
+                  <option value="">{AI_PROVIDERS[workspaceDefaultAiProvider].displayName}</option>
+                  {Object.values(AI_PROVIDERS).filter((p) => p.id !== workspaceDefaultAiProvider).map((p) => (
+                    <option key={p.id} value={p.id}>{p.displayName}</option>
+                  ))}
+                </select>
               </div>
               <div className="kanban-create-labels">
                 <span className="kanban-create-labels-title">{t('kanban.labels')} :</span>
@@ -894,7 +918,7 @@ export function KanbanBoard() {
             onUpdate={(data) => updateTask(selectedTask.id, data)}
             onDelete={() => { deleteTask(selectedTask.id); setSelectedTask(null) }}
             onStatusChange={(status) => updateTaskStatus(selectedTask.id, status)}
-            onSendToClaude={() => handleSendToClaude(selectedTask)}
+            onSendToAi={() => handleSendToAi(selectedTask)}
             onAttachFiles={() => attachFiles(selectedTask.id)}
             onAttachFromClipboard={(dataBase64, filename, mimeType) => attachFromClipboard(selectedTask.id, dataBase64, filename, mimeType)}
             onRemoveAttachment={(attachmentId) => removeAttachment(selectedTask.id, attachmentId)}
@@ -938,7 +962,7 @@ function KanbanCard({
   onContextMenu: (e: React.MouseEvent) => void
   onDoubleClick: () => void
   onGoToTerminal: (() => void) | null
-  projects: Array<{ id: string; name: string; aiProvider?: AiProviderId | null }>
+  projects: Array<{ id: string; name: string; aiProvider?: AiProviderId | null; aiDefaults?: AiDefaults }>
   defaultAiProvider: AiProviderId
 }) {
   const { t } = useI18n()
@@ -970,8 +994,10 @@ function KanbanCard({
 
   const isWorking = task.status === 'WORKING'
 
+  const targetProject = projects.find((p) => p.id === task.targetProjectId)
   const resolvedProvider: AiProviderId = task.aiProvider
-    ?? projects.find((p) => p.id === task.targetProjectId)?.aiProvider
+    ?? targetProject?.aiDefaults?.kanban
+    ?? targetProject?.aiProvider
     ?? defaultAiProvider
   const workingColor = AI_PROVIDERS[resolvedProvider].detectionColor
 
@@ -1025,12 +1051,176 @@ function KanbanCard({
       {onGoToTerminal && (
         <button
           className="kanban-card-terminal-btn"
+          style={{ color: workingColor, background: `${workingColor}1a` }}
           onClick={(e) => { e.stopPropagation(); onGoToTerminal() }}
           title={t('kanban.goToTerminal')}
         >
           &#9002; {t('kanban.terminal')}
         </button>
       )}
+    </div>
+  )
+}
+
+// --- Comments Section ---
+
+function CommentsSection({ task, onUpdate }: { task: KanbanTask; onUpdate: (data: Partial<KanbanTask>) => void }) {
+  const { t } = useI18n()
+  const [commentText, setCommentText] = useState('')
+
+  const addComment = useCallback(() => {
+    const text = commentText.trim()
+    if (!text) return
+
+    const newComment: KanbanComment = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: Date.now(),
+    }
+    onUpdate({ comments: [...(task.comments ?? []), newComment] })
+    setCommentText('')
+  }, [commentText, task.comments, onUpdate])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault()
+        addComment()
+      }
+    },
+    [addComment],
+  )
+
+  return (
+    <div className="kanban-detail-section">
+      <span className="kanban-detail-section-title">{t('kanban.comments')}</span>
+      <div className="kanban-detail-comments">
+        {task.comments && task.comments.length > 0 ? (
+          task.comments.map((c) => (
+            <div key={c.id} className="kanban-comment-item">
+              <div className="kanban-comment-header">
+                <span className="kanban-comment-date">
+                  {new Date(c.createdAt).toLocaleString('fr-FR')}
+                </span>
+              </div>
+              <div className="kanban-comment-text">{c.text}</div>
+            </div>
+          ))
+        ) : (
+          <span className="kanban-detail-empty-hint">{t('kanban.noComments')}</span>
+        )}
+        <div className="kanban-comment-input-row">
+          <textarea
+            className="kanban-comment-input"
+            placeholder={t('kanban.commentPlaceholder')}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+          />
+          <button
+            className="kanban-comment-add-btn"
+            onClick={addComment}
+            disabled={!commentText.trim()}
+          >
+            {t('kanban.addComment')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Reopen or Send to AI Section ---
+
+function ReopenOrSendSection({
+  task,
+  onUpdate,
+  onSendToAi,
+}: {
+  task: KanbanTask
+  onUpdate: (data: Partial<KanbanTask>) => void
+  onSendToAi: () => void
+}) {
+  const { t } = useI18n()
+  const isCompleted = task.status === 'DONE' || task.status === 'FAILED'
+  const [reopenMode, setReopenMode] = useState(false)
+  const [reopenComment, setReopenComment] = useState('')
+
+  const handleReopen = useCallback(() => {
+    const text = reopenComment.trim()
+    if (!text) return
+
+    const newComment: KanbanComment = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: Date.now(),
+    }
+    onUpdate({ comments: [...(task.comments ?? []), newComment] })
+    setReopenComment('')
+    setReopenMode(false)
+    onSendToAi()
+  }, [reopenComment, task.comments, onUpdate, onSendToAi])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && e.metaKey) {
+        e.preventDefault()
+        handleReopen()
+      }
+    },
+    [handleReopen],
+  )
+
+  if (!isCompleted) {
+    return (
+      <div className="kanban-detail-section">
+        <button className="kanban-detail-ai-btn" onClick={onSendToAi}>
+          {t('kanban.sendToAi')}
+        </button>
+      </div>
+    )
+  }
+
+  if (!reopenMode) {
+    return (
+      <div className="kanban-detail-section">
+        <button className="kanban-detail-reopen-btn" onClick={() => setReopenMode(true)}>
+          {t('kanban.reopenTicket')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="kanban-detail-section">
+      <span className="kanban-detail-section-title">{t('kanban.reopenComment')}</span>
+      <div className="kanban-reopen-form">
+        <textarea
+          className="kanban-comment-input"
+          placeholder={t('kanban.reopenPlaceholder')}
+          value={reopenComment}
+          onChange={(e) => setReopenComment(e.target.value)}
+          onKeyDown={handleKeyDown}
+          rows={3}
+          autoFocus
+        />
+        <div className="kanban-reopen-actions">
+          <button
+            className="kanban-reopen-cancel"
+            onClick={() => { setReopenMode(false); setReopenComment('') }}
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            className="kanban-reopen-confirm"
+            onClick={handleReopen}
+            disabled={!reopenComment.trim()}
+          >
+            {t('kanban.reopenAndSend')}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1043,7 +1233,7 @@ function TaskDetailPanel({
   onUpdate,
   onDelete,
   onStatusChange,
-  onSendToClaude,
+  onSendToAi,
   onAttachFiles,
   onAttachFromClipboard,
   onRemoveAttachment,
@@ -1054,7 +1244,7 @@ function TaskDetailPanel({
   onUpdate: (data: Partial<KanbanTask>) => void
   onDelete: () => void
   onStatusChange: (status: KanbanStatus) => void
-  onSendToClaude: () => void
+  onSendToAi: () => void
   onAttachFiles: () => void
   onAttachFromClipboard: (dataBase64: string, filename: string, mimeType: string) => void
   onRemoveAttachment: (attachmentId: string) => void
@@ -1334,19 +1524,18 @@ function TaskDetailPanel({
         </div>
       )}
 
+      {/* Comments */}
+      <CommentsSection task={task} onUpdate={onUpdate} />
+
       {/* Timestamps */}
       <div className="kanban-detail-timestamps">
         <span>{t('kanban.created')} {new Date(task.createdAt).toLocaleString('fr-FR')}</span>
         <span>{t('kanban.modified')} {new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
       </div>
 
-      {/* Send to Claude */}
+      {/* Send to AI / Reopen */}
       {task.status !== 'WORKING' && (
-        <div className="kanban-detail-section">
-          <button className="kanban-detail-claude-btn" onClick={onSendToClaude}>
-            {t('kanban.sendToClaude')}
-          </button>
-        </div>
+        <ReopenOrSendSection task={task} onUpdate={onUpdate} onSendToAi={onSendToAi} />
       )}
 
       {/* Delete */}

@@ -1,4 +1,4 @@
-export type AiProviderId = 'claude' | 'codex'
+export type AiProviderId = 'claude' | 'codex' | 'copilot'
 
 export interface AiProviderConfig {
   id: AiProviderId
@@ -21,7 +21,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderConfig> = {
     cliCommand: 'claude',
     npmPackage: '@anthropic-ai/claude-code',
     configDir: '.claude',
-    detectionColor: '#7c3aed',
+    detectionColor: '#C15F3C',
     interactiveArgs: ['--dangerously-skip-permissions'],
     nonInteractiveArgs: ['--dangerously-skip-permissions', '--print'],
     nlQueryArgs: ['-p', '--model', 'claude-haiku-4-5-20251001', '--output-format', 'json'],
@@ -40,6 +40,19 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderConfig> = {
     nlQueryArgs: ['exec', '--full-auto', '--json'],
     envVarsToUnset: [],
     versionStripPattern: /^codex\s+/i,
+  },
+  copilot: {
+    id: 'copilot',
+    displayName: 'Copilot',
+    cliCommand: 'copilot',
+    npmPackage: '@github/copilot',
+    configDir: '.copilot',
+    detectionColor: '#e2538a',
+    interactiveArgs: ['-i'],
+    nonInteractiveArgs: ['-p'],
+    nlQueryArgs: ['-p', '--output-format', 'json'],
+    envVarsToUnset: [],
+    versionStripPattern: /^copilot\s+/i,
   },
 }
 

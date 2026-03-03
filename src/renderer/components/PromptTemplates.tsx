@@ -107,8 +107,8 @@ export function PromptTemplates() {
     setShowForm(false)
   }, [])
 
-  // Send draft content to the Claude pane in the active terminal
-  const handleSendToClaude = useCallback(() => {
+  // Send draft content to the AI pane in the active terminal
+  const handleSendToAi = useCallback(() => {
     const content = draftContent.trim()
     if (!content) return
     const { tabs, activeTabId } = useTerminalTabStore.getState()
@@ -341,8 +341,8 @@ export function PromptTemplates() {
 
             <div className="pt-preview-actions">
               <div className="pt-preview-actions-primary">
-                <button className="pt-btn pt-btn--claude" onClick={handleSendToClaude}>
-                  {sent ? '\u2713 ' + t('common.sent') : '\u25B6 ' + t('prompts.sendToClaude')}
+                <button className="pt-btn pt-btn--ai" onClick={handleSendToAi}>
+                  {sent ? '\u2713 ' + t('common.sent') : '\u25B6 ' + t('prompts.sendToAi')}
                 </button>
                 <button className="pt-btn pt-btn--ticket" onClick={handleCreateTicket}>
                   {t('prompts.createTicket')}

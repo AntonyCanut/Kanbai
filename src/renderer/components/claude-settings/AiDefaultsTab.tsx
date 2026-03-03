@@ -85,9 +85,9 @@ export function AiDefaultsTab({ projectId }: Props) {
       ...defaults,
       kanban: id,
       packages: id,
-      packagesModel: id === 'codex' ? 'gpt-5.1-codex-mini' : '',
+      packagesModel: id === 'codex' ? 'gpt-5.1-codex-mini' : id === 'copilot' ? 'gpt-4o' : '',
       database: id,
-      databaseModel: id === 'codex' ? 'gpt-5.1-codex-mini' : '',
+      databaseModel: id === 'codex' ? 'gpt-5.1-codex-mini' : id === 'copilot' ? 'gpt-4o' : '',
     })
   }
 
@@ -124,7 +124,7 @@ export function AiDefaultsTab({ projectId }: Props) {
             label={t('ai.defaults.packagesLabel')}
             description={t('ai.defaults.packagesDesc')}
             value={packagesProvider}
-            onChange={(id) => save({ ...defaults, packages: id, packagesModel: id === 'codex' ? 'gpt-5.1-codex-mini' : '' })}
+            onChange={(id) => save({ ...defaults, packages: id, packagesModel: id === 'codex' ? 'gpt-5.1-codex-mini' : id === 'copilot' ? 'gpt-4o' : '' })}
           />
         </div>
       </div>
@@ -136,7 +136,7 @@ export function AiDefaultsTab({ projectId }: Props) {
             label={t('ai.defaults.databaseLabel')}
             description={t('ai.defaults.databaseDesc')}
             value={databaseProvider}
-            onChange={(id) => save({ ...defaults, database: id, databaseModel: id === 'codex' ? 'gpt-5.1-codex-mini' : '' })}
+            onChange={(id) => save({ ...defaults, database: id, databaseModel: id === 'codex' ? 'gpt-5.1-codex-mini' : id === 'copilot' ? 'gpt-4o' : '' })}
           />
         </div>
       </div>

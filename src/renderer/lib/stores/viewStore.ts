@@ -17,11 +17,14 @@ interface ViewState {
   clipboardOperation: 'copy' | null
   // Database explorer
   pendingDbProjectPath: string | null
+  // Kanban task selection from terminal notch
+  pendingKanbanTaskId: string | null
   // Recent files and bookmarks
   recentFiles: string[]
   bookmarks: string[]
   setPendingDbProjectPath: (path: string | null) => void
   setViewMode: (mode: ViewMode) => void
+  navigateToKanbanTask: (taskId: string) => void
   openFile: (filePath: string, lineNumber?: number) => void
   setHighlightedFilePath: (path: string | null) => void
   setEditorDirty: (dirty: boolean) => void
@@ -65,10 +68,12 @@ export const useViewStore = create<ViewState>((set, get) => ({
   clipboardPath: null,
   clipboardOperation: null,
   pendingDbProjectPath: null,
+  pendingKanbanTaskId: null,
   recentFiles: loadPersistedList('mirehub:recentFiles'),
   bookmarks: loadPersistedList('mirehub:bookmarks'),
   setPendingDbProjectPath: (path) => set({ pendingDbProjectPath: path }),
   setViewMode: (mode) => set({ viewMode: mode }),
+  navigateToKanbanTask: (taskId) => set({ viewMode: 'kanban', pendingKanbanTaskId: taskId }),
   openFile: (filePath, lineNumber?) => {
     const { recentFiles } = get()
     const updated = [filePath, ...recentFiles.filter((f) => f !== filePath)].slice(0, 20)

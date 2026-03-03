@@ -175,7 +175,7 @@ function computePaneRects(
 
 function isAiCommand(cmd: string | null | undefined): boolean {
   if (!cmd) return false
-  return cmd === 'claude' || cmd.includes('claude ') || cmd === 'codex' || cmd.includes('codex ')
+  return cmd === 'claude' || cmd.includes('claude ') || cmd === 'codex' || cmd.includes('codex ') || cmd === 'copilot' || cmd.includes('copilot ')
 }
 
 function countAiPanes(node: PaneNode): number {

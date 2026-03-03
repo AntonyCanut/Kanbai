@@ -117,7 +117,8 @@ export function TabBar() {
         return (
           <div
             key={tab.id}
-            className={`tab${isActive ? ' active' : ''}${isDragging ? ' tab--dragging' : ''}${isDropTarget ? ' tab--drop-target' : ''}${isStreaming ? ' tab--streaming' : ''}`}
+            className={`tab${isActive ? ' active' : ''}${isDragging ? ' tab--dragging' : ''}${isDropTarget ? ' tab--drop-target' : ''}${isStreaming ? ' tab--streaming' : ''}${tab.color ? ' tab--tinted' : ''}`}
+            style={tab.color ? { '--tab-tint-color': tab.color } as React.CSSProperties : undefined}
             onClick={() => !isRenaming && setActiveTab(tab.id)}
             onDoubleClick={() => handleDoubleClick(tab)}
             onContextMenu={(e) => handleContextMenu(e, tab.id)}
@@ -144,7 +145,15 @@ export function TabBar() {
                 autoFocus
               />
             ) : (
-              <span className="tab-label">{tab.label}</span>
+              <span
+                className="tab-label"
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget
+                  el.title = el.scrollWidth > el.clientWidth ? tab.label : ''
+                }}
+              >
+                {tab.label}
+              </span>
             )}
             {tabs.length > 1 && (
               <button

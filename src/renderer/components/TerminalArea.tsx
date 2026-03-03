@@ -1,7 +1,10 @@
 import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react'
 import { useTerminalTabStore } from '../lib/stores/terminalTabStore'
 import { useWorkspaceStore } from '../lib/stores/workspaceStore'
+import { useKanbanStore } from '../lib/stores/kanbanStore'
+import { useViewStore } from '../lib/stores/viewStore'
 import { useI18n } from '../lib/i18n'
+import { AI_PROVIDERS } from '../../shared/types/ai-provider'
 import { SplitContainer } from './SplitContainer'
 import { ProjectToolbar } from './ProjectToolbar'
 
@@ -64,6 +67,7 @@ export function TerminalArea() {
   const editInputRef = useRef<HTMLInputElement>(null)
   const dragIndexRef = useRef<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
 
   // Terminal font size (shared across all terminals)
   const [terminalFontSize, setTerminalFontSize] = useState(14)
@@ -217,6 +221,7 @@ export function TerminalArea() {
     (tabId: string, currentLabel: string) => {
       setEditingTabId(tabId)
       setEditingLabel(currentLabel)
+      setTooltip(null)
     },
     [],
   )
@@ -244,17 +249,19 @@ export function TerminalArea() {
     [commitRename],
   )
 
-  // Drag & drop handlers
+  // Drag & drop handlers — indices are workspace-scoped, must map to global
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     dragIndexRef.current = index
     e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', '')
+    setTooltip(null)
     const target = e.currentTarget as HTMLElement
-    target.style.opacity = '0.5'
+    target.classList.add('tab--dragging')
   }, [])
 
   const handleDragEnd = useCallback((e: React.DragEvent) => {
     const target = e.currentTarget as HTMLElement
-    target.style.opacity = '1'
+    target.classList.remove('tab--dragging')
     dragIndexRef.current = null
     setDragOverIndex(null)
   }, [])
@@ -265,17 +272,33 @@ export function TerminalArea() {
     setDragOverIndex(index)
   }, [])
 
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDragOverIndex(null)
+    }
+  }, [])
+
   const handleDrop = useCallback(
-    (e: React.DragEvent, toIndex: number) => {
+    (e: React.DragEvent, toLocalIndex: number) => {
       e.preventDefault()
-      const fromIndex = dragIndexRef.current
-      if (fromIndex !== null && fromIndex !== toIndex) {
-        reorderTabs(fromIndex, toIndex)
+      const fromLocalIndex = dragIndexRef.current
+      if (fromLocalIndex !== null && fromLocalIndex !== toLocalIndex) {
+        const allCurrentTabs = useTerminalTabStore.getState().tabs
+        const fromTab = tabs[fromLocalIndex]
+        const toTab = tabs[toLocalIndex]
+        if (fromTab && toTab) {
+          const fromGlobal = allCurrentTabs.findIndex((t) => t.id === fromTab.id)
+          const toGlobal = allCurrentTabs.findIndex((t) => t.id === toTab.id)
+          if (fromGlobal !== -1 && toGlobal !== -1) {
+            reorderTabs(fromGlobal, toGlobal)
+          }
+        }
       }
       dragIndexRef.current = null
       setDragOverIndex(null)
     },
-    [reorderTabs],
+    [reorderTabs, tabs],
   )
 
   const handleTabClose = useCallback(
@@ -302,6 +325,19 @@ export function TerminalArea() {
     }
   }, [activeWorkspaceId, envCwd, createTab])
 
+  const kanbanTabIds = useKanbanStore((s) => s.kanbanTabIds)
+  const kanbanTasks = useKanbanStore((s) => s.tasks)
+  const navigateToKanbanTask = useViewStore((s) => s.navigateToKanbanTask)
+
+  // Build reverse mapping: tabId -> taskId
+  const tabToTaskId = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const [taskId, tabId] of Object.entries(kanbanTabIds)) {
+      map[tabId] = taskId
+    }
+    return map
+  }, [kanbanTabIds])
+
   const { createSplitTab } = useTerminalTabStore()
 
   const handleNewClaudeTab = useCallback(() => {
@@ -318,8 +354,13 @@ export function TerminalArea() {
 
   const addWrapperRef = useRef<HTMLDivElement>(null)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
+  const dropdownLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleAddWrapperEnter = useCallback(() => {
+    if (dropdownLeaveTimer.current) {
+      clearTimeout(dropdownLeaveTimer.current)
+      dropdownLeaveTimer.current = null
+    }
     if (addWrapperRef.current) {
       const rect = addWrapperRef.current.getBoundingClientRect()
       setDropdownPos({ top: rect.bottom + 4, left: rect.left })
@@ -327,7 +368,19 @@ export function TerminalArea() {
   }, [])
 
   const handleAddWrapperLeave = useCallback(() => {
-    setDropdownPos(null)
+    dropdownLeaveTimer.current = setTimeout(() => {
+      setDropdownPos(null)
+      dropdownLeaveTimer.current = null
+    }, 1000)
+  }, [])
+
+  // Cleanup dropdown leave timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dropdownLeaveTimer.current) {
+        clearTimeout(dropdownLeaveTimer.current)
+      }
+    }
   }, [])
 
   if (!activeWorkspaceId) {
@@ -353,7 +406,8 @@ export function TerminalArea() {
             key={tab.id}
             className={`tab ${tab.id === activeTabId ? 'active' : ''} ${
               dragOverIndex === index ? 'tab-drag-over' : ''
-            }${tab.color === '#fab387' ? ' tab--streaming' : ''}`}
+            }${tab.color === '#fab387' ? ' tab--streaming' : ''}${tab.color ? ' tab--tinted' : ''}`}
+            style={tab.color ? { '--tab-tint-color': tab.color } as React.CSSProperties : undefined}
             onClick={() => setActiveTab(tab.id)}
             onMouseDown={(e) => handleTabMouseDown(e, tab.id)}
             onDoubleClick={() => handleDoubleClick(tab.id, tab.label)}
@@ -361,7 +415,15 @@ export function TerminalArea() {
             onDragStart={(e) => handleDragStart(e, index)}
             onDragEnd={handleDragEnd}
             onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, index)}
+            onMouseEnter={(e) => {
+              if (editingTabId !== tab.id) {
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                setTooltip({ text: tab.label, x: rect.left + rect.width / 2, y: rect.bottom })
+              }
+            }}
+            onMouseLeave={() => setTooltip(null)}
           >
             {tab.color && (
               <span className="tab-color-dot" style={{ background: tab.color }} />
@@ -380,11 +442,13 @@ export function TerminalArea() {
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <span className="tab-label">{tab.label}</span>
+              <span className="tab-label">
+                {tab.label}
+              </span>
             )}
             <button
               className="tab-close"
-              title={t('common.close')}
+              data-tooltip={t('common.close')}
               onClick={(e) => handleTabClose(e, tab.id)}
             >
               x
@@ -397,13 +461,20 @@ export function TerminalArea() {
           onMouseEnter={handleAddWrapperEnter}
           onMouseLeave={handleAddWrapperLeave}
         >
-          <button className="btn-icon tab-add" title={t('terminal.newTerminal')} onClick={handleNewTab}>
+          <button className="btn-icon tab-add" data-tooltip={t('terminal.newTerminal')} onClick={handleNewTab}>
             +
           </button>
           {dropdownPos && (
             <div
               className="tab-add-dropdown"
               style={{ display: 'block', top: dropdownPos.top, left: dropdownPos.left }}
+              onMouseEnter={() => {
+                if (dropdownLeaveTimer.current) {
+                  clearTimeout(dropdownLeaveTimer.current)
+                  dropdownLeaveTimer.current = null
+                }
+              }}
+              onMouseLeave={handleAddWrapperLeave}
             >
               <button className="tab-add-dropdown-item" onClick={handleNewTab}>
                 <span className="tab-add-dropdown-icon">{'>'}_</span>
@@ -421,22 +492,44 @@ export function TerminalArea() {
           )}
         </div>
       </div>
+      {tooltip && (
+        <div
+          className="tab-tooltip"
+          style={{ top: tooltip.y + 6, left: tooltip.x }}
+        >
+          {tooltip.text}
+        </div>
+      )}
       <ProjectToolbar />
       <div className="terminal-content">
-        {allTabs.map((tab) => (
-          <div
-            key={tab.id}
-            className="terminal-tab-content"
-            style={{
-              display:
-                tab.workspaceId === activeWorkspaceId && tab.id === activeTabId
-                  ? 'flex'
-                  : 'none',
-            }}
-          >
-            <SplitContainer tabId={tab.id} fontSize={terminalFontSize} />
-          </div>
-        ))}
+        {allTabs.map((tab) => {
+          const linkedTaskId = tabToTaskId[tab.id]
+          const linkedTask = linkedTaskId ? kanbanTasks.find((t) => t.id === linkedTaskId) : null
+          return (
+            <div
+              key={tab.id}
+              className="terminal-tab-content"
+              style={{
+                display:
+                  tab.workspaceId === activeWorkspaceId && tab.id === activeTabId
+                    ? 'flex'
+                    : 'none',
+              }}
+            >
+              {linkedTask && (
+                <button
+                  className="terminal-kanban-notch"
+                  style={{ '--notch-color': AI_PROVIDERS[linkedTask.aiProvider ?? 'claude'].detectionColor } as React.CSSProperties}
+                  data-tooltip={t('terminal.goToKanban')}
+                  onClick={() => navigateToKanbanTask(linkedTask.id)}
+                >
+                  <span className="terminal-kanban-notch-text">Ticket {linkedTask.ticketNumber != null ? `T-${linkedTask.ticketNumber}` : ''}</span>
+                </button>
+              )}
+              <SplitContainer tabId={tab.id} fontSize={terminalFontSize} />
+            </div>
+          )
+        })}
         {tabs.length === 0 && (
           <div className="terminal-empty">
             <p>{t('terminal.noTerminalOpen')}</p>

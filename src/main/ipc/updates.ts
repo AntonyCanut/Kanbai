@@ -52,6 +52,11 @@ const TOOLS_TO_CHECK: ToolCheck[] = [
     checkCommand: 'codex',
     checkArgs: ['--version'],
   },
+  {
+    name: 'copilot',
+    checkCommand: 'copilot',
+    checkArgs: ['--version'],
+  },
   // cargo & rtk — Windows only
   ...(IS_WIN
     ? [
@@ -79,6 +84,7 @@ async function getVersion(command: string, args: string[]): Promise<string | nul
       .replace(/^Claude Code /, '')
       .replace(/^cargo /, '')
       .replace(/^codex\s+/i, '')
+      .replace(/^copilot\s+/i, '')
       .replace(/ \(.+\)$/, '')
     return version
   } catch {
@@ -177,6 +183,8 @@ async function checkToolUpdates(): Promise<UpdateInfo[]> {
       latestVersion = null
     } else if (tool.name === 'codex') {
       latestVersion = await getLatestNpmVersion('@openai/codex')
+    } else if (tool.name === 'copilot') {
+      latestVersion = await getLatestNpmVersion('@github/copilot')
     } else if (tool.name === 'rtk') {
       // rtk is a cargo crate — no easy remote version check, skip
       latestVersion = null
@@ -255,6 +263,10 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
           case 'codex':
             command = 'npm'
             args = ['install', '-g', '@openai/codex@latest']
+            break
+          case 'copilot':
+            command = 'npm'
+            args = ['install', '-g', '@github/copilot@latest']
             break
           case 'git':
             if (IS_WIN) {

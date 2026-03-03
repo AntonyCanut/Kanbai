@@ -614,6 +614,29 @@ const api = {
     delete: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.CODEX_DELETE_SKILL, { projectPath, dirname }),
   },
 
+  // Copilot config
+  copilotConfig: {
+    read: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_READ_CONFIG, { projectPath }),
+    write: (projectPath: string, config: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_WRITE_CONFIG, { projectPath, config }),
+    check: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_CHECK_CONFIG, { projectPath }),
+  },
+
+  // Copilot instructions (memory)
+  copilotMemory: {
+    readInstructions: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_READ_INSTRUCTIONS, { projectPath }),
+    writeInstructions: (projectPath: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_WRITE_INSTRUCTIONS, { projectPath, content }),
+    readGlobalInstructions: () => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_READ_GLOBAL_INSTRUCTIONS),
+    writeGlobalInstructions: (content: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_WRITE_GLOBAL_INSTRUCTIONS, { content }),
+  },
+
+  // Copilot skills
+  copilotSkills: {
+    list: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_LIST_SKILLS, { projectPath }),
+    read: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_READ_SKILL, { projectPath, dirname }),
+    write: (projectPath: string, dirname: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_WRITE_SKILL, { projectPath, dirname, content }),
+    delete: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_DELETE_SKILL, { projectPath, dirname }),
+  },
+
   // AI provider
   aiProvider: {
     set: (projectId: string, provider: string) => ipcRenderer.invoke(IPC_CHANNELS.AI_PROVIDER_SET, { projectId, provider }),

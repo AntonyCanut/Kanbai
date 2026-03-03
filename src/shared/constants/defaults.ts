@@ -7,6 +7,7 @@ import { getDefaultShell } from '../platform'
  * incorrectly inlining getDefaultShell() during bundling.
  */
 export const DEFAULT_CODEX_DETECTION_COLOR = '#10a37f'
+export const DEFAULT_COPILOT_DETECTION_COLOR = '#e2538a'
 
 export function createDefaultSettings(): AppSettings {
   return {
@@ -16,8 +17,9 @@ export function createDefaultSettings(): AppSettings {
     fontSize: 14,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     scrollbackLines: 10000,
-    claudeDetectionColor: '#7c3aed',
+    claudeDetectionColor: '#C15F3C',
     codexDetectionColor: DEFAULT_CODEX_DETECTION_COLOR,
+    copilotDetectionColor: DEFAULT_COPILOT_DETECTION_COLOR,
     defaultAiProvider: 'claude',
     autoClauderEnabled: false,
     notificationSound: true,

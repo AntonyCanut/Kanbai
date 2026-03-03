@@ -13,16 +13,22 @@ import { SecuritySandboxTab } from './SecuritySandboxTab'
 import { AgentsSkillsTab } from './AgentsSkillsTab'
 import { IntegrationsTab } from './IntegrationsTab'
 import { MemoryTab } from './MemoryTab'
+import { CopilotGeneralTab } from './CopilotGeneralTab'
+import { CopilotRulesTab } from './CopilotRulesTab'
+import { CopilotSkillsTab } from './CopilotSkillsTab'
+import { CopilotMemoryTab } from './CopilotMemoryTab'
 import { WORKFLOW_MARKER } from '../../../shared/constants/defaultWorkflows'
 
-type SidebarSection = 'general' | 'claude' | 'codex'
+type SidebarSection = 'general' | 'claude' | 'codex' | 'copilot'
 type ClaudeSubTab = 'general' | 'security' | 'agents' | 'integrations' | 'memory'
 type CodexSubTab = 'general' | 'rules' | 'skills' | 'memory'
+type CopilotSubTab = 'general' | 'rules' | 'skills' | 'memory'
 
 const SIDEBAR_ITEMS: { key: SidebarSection; providerId?: AiProviderId }[] = [
   { key: 'general' },
   { key: 'claude', providerId: 'claude' },
   { key: 'codex', providerId: 'codex' },
+  { key: 'copilot', providerId: 'copilot' },
 ]
 
 export function ClaudeSettingsPanel() {
@@ -34,6 +40,7 @@ export function ClaudeSettingsPanel() {
   const [section, setSection] = useState<SidebarSection>('general')
   const [claudeSubTab, setClaudeSubTab] = useState<ClaudeSubTab>('general')
   const [codexSubTab, setCodexSubTab] = useState<CodexSubTab>('general')
+  const [copilotSubTab, setCopilotSubTab] = useState<CopilotSubTab>('general')
   const [settings, setSettings] = useState<Record<string, unknown>>({})
   const [localSettings, setLocalSettings] = useState<Record<string, unknown> | null>(null)
   const [userSettings, setUserSettings] = useState<Record<string, unknown> | null>(null)
@@ -328,6 +335,41 @@ export function ClaudeSettingsPanel() {
                 )}
                 {codexSubTab === 'memory' && (
                   <CodexMemoryTab projectPath={activeProject.path} />
+                )}
+              </div>
+            </>
+          )}
+
+          {section === 'copilot' && (
+            <>
+              <div className="claude-rules-tabs">
+                {([
+                  { key: 'general' as CopilotSubTab, label: t('copilot.generalTab') },
+                  { key: 'rules' as CopilotSubTab, label: t('copilot.rulesTab') },
+                  { key: 'skills' as CopilotSubTab, label: t('copilot.skillsTab') },
+                  { key: 'memory' as CopilotSubTab, label: t('copilot.memoryTab') },
+                ]).map((tab) => (
+                  <button
+                    key={tab.key}
+                    className={`claude-rules-tab${copilotSubTab === tab.key ? ' claude-rules-tab--active' : ''}`}
+                    onClick={() => setCopilotSubTab(tab.key)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="claude-rules-content">
+                {copilotSubTab === 'general' && (
+                  <CopilotGeneralTab projectPath={activeProject.path} />
+                )}
+                {copilotSubTab === 'rules' && (
+                  <CopilotRulesTab projectPath={activeProject.path} />
+                )}
+                {copilotSubTab === 'skills' && (
+                  <CopilotSkillsTab projectPath={activeProject.path} />
+                )}
+                {copilotSubTab === 'memory' && (
+                  <CopilotMemoryTab projectPath={activeProject.path} />
                 )}
               </div>
             </>

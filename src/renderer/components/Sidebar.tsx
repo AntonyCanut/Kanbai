@@ -423,6 +423,12 @@ export function Sidebar() {
                   >
                     Codex
                   </button>
+                  <button
+                    className={`settings-radio-btn${newProjectAiProvider === 'copilot' ? ' settings-radio-btn--active' : ''}`}
+                    onClick={() => setNewProjectAiProvider('copilot')}
+                  >
+                    Copilot
+                  </button>
                 </div>
               </div>
             </div>
@@ -462,6 +468,12 @@ export function Sidebar() {
                   onClick={() => setNewProjectAiProvider('codex')}
                 >
                   Codex
+                </button>
+                <button
+                  className={`settings-radio-btn${newProjectAiProvider === 'copilot' ? ' settings-radio-btn--active' : ''}`}
+                  onClick={() => setNewProjectAiProvider('copilot')}
+                >
+                  Copilot
                 </button>
               </div>
             </div>
