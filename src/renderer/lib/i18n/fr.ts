@@ -150,6 +150,7 @@ export const fr = {
   'settings.autoCloseCompletedTerminals': 'Fermer auto. les terminaux des tickets traites',
   'settings.autoCloseCtoTerminals': 'Fermer auto. les terminaux en mode CTO',
   'settings.autoCreateAiMemoryRefactorTickets': 'Creer auto. des tickets de refonte memoire IA',
+  'settings.autoCreateAiMemoryRefactorTicketsHint': 'Tous les 10 tickets, cree un ticket pour refondre les memoires IA (Claude.md, Gemini.md, etc)',
   'settings.about': 'À propos',
   'settings.appName': 'Nom',
   'settings.version': 'Version',
@@ -1712,7 +1713,8 @@ export const fr = {
 
   // Tutorial
   'tutorial.welcome.title': 'Bienvenue sur Kanbai',
-  'tutorial.welcome.description': 'Kanbai est votre environnement de développement unifié. Ce tutoriel vous présenté les fonctionnalités principales en quelques étapes.',
+  'tutorial.welcome.chooseLanguage': 'Choisissez votre langue',
+  'tutorial.welcome.description': 'Kanbai est votre environnement de développement unifié. Ce tutoriel vous présente les fonctionnalités principales en quelques étapes.',
   'tutorial.updates.title': 'Mises à jour automatiques',
   'tutorial.updates.description': 'Kanbai verifie automatiquement les mises à jour au démarrage. Vous serez notifie lorsqu\'une nouvelle version est disponible et pourrez l\'installer en un clic.',
   'tutorial.namespaces.title': 'Namespaces',

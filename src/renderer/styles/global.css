@@ -12765,6 +12765,48 @@ body {
   color: var(--bg-primary);
 }
 
+/* --- Tutorial Language Selector --- */
+
+.tutorial-language-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tutorial-language-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.tutorial-language-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.tutorial-lang-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tutorial-lang-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.tutorial-lang-btn--active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
 /* ========================================
    Health Check Panel — Modern Design
    ======================================== */

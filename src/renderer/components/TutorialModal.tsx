@@ -28,7 +28,7 @@ interface TutorialModalProps {
 }
 
 export function TutorialModal({ section, onDone, onDismissAll }: TutorialModalProps) {
-  const { t } = useI18n()
+  const { t, locale, setLocale } = useI18n()
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -61,6 +61,25 @@ export function TutorialModal({ section, onDone, onDismissAll }: TutorialModalPr
 
         <div className="tutorial-modal-body">
           <div className="tutorial-modal-icon">{icon}</div>
+          {section === 'welcome' && (
+            <div className="tutorial-language-selector">
+              <span className="tutorial-language-label">{t('tutorial.welcome.chooseLanguage')}</span>
+              <div className="tutorial-language-buttons">
+                <button
+                  className={`tutorial-lang-btn${locale === 'fr' ? ' tutorial-lang-btn--active' : ''}`}
+                  onClick={() => setLocale('fr')}
+                >
+                  Français
+                </button>
+                <button
+                  className={`tutorial-lang-btn${locale === 'en' ? ' tutorial-lang-btn--active' : ''}`}
+                  onClick={() => setLocale('en')}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+          )}
           <h2 className="tutorial-modal-title">{t(titleKey)}</h2>
           <p className="tutorial-modal-description">{t(descriptionKey)}</p>
         </div>

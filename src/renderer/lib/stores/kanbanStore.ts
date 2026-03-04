@@ -919,6 +919,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
     if (!task || task.status !== 'DONE' || !workspaceId) return
 
+    // Grace period: don't reactivate a ticket marked DONE less than 30s ago.
+    // This prevents accidental reactivation when the user presses Enter
+    // right after an AI agent finishes and marks the ticket as DONE.
+    const REACTIVATION_GRACE_PERIOD_MS = 30_000
+    if (task.updatedAt && Date.now() - task.updatedAt < REACTIVATION_GRACE_PERIOD_MS) return
+
     const isCurrentWorkspace = workspaceId === currentWorkspaceId
 
     reactivatingTaskIds.add(taskId)

@@ -6,7 +6,7 @@ import { useI18n } from '../lib/i18n'
 const IS_WIN_RENDERER = navigator.platform.startsWith('Win')
 
 export function UpdateCenter() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const { updates, isChecking, lastChecked, installingTool, installStatus, checkUpdates, installUpdate, uninstallUpdate, clearInstallStatus } =
     useUpdateStore()
@@ -73,7 +73,7 @@ export function UpdateCenter() {
   const formatTime = (ts: number | null) => {
     if (!ts) return t('time.never')
     const date = new Date(ts)
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (

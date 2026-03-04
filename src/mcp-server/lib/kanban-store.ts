@@ -41,7 +41,25 @@ export const AI_MEMORY_REFACTOR_LABEL = 'ai-memory-refactor'
 
 const MEMORY_REFACTOR_INTERVAL = 10
 
-const MEMORY_REFACTOR_DESCRIPTION = `## Objective
+const MEMORY_REFACTOR_TITLES: Record<string, string> = {
+  fr: 'Refonte des memoires IA (Claude.md, Gemini.md, etc)',
+  en: 'AI memory refactor (Claude.md, Gemini.md, etc)',
+}
+
+function readLocaleFromSettings(): string {
+  try {
+    const dataPath = path.join(os.homedir(), '.kanbai', 'data.json')
+    if (!fs.existsSync(dataPath)) return 'fr'
+    const raw = fs.readFileSync(dataPath, 'utf-8')
+    const data = JSON.parse(raw)
+    return data.settings?.locale ?? 'fr'
+  } catch {
+    return 'fr'
+  }
+}
+
+const MEMORY_REFACTOR_DESCRIPTIONS: Record<string, string> = {
+  en: `## Objective
 Review and consolidate all AI memory files to reflect the current project state.
 All work must be done in the **workspace** (not the project).
 
@@ -80,7 +98,48 @@ All work must be done in the **workspace** (not the project).
 - No redundant information within each file
 - Memory reflects the current project architecture and conventions
 - Files are clear and easy to understand for any AI agent
-`
+`,
+  fr: `## Objectif
+Revoir et consolider tous les fichiers memoire IA pour refleter l'etat actuel du projet.
+Tout le travail doit etre fait dans le **workspace** (pas le projet).
+
+## Fichiers a revoir (par provider)
+
+### Claude Code
+- [ ] CLAUDE.md (racine du workspace — protocole equipe d'agents)
+- [ ] .claude/rules/ (fichiers de regles)
+- [ ] .claude/agents/ (configurations des agents)
+
+### Codex
+- [ ] AGENTS.md (racine du workspace — instructions Codex)
+- [ ] .codex/config.toml (parametres)
+
+### Copilot
+- [ ] .github/copilot-instructions.md (instructions globales)
+- [ ] .github/instructions/*.instructions.md (regles par chemin)
+- [ ] .copilot/config.json (parametres)
+
+### Gemini CLI
+- [ ] GEMINI.md (racine du workspace — instructions Gemini)
+- [ ] .gemini/settings.json (parametres)
+
+## Taches
+1. Lire tous les fichiers memoire IA existants dans le workspace et chaque projet
+2. S'assurer que les 4 providers ont des fichiers d'instructions complets et a jour
+3. Consolider les informations dupliquees — chaque fichier doit avoir la meme base de connaissances adaptee au format du provider
+4. Mettre a jour avec les nouvelles connaissances acquises lors des tickets recents
+5. Ameliorer la clarte : architecture, technologies, conventions, decisions
+6. Copier les fichiers memoire utiles du niveau projet vers le niveau workspace
+7. Supprimer les informations obsoletes ou contradictoires
+
+## Criteres d'acceptation
+- Les 4 providers ont des fichiers d'instructions complets dans le workspace
+- Meme base de connaissances dans tous les fichiers (architecture, conventions, decisions)
+- Pas d'information redondante dans chaque fichier
+- La memoire reflete l'architecture et les conventions actuelles du projet
+- Les fichiers sont clairs et faciles a comprendre pour tout agent IA
+`,
+}
 
 function readAutoMemoryRefactorSetting(): boolean {
   try {
@@ -125,8 +184,8 @@ export function maybeCreateMemoryRefactorTicket(
     id: uuid(),
     workspaceId,
     ticketNumber: getNextTicketNumber(tasks),
-    title: 'Refonte des memoires IA (Claude.md, Gemini.md, etc)',
-    description: MEMORY_REFACTOR_DESCRIPTION,
+    title: MEMORY_REFACTOR_TITLES[readLocaleFromSettings()] ?? MEMORY_REFACTOR_TITLES['fr']!,
+    description: MEMORY_REFACTOR_DESCRIPTIONS[readLocaleFromSettings()] ?? MEMORY_REFACTOR_DESCRIPTIONS['fr']!,
     status: 'TODO',
     priority: 'medium',
     labels: [AI_MEMORY_REFACTOR_LABEL, 'maintenance'],

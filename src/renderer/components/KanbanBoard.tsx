@@ -1170,7 +1170,7 @@ function KanbanCard({
   projects: Array<{ id: string; name: string; aiProvider?: AiProviderId | null; aiDefaults?: AiDefaults }>
   defaultAiProvider: AiProviderId
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Delayed single-click: allows double-click to cancel opening the detail panel
@@ -1234,9 +1234,9 @@ function KanbanCard({
         </button>
       </div>
       <span className="kanban-card-date">
-        {new Date(task.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+        {new Date(task.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
         {', '}
-        {new Date(task.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        {new Date(task.createdAt).toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
       </span>
       <p className="kanban-card-desc">
         {task.description || t('kanban.noDescription')}
@@ -1385,7 +1385,7 @@ function TaskDetailPanel({
   onRemoveAttachment: (attachmentId: string) => void
   projects: Array<{ id: string; name: string }>
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(task.title)
   const [editingDesc, setEditingDesc] = useState(false)
@@ -1661,8 +1661,8 @@ function TaskDetailPanel({
 
       {/* Timestamps */}
       <div className="kanban-detail-timestamps">
-        <span>{t('kanban.created')} {new Date(task.createdAt).toLocaleString('fr-FR')}</span>
-        <span>{t('kanban.modified')} {new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
+        <span>{t('kanban.created')} {new Date(task.createdAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>
+        <span>{t('kanban.modified')} {new Date(task.updatedAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>
       </div>
 
       {/* Send to AI / Reopen */}

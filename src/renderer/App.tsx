@@ -43,7 +43,7 @@ const TUTORIAL_VIEWS = new Set([
 export function App() {
   const { viewMode, setViewMode, availableMagicTabs, setAvailableMagicTabs } = useViewStore()
   const { activeProjectId, projects, activeWorkspaceId, workspaces } = useWorkspaceStore()
-  const { t } = useI18n()
+  const { t, setLocale } = useI18n()
   const [pendingSession, setPendingSession] = useState<SessionData | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -76,9 +76,12 @@ export function App() {
     })
   }, [])
 
-  // Load tutorial state and show welcome on first launch
+  // Load tutorial state, saved locale, and show welcome on first launch
   useEffect(() => {
     window.kanbai.settings.get().then((s: AppSettings) => {
+      if (s.locale) {
+        setLocale(s.locale)
+      }
       const completed = s.tutorialCompleted ?? false
       const seen = s.tutorialSeenSections ?? []
       setTutorialCompleted(completed)
