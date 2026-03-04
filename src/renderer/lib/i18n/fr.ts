@@ -963,12 +963,8 @@ export const fr = {
   'kanban.ctoModeAlreadyActive': 'Un ticket CTO est déjà actif ou en attente. Terminéz-le avant d\'en créer un nouveau.',
   'kanban.disableTask': 'Désactiver',
   'kanban.enableTask': 'Réactiver',
-  'kanban.comments': 'Commentaires',
-  'kanban.noComments': 'Aucun commentaire.',
-  'kanban.commentPlaceholder': 'Ajouter un commentaire... (Cmd+Entree pour envoyer)',
-  'kanban.addComment': 'Ajouter',
   'kanban.reopenTicket': 'Rouvrir ce ticket',
-  'kanban.reopenComment': 'Que souhaitez-vous modifier ?',
+  'kanban.reopenComment': 'Que souhaitez-vous modifier ? (optionnel)',
   'kanban.reopenPlaceholder': 'Décrivez ce que l\'IA doit faire differemment...',
   'kanban.reopenAndSend': 'Rouvrir et envoyer',
 

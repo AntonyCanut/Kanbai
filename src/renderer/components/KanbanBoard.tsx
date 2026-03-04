@@ -1267,75 +1267,6 @@ function KanbanCard({
   )
 }
 
-// --- Comments Section ---
-
-function CommentsSection({ task, onUpdate }: { task: KanbanTask; onUpdate: (data: Partial<KanbanTask>) => void }) {
-  const { t } = useI18n()
-  const [commentText, setCommentText] = useState('')
-
-  const addComment = useCallback(() => {
-    const text = commentText.trim()
-    if (!text) return
-
-    const newComment: KanbanComment = {
-      id: crypto.randomUUID(),
-      text,
-      createdAt: Date.now(),
-    }
-    onUpdate({ comments: [...(task.comments ?? []), newComment] })
-    setCommentText('')
-  }, [commentText, task.comments, onUpdate])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && e.metaKey) {
-        e.preventDefault()
-        addComment()
-      }
-    },
-    [addComment],
-  )
-
-  return (
-    <div className="kanban-detail-section">
-      <span className="kanban-detail-section-title">{t('kanban.comments')}</span>
-      <div className="kanban-detail-comments">
-        {task.comments && task.comments.length > 0 ? (
-          task.comments.map((c) => (
-            <div key={c.id} className="kanban-comment-item">
-              <div className="kanban-comment-header">
-                <span className="kanban-comment-date">
-                  {new Date(c.createdAt).toLocaleString('fr-FR')}
-                </span>
-              </div>
-              <div className="kanban-comment-text">{c.text}</div>
-            </div>
-          ))
-        ) : (
-          <span className="kanban-detail-empty-hint">{t('kanban.noComments')}</span>
-        )}
-        <div className="kanban-comment-input-row">
-          <textarea
-            className="kanban-comment-input"
-            placeholder={t('kanban.commentPlaceholder')}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={3}
-          />
-          <button
-            className="kanban-comment-add-btn"
-            onClick={addComment}
-            disabled={!commentText.trim()}
-          >
-            {t('kanban.addComment')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // --- Reopen or Send to AI Section ---
 
 function ReopenOrSendSection({
@@ -1354,14 +1285,14 @@ function ReopenOrSendSection({
 
   const handleReopen = useCallback(() => {
     const text = reopenComment.trim()
-    if (!text) return
-
-    const newComment: KanbanComment = {
-      id: crypto.randomUUID(),
-      text,
-      createdAt: Date.now(),
+    if (text) {
+      const newComment: KanbanComment = {
+        id: crypto.randomUUID(),
+        text,
+        createdAt: Date.now(),
+      }
+      onUpdate({ comments: [...(task.comments ?? []), newComment] })
     }
-    onUpdate({ comments: [...(task.comments ?? []), newComment] })
     setReopenComment('')
     setReopenMode(false)
     onSendToAi()
@@ -1420,7 +1351,6 @@ function ReopenOrSendSection({
           <button
             className="kanban-reopen-confirm"
             onClick={handleReopen}
-            disabled={!reopenComment.trim()}
           >
             {t('kanban.reopenAndSend')}
           </button>
@@ -1728,9 +1658,6 @@ function TaskDetailPanel({
           </div>
         </div>
       )}
-
-      {/* Comments */}
-      <CommentsSection task={task} onUpdate={onUpdate} />
 
       {/* Timestamps */}
       <div className="kanban-detail-timestamps">

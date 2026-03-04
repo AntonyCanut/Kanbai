@@ -1524,46 +1524,7 @@
   border-radius: 3px;
 }
 
-/* ========= Comments Section ========= */
-.kanban-detail-comments {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.kanban-comment-item {
-  padding: 8px 10px;
-  background: rgba(180, 190, 254, 0.08);
-  border: 1px solid rgba(180, 190, 254, 0.2);
-  border-radius: 6px;
-}
-
-.kanban-comment-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.kanban-comment-date {
-  font-size: 10px;
-  color: #b4befe;
-  opacity: 0.8;
-}
-
-.kanban-comment-text {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-
-.kanban-comment-input-row {
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
-}
-
+/* ========= Reopen Comment Input ========= */
 .kanban-comment-input {
   flex: 1;
   min-height: 72px;
@@ -1584,31 +1545,6 @@
 .kanban-comment-input:focus {
   border-color: #b4befe;
   box-shadow: 0 0 0 2px rgba(180, 190, 254, 0.15);
-}
-
-.kanban-comment-add-btn {
-  height: 32px;
-  padding: 0 12px;
-  background: rgba(180, 190, 254, 0.15);
-  color: #b4befe;
-  border: 1px solid rgba(180, 190, 254, 0.3);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.kanban-comment-add-btn:hover {
-  background: rgba(180, 190, 254, 0.25);
-  border-color: #b4befe;
-}
-
-.kanban-comment-add-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 /* Send to AI button */
