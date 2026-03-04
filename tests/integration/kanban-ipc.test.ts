@@ -36,6 +36,10 @@ describe('Kanban IPC Handlers', () => {
     }
     fs.mkdirSync(dataDir, { recursive: true })
 
+    // Disable auto memory refactor ticket creation to avoid ghost tickets in tests
+    const dataJsonPath = path.join(dataDir, 'data.json')
+    fs.writeFileSync(dataJsonPath, JSON.stringify({ settings: { autoCreateAiMemoryRefactorTickets: false } }), 'utf-8')
+
     const { registerKanbanHandlers } = await import('../../src/main/ipc/kanban')
 
     mockIpcMain = createMockIpcMain()

@@ -42,9 +42,9 @@ function statusLabel(status: string, t: (key: string) => string): string {
 
 export function HealthCheckPanel() {
   const { t } = useI18n()
-  const { activeProjectId, projects } = useWorkspaceStore()
-  const activeProject = projects.find((p) => p.id === activeProjectId)
-  const projectPath = activeProject?.path ?? ''
+  const { activeWorkspaceId, workspaces } = useWorkspaceStore()
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId)
+  const [workspacePath, setWorkspacePath] = useState('')
 
   const {
     data,
@@ -70,36 +70,47 @@ export function HealthCheckPanel() {
   const [historyPage, setHistoryPage] = useState(0)
   const autoStartAttempted = useRef(false)
 
-  // Load data when project changes
+  // Resolve workspace env path
   useEffect(() => {
-    if (!projectPath) return
+    if (!activeWorkspace) {
+      setWorkspacePath('')
+      return
+    }
+    window.kanbai.workspaceEnv.getPath(activeWorkspace.name).then((envPath) => {
+      setWorkspacePath(envPath ?? '')
+    })
+  }, [activeWorkspace])
+
+  // Load data when workspace changes
+  useEffect(() => {
+    if (!workspacePath) return
     autoStartAttempted.current = false
-    loadData(projectPath)
-  }, [projectPath, loadData])
+    loadData(workspacePath)
+  }, [workspacePath, loadData])
 
   // Auto-start scheduler when data is loaded and checks have enabled schedules
   useEffect(() => {
-    if (!projectPath || loading || schedulerRunning || autoStartAttempted.current) return
+    if (!workspacePath || loading || schedulerRunning || autoStartAttempted.current) return
     const hasEnabledSchedules = data.checks.some((c) => c.schedule.enabled)
     if (hasEnabledSchedules) {
       autoStartAttempted.current = true
-      startScheduler(projectPath)
+      startScheduler(workspacePath)
     }
-  }, [projectPath, loading, schedulerRunning, data.checks, startScheduler])
+  }, [workspacePath, loading, schedulerRunning, data.checks, startScheduler])
 
   // IPC listener for real-time status updates
   useEffect(() => {
-    if (!projectPath) return
+    if (!workspacePath) return
     const unsubscribe = window.kanbai.healthcheck.onStatusUpdate(
       (payload: { projectPath: string; statuses: HealthCheckSchedulerStatus[] }) => {
-        if (payload.projectPath === projectPath) {
-          handleStatusUpdate(projectPath, payload.statuses)
-          refreshData(projectPath)
+        if (payload.projectPath === workspacePath) {
+          handleStatusUpdate(workspacePath, payload.statuses)
+          refreshData(workspacePath)
         }
       },
     )
     return () => { unsubscribe() }
-  }, [projectPath, handleStatusUpdate, refreshData])
+  }, [workspacePath, handleStatusUpdate, refreshData])
 
   useEffect(() => {
     setHistoryPage(0)
@@ -134,28 +145,28 @@ export function HealthCheckPanel() {
 
   // Handlers
   const handleAddCheck = useCallback(() => {
-    if (!projectPath) return
-    addCheck(projectPath)
-  }, [projectPath, addCheck])
+    if (!workspacePath) return
+    addCheck(workspacePath)
+  }, [workspacePath, addCheck])
 
   const handleUpdateCheck = useCallback(
     (updates: Partial<HealthCheckConfig>) => {
-      if (!projectPath || !selectedCheckId) return
-      updateCheck(projectPath, selectedCheckId, updates)
+      if (!workspacePath || !selectedCheckId) return
+      updateCheck(workspacePath, selectedCheckId, updates)
     },
-    [projectPath, selectedCheckId, updateCheck],
+    [workspacePath, selectedCheckId, updateCheck],
   )
 
   const handleDeleteCheck = useCallback(() => {
-    if (!projectPath || !selectedCheckId) return
-    deleteCheck(projectPath, selectedCheckId)
-  }, [projectPath, selectedCheckId, deleteCheck])
+    if (!workspacePath || !selectedCheckId) return
+    deleteCheck(workspacePath, selectedCheckId)
+  }, [workspacePath, selectedCheckId, deleteCheck])
 
   const handleRunSingleCheck = useCallback(async (checkId: string) => {
-    if (!projectPath) return
+    if (!workspacePath) return
     setExecutingIds((prev) => new Set(prev).add(checkId))
     try {
-      await executeCheck(projectPath, checkId)
+      await executeCheck(workspacePath, checkId)
     } finally {
       setExecutingIds((prev) => {
         const next = new Set(prev)
@@ -163,47 +174,47 @@ export function HealthCheckPanel() {
         return next
       })
     }
-  }, [projectPath, executeCheck])
+  }, [workspacePath, executeCheck])
 
   const handleRunAllChecks = useCallback(async () => {
-    if (!projectPath || data.checks.length === 0) return
+    if (!workspacePath || data.checks.length === 0) return
     const ids = data.checks.map((c) => c.id)
     setExecutingIds(new Set(ids))
     try {
-      await Promise.all(ids.map((id) => executeCheck(projectPath, id)))
+      await Promise.all(ids.map((id) => executeCheck(workspacePath, id)))
     } finally {
       setExecutingIds(new Set())
     }
-  }, [projectPath, data.checks, executeCheck])
+  }, [workspacePath, data.checks, executeCheck])
 
   const handleStartScheduler = useCallback(async () => {
-    if (!projectPath) return
-    await startScheduler(projectPath)
-  }, [projectPath, startScheduler])
+    if (!workspacePath) return
+    await startScheduler(workspacePath)
+  }, [workspacePath, startScheduler])
 
   const handleStopScheduler = useCallback(async () => {
-    if (!projectPath) return
-    await stopScheduler(projectPath)
-  }, [projectPath, stopScheduler])
+    if (!workspacePath) return
+    await stopScheduler(workspacePath)
+  }, [workspacePath, stopScheduler])
 
   const handleUpdateInterval = useCallback(async () => {
-    if (!projectPath || !selectedCheckId) return
-    await updateInterval(projectPath, selectedCheckId)
-  }, [projectPath, selectedCheckId, updateInterval])
+    if (!workspacePath || !selectedCheckId) return
+    await updateInterval(workspacePath, selectedCheckId)
+  }, [workspacePath, selectedCheckId, updateInterval])
 
   const handleQuickCheck = useCallback(async () => {
-    if (!projectPath || !selectedCheckId) return
-    updateCheck(projectPath, selectedCheckId, {
+    if (!workspacePath || !selectedCheckId) return
+    updateCheck(workspacePath, selectedCheckId, {
       schedule: { enabled: true, interval: 10, unit: 'seconds' },
     })
-    await updateInterval(projectPath, selectedCheckId)
-  }, [projectPath, selectedCheckId, updateCheck, updateInterval])
+    await updateInterval(workspacePath, selectedCheckId)
+  }, [workspacePath, selectedCheckId, updateCheck, updateInterval])
 
   const handleClearHistory = useCallback(async () => {
-    if (!projectPath) return
-    await clearHistory(projectPath)
+    if (!workspacePath) return
+    await clearHistory(workspacePath)
     setHistoryPage(0)
-  }, [projectPath, clearHistory])
+  }, [workspacePath, clearHistory])
 
   const handleExport = useCallback(async () => {
     await window.kanbai.healthcheck.export(data)
@@ -211,11 +222,11 @@ export function HealthCheckPanel() {
 
   const handleImport = useCallback(async () => {
     const result = await window.kanbai.healthcheck.import()
-    if (result.success && result.data && projectPath) {
-      await window.kanbai.healthcheck.save(projectPath, result.data)
-      await loadData(projectPath)
+    if (result.success && result.data && workspacePath) {
+      await window.kanbai.healthcheck.save(workspacePath, result.data)
+      await loadData(workspacePath)
     }
-  }, [projectPath, loadData])
+  }, [workspacePath, loadData])
 
   const handleAddHeader = useCallback(() => {
     if (!selectedCheck) return
@@ -242,7 +253,7 @@ export function HealthCheckPanel() {
     [selectedCheck, handleUpdateCheck],
   )
 
-  if (!activeProject) {
+  if (!activeWorkspace) {
     return (
       <div className="hc-panel">
         <div className="hc-empty-state">{t('healthcheck.noProject')}</div>

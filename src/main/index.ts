@@ -410,11 +410,26 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('before-quit', () => {
+// Intercept the quit sequence to prevent the pty.node TSFN crash (T-39).
+// node-pty's native read thread can queue a ThreadSafeFunction callback
+// that fires during FreeEnvironment → uv_run after V8 starts dying,
+// causing SIGABRT. By intercepting quit, doing cleanup, then calling
+// app.exit(0) (which uses C exit() and skips FreeEnvironment), we
+// bypass the crash entirely.
+let isExiting = false
+app.on('before-quit', (event) => {
+  if (isExiting) return
+  event.preventDefault()
+  isExiting = true
+
   cleanupTerminals()
   cleanupClaudeSessions()
   databaseService.disconnectAll()
   shutdownPixelAgentsService()
+
+  // Give native PTY read threads time to detect closed fds, then
+  // force-exit via app.exit() which skips FreeEnvironment/uv_run.
+  setTimeout(() => app.exit(0), 300)
 })
 
 // Security: prevent new window creation
