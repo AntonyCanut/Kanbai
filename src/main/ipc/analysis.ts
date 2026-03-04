@@ -948,6 +948,53 @@ function storeReport(report: AnalysisReport): void {
 }
 
 // ---------------------------------------------------------------------------
+// Gitignore auto-update for analysis report directories
+// ---------------------------------------------------------------------------
+
+/** Known report directories that analysis tools may generate inside a project */
+const TOOL_REPORT_PATTERNS: Record<string, string[]> = {
+  megalinter: ['megalinter-reports/'],
+  semgrep: ['.semgrep/'],
+  bearer: ['.bearer/'],
+  trivy: ['.trivycache/'],
+  checkov: ['.checkov/'],
+}
+
+const GITIGNORE_SECTION_HEADER = '# Analysis tool reports (auto-managed by Kanbai)'
+const GITIGNORE_SECTION_FOOTER = '# End analysis tool reports'
+
+function ensureGitignoreExcludesReports(projectPath: string, toolId: string): void {
+  const patterns = TOOL_REPORT_PATTERNS[toolId]
+  if (!patterns || patterns.length === 0) return
+
+  const gitignorePath = path.join(projectPath, '.gitignore')
+  if (!fs.existsSync(gitignorePath)) return
+
+  const content = fs.readFileSync(gitignorePath, 'utf-8')
+  const missingPatterns = patterns.filter((p) => !content.includes(p))
+  if (missingPatterns.length === 0) return
+
+  const hasSection = content.includes(GITIGNORE_SECTION_HEADER)
+
+  if (hasSection) {
+    const updatedContent = content.replace(
+      GITIGNORE_SECTION_FOOTER,
+      missingPatterns.join('\n') + '\n' + GITIGNORE_SECTION_FOOTER,
+    )
+    fs.writeFileSync(gitignorePath, updatedContent, 'utf-8')
+  } else {
+    const section = [
+      '',
+      GITIGNORE_SECTION_HEADER,
+      ...missingPatterns,
+      GITIGNORE_SECTION_FOOTER,
+      '',
+    ].join('\n')
+    fs.writeFileSync(gitignorePath, content.trimEnd() + '\n' + section, 'utf-8')
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Report persistence
 // ---------------------------------------------------------------------------
 
@@ -1115,6 +1162,10 @@ export function registerAnalysisHandlers(
       const report = await runTool(entry, options, getMainWindow)
       storeReport(report)
       persistReport(report)
+
+      // Auto-update .gitignore to exclude tool report directories
+      ensureGitignoreExcludesReports(options.projectPath, options.toolId)
+
       return report
     },
   )
