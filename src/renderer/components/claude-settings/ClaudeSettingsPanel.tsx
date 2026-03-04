@@ -17,18 +17,28 @@ import { CopilotGeneralTab } from './CopilotGeneralTab'
 import { CopilotRulesTab } from './CopilotRulesTab'
 import { CopilotSkillsTab } from './CopilotSkillsTab'
 import { CopilotMemoryTab } from './CopilotMemoryTab'
+import { GeminiGeneralTab } from './GeminiGeneralTab'
+import { GeminiUiTab } from './GeminiUiTab'
+import { GeminiToolsTab } from './GeminiToolsTab'
+import { GeminiSecurityTab } from './GeminiSecurityTab'
+import { GeminiAgentsTab } from './GeminiAgentsTab'
+import { GeminiSkillsTab } from './GeminiSkillsTab'
+import { GeminiMemoryTab } from './GeminiMemoryTab'
+import { useGeminiConfig } from './useGeminiConfig'
 import { WORKFLOW_MARKER } from '../../../shared/constants/defaultWorkflows'
 
-type SidebarSection = 'general' | 'claude' | 'codex' | 'copilot'
+type SidebarSection = 'general' | 'claude' | 'codex' | 'copilot' | 'gemini'
 type ClaudeSubTab = 'general' | 'security' | 'agents' | 'integrations' | 'memory'
 type CodexSubTab = 'general' | 'rules' | 'skills' | 'memory'
 type CopilotSubTab = 'general' | 'rules' | 'skills' | 'memory'
+type GeminiSubTab = 'general' | 'ui' | 'tools' | 'security' | 'agents' | 'skills' | 'memory'
 
 const SIDEBAR_ITEMS: { key: SidebarSection; providerId?: AiProviderId }[] = [
   { key: 'general' },
   { key: 'claude', providerId: 'claude' },
   { key: 'codex', providerId: 'codex' },
   { key: 'copilot', providerId: 'copilot' },
+  { key: 'gemini', providerId: 'gemini' },
 ]
 
 export function ClaudeSettingsPanel() {
@@ -41,6 +51,7 @@ export function ClaudeSettingsPanel() {
   const [claudeSubTab, setClaudeSubTab] = useState<ClaudeSubTab>('general')
   const [codexSubTab, setCodexSubTab] = useState<CodexSubTab>('general')
   const [copilotSubTab, setCopilotSubTab] = useState<CopilotSubTab>('general')
+  const [geminiSubTab, setGeminiSubTab] = useState<GeminiSubTab>('general')
   const [settings, setSettings] = useState<Record<string, unknown>>({})
   const [localSettings, setLocalSettings] = useState<Record<string, unknown> | null>(null)
   const [userSettings, setUserSettings] = useState<Record<string, unknown> | null>(null)
@@ -247,6 +258,7 @@ export function ClaudeSettingsPanel() {
                   <button
                     key={tab.key}
                     className={`claude-rules-tab${claudeSubTab === tab.key ? ' claude-rules-tab--active' : ''}`}
+                    style={claudeSubTab === tab.key ? { borderColor: AI_PROVIDERS.claude.detectionColor, color: AI_PROVIDERS.claude.detectionColor } : undefined}
                     onClick={() => setClaudeSubTab(tab.key)}
                   >
                     {tab.label}
@@ -317,6 +329,7 @@ export function ClaudeSettingsPanel() {
                   <button
                     key={tab.key}
                     className={`claude-rules-tab${codexSubTab === tab.key ? ' claude-rules-tab--active' : ''}`}
+                    style={codexSubTab === tab.key ? { borderColor: AI_PROVIDERS.codex.detectionColor, color: AI_PROVIDERS.codex.detectionColor } : undefined}
                     onClick={() => setCodexSubTab(tab.key)}
                   >
                     {tab.label}
@@ -352,6 +365,7 @@ export function ClaudeSettingsPanel() {
                   <button
                     key={tab.key}
                     className={`claude-rules-tab${copilotSubTab === tab.key ? ' claude-rules-tab--active' : ''}`}
+                    style={copilotSubTab === tab.key ? { borderColor: AI_PROVIDERS.copilot.detectionColor, color: AI_PROVIDERS.copilot.detectionColor } : undefined}
                     onClick={() => setCopilotSubTab(tab.key)}
                   >
                     {tab.label}
@@ -374,8 +388,103 @@ export function ClaudeSettingsPanel() {
               </div>
             </>
           )}
+
+          {section === 'gemini' && (
+            <GeminiSettingsSection
+              projectPath={activeProject.path}
+              geminiSubTab={geminiSubTab}
+              setGeminiSubTab={setGeminiSubTab}
+            />
+          )}
         </div>
       </div>
     </div>
+  )
+}
+
+function GeminiSettingsSection({
+  projectPath,
+  geminiSubTab,
+  setGeminiSubTab,
+}: {
+  projectPath: string
+  geminiSubTab: GeminiSubTab
+  setGeminiSubTab: (tab: GeminiSubTab) => void
+}) {
+  const { t } = useI18n()
+  const gemini = useGeminiConfig(projectPath)
+
+  const tabs: { key: GeminiSubTab; label: string }[] = [
+    { key: 'general', label: t('gemini.generalTab') },
+    { key: 'ui', label: t('gemini.uiTab') },
+    { key: 'tools', label: t('gemini.toolsTab') },
+    { key: 'security', label: t('gemini.securityTab') },
+    { key: 'agents', label: t('gemini.agentsTab') },
+    { key: 'skills', label: t('gemini.skillsTab') },
+    { key: 'memory', label: t('gemini.memoryTab') },
+  ]
+
+  if (gemini.loading) {
+    return <div className="file-viewer-empty">{t('common.loading')}</div>
+  }
+
+  if (!gemini.exists) {
+    return (
+      <div className="cs-general-tab">
+        <div className="cs-general-section">
+          <div className="claude-rules-section">
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>{t('gemini.noConfig')}</p>
+            <button className="modal-btn modal-btn--primary" onClick={gemini.createConfig}>
+              {t('gemini.createConfig')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="claude-rules-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`claude-rules-tab${geminiSubTab === tab.key ? ' claude-rules-tab--active' : ''}`}
+            style={geminiSubTab === tab.key ? { borderColor: AI_PROVIDERS.gemini.detectionColor, color: AI_PROVIDERS.gemini.detectionColor } : undefined}
+            onClick={() => setGeminiSubTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="claude-rules-content">
+        {geminiSubTab === 'general' && (
+          <GeminiGeneralTab config={gemini.config} onUpdate={gemini.updateConfig} />
+        )}
+        {geminiSubTab === 'ui' && (
+          <GeminiUiTab config={gemini.config} onUpdate={gemini.updateConfig} />
+        )}
+        {geminiSubTab === 'tools' && (
+          <GeminiToolsTab config={gemini.config} onUpdate={gemini.updateConfig} />
+        )}
+        {geminiSubTab === 'security' && (
+          <GeminiSecurityTab config={gemini.config} onUpdate={gemini.updateConfig} />
+        )}
+        {geminiSubTab === 'agents' && (
+          <GeminiAgentsTab config={gemini.config} onUpdate={gemini.updateConfig} />
+        )}
+        {geminiSubTab === 'skills' && (
+          <GeminiSkillsTab projectPath={projectPath} />
+        )}
+        {geminiSubTab === 'memory' && (
+          <GeminiMemoryTab projectPath={projectPath} />
+        )}
+      </div>
+      {gemini.saved && (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, background: 'var(--green)', color: '#fff', padding: '8px 16px', borderRadius: 8, fontSize: 13, zIndex: 9999 }}>
+          {t('gemini.saved')}
+        </div>
+      )}
+    </>
   )
 }

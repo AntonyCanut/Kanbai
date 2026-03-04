@@ -1,11 +1,14 @@
 import { useCallback, useMemo } from 'react'
 import { useI18n } from '../../lib/i18n'
+import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
 import { PermissionModeSelector } from './PermissionModeSelector'
 import { EffortSlider } from './EffortSlider'
 import { CompanyAnnouncements } from './CompanyAnnouncements'
 import { CardSelector } from './CardSelector'
 import { FeatureToggleGrid } from './FeatureToggleGrid'
 import { TokenSlider } from './TokenSlider'
+
+const ACCENT_COLOR = AI_PROVIDERS.claude.detectionColor
 
 interface Props {
   settings: Record<string, unknown>
@@ -257,9 +260,10 @@ export function GeneralTab({
             options={modelOptions}
             value={model}
             onChange={handleModelChange}
+            accentColor={ACCENT_COLOR}
           />
           <EffortSlider value={effortLevel} onChange={handleEffortChange} />
-          <FeatureToggleGrid features={perfFeatures} />
+          <FeatureToggleGrid features={perfFeatures} accentColor={ACCENT_COLOR} />
           <TokenSlider
             label={t('claude.thinkingBudget')}
             description={t('claude.thinkingBudgetDesc')}
@@ -287,18 +291,20 @@ export function GeneralTab({
       <div className="cs-general-section">
         <div className="cs-general-section-header">{t('claude.agentTeams')}</div>
         <div className="cs-general-card cs-agent-teams">
-          <FeatureToggleGrid features={agentFeatures} />
+          <FeatureToggleGrid features={agentFeatures} accentColor={ACCENT_COLOR} />
           <CardSelector
             label={t('claude.teammateMode')}
             options={teammateModeOptions}
             value={teammateMode}
             onChange={handleTeammateModeChange}
+            accentColor={ACCENT_COLOR}
           />
           <CardSelector
             label={t('claude.subagentModelDefault')}
             options={subagentModelOptions}
             value={subagentModel}
             onChange={(v) => setEnvValue('CLAUDE_CODE_SUBAGENT_MODEL', v)}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>

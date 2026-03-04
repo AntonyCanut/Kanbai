@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../lib/i18n'
+import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
 import { CardSelector } from './CardSelector'
 import { FeatureToggleGrid } from './FeatureToggleGrid'
+
+const ACCENT_COLOR = AI_PROVIDERS.copilot.detectionColor
 
 interface Props {
   projectPath: string
@@ -171,6 +174,7 @@ export function CopilotGeneralTab({ projectPath }: Props) {
             options={modelOptions}
             value={config.model}
             onChange={(v) => saveConfig({ ...config, model: v })}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>
@@ -184,6 +188,7 @@ export function CopilotGeneralTab({ projectPath }: Props) {
             options={approvalOptions}
             value={config.approval_mode}
             onChange={(v) => saveConfig({ ...config, approval_mode: v })}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>
@@ -192,7 +197,7 @@ export function CopilotGeneralTab({ projectPath }: Props) {
       <div className="cs-general-section">
         <div className="cs-general-section-header">{t('copilot.features')}</div>
         <div className="cs-general-card cs-agent-teams">
-          <FeatureToggleGrid features={features} />
+          <FeatureToggleGrid features={features} accentColor={ACCENT_COLOR} />
         </div>
       </div>
 

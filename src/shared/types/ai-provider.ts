@@ -1,4 +1,4 @@
-export type AiProviderId = 'claude' | 'codex' | 'copilot'
+export type AiProviderId = 'claude' | 'codex' | 'copilot' | 'gemini'
 
 export interface AiProviderConfig {
   id: AiProviderId
@@ -53,6 +53,19 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderConfig> = {
     nlQueryArgs: ['-p', '--output-format', 'json'],
     envVarsToUnset: [],
     versionStripPattern: /^copilot\s+/i,
+  },
+  gemini: {
+    id: 'gemini',
+    displayName: 'Gemini',
+    cliCommand: 'gemini',
+    npmPackage: '@google/gemini-cli',
+    configDir: '.gemini',
+    detectionColor: '#4285F4',
+    interactiveArgs: ['--yolo'],
+    nonInteractiveArgs: ['--yolo'],
+    nlQueryArgs: ['--output-format', 'json'],
+    envVarsToUnset: ['GEMINI_CLI'],
+    versionStripPattern: /^Gemini CLI\s+/i,
   },
 }
 

@@ -413,6 +413,10 @@ export async function installActivityHooks(
     await installCopilotActivityHooks(projectPath, workspaceName)
     return
   }
+  if (provider === 'gemini') {
+    await installGeminiActivityHooks(projectPath, workspaceName)
+    return
+  }
 
   const storage = new StorageService()
   const { autoApprove } = storage.getSettings()
@@ -656,12 +660,45 @@ async function installCopilotActivityHooks(
 }
 
 /**
+ * Installs activity hooks for Gemini provider.
+ * Gemini uses .gemini/settings.json — we add hooks configuration.
+ */
+async function installGeminiActivityHooks(
+  projectPath: string,
+  _workspaceName?: string,
+): Promise<void> {
+  ensureActivityHookScript()
+  ensurePixelAgentsHookScript()
+
+  const geminiDir = path.join(projectPath, '.gemini')
+  if (!fs.existsSync(geminiDir)) {
+    fs.mkdirSync(geminiDir, { recursive: true })
+  }
+
+  const hookScriptPath = path.join(os.homedir(), '.kanbai', 'hooks', 'kanbai-activity.sh')
+  const configPath = path.join(geminiDir, 'settings.json')
+
+  let existingConfig: Record<string, unknown> = {}
+  if (fs.existsSync(configPath)) {
+    try {
+      existingConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+    } catch { /* ignore corrupt file */ }
+  }
+
+  if (!existingConfig.hooks) {
+    existingConfig.hooks = { notify: ['bash', hookScriptPath, 'working'] }
+    fs.writeFileSync(configPath, JSON.stringify(existingConfig, null, 2), 'utf-8')
+  }
+}
+
+/**
  * Iterates all existing workspace env directories (~/.kanbai/envs/*)
  * and ensures hooks are installed in each one.
  * Called at app startup to keep all envs in sync.
  */
 export function syncAllWorkspaceEnvHooks(): void {
   if (!fs.existsSync(ENVS_DIR)) return
+  const providers: AiProviderId[] = ['claude', 'codex', 'copilot', 'gemini']
   try {
     const entries = fs.readdirSync(ENVS_DIR)
     for (const entry of entries) {
@@ -669,7 +706,9 @@ export function syncAllWorkspaceEnvHooks(): void {
       try {
         const stat = fs.statSync(envDir)
         if (stat.isDirectory()) {
-          installActivityHooks(envDir)
+          for (const provider of providers) {
+            installActivityHooks(envDir, undefined, provider)
+          }
         }
       } catch { /* skip individual failures */ }
     }

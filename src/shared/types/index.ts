@@ -211,6 +211,7 @@ export interface AppSettings {
   claudeDetectionColor: string
   codexDetectionColor: string
   copilotDetectionColor: string
+  geminiDetectionColor: string
   defaultAiProvider: import('./ai-provider').AiProviderId
   autoClauderEnabled: boolean
   defaultAutoClauderTemplateId?: string
@@ -1181,6 +1182,23 @@ export const IPC_CHANNELS = {
   COPILOT_READ_SKILL: 'copilot:readSkill',
   COPILOT_WRITE_SKILL: 'copilot:writeSkill',
   COPILOT_DELETE_SKILL: 'copilot:deleteSkill',
+
+  // Gemini config
+  GEMINI_READ_CONFIG: 'gemini:readConfig',
+  GEMINI_WRITE_CONFIG: 'gemini:writeConfig',
+  GEMINI_CHECK_CONFIG: 'gemini:checkConfig',
+
+  // Gemini memory (GEMINI.md)
+  GEMINI_READ_MEMORY: 'gemini:readMemory',
+  GEMINI_WRITE_MEMORY: 'gemini:writeMemory',
+  GEMINI_READ_GLOBAL_MEMORY: 'gemini:readGlobalMemory',
+  GEMINI_WRITE_GLOBAL_MEMORY: 'gemini:writeGlobalMemory',
+
+  // Gemini skills
+  GEMINI_LIST_SKILLS: 'gemini:listSkills',
+  GEMINI_READ_SKILL: 'gemini:readSkill',
+  GEMINI_WRITE_SKILL: 'gemini:writeSkill',
+  GEMINI_DELETE_SKILL: 'gemini:deleteSkill',
 
   // AI Provider
   AI_PROVIDER_SET: 'ai:providerSet',

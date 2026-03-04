@@ -211,7 +211,12 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
       xterm.onData((data: string) => {
         if (sessionIdRef.current) {
           window.kanbai.terminal.write(sessionIdRef.current, data)
-          onUserInputRef.current?.()
+          // Only trigger reactivation on message submission (Enter key),
+          // not on every keystroke. This prevents DONE tickets from being
+          // reactivated to WORKING by accidental keystrokes.
+          if (data.includes('\r') || data.includes('\n')) {
+            onUserInputRef.current?.()
+          }
         }
       })
 
@@ -221,6 +226,7 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
         if (initialCommand === 'codex' || initialCommand.startsWith('codex ')) provider = 'codex'
         else if (initialCommand === 'copilot' || initialCommand.startsWith('copilot ')) provider = 'copilot'
         else if (initialCommand === 'claude' || initialCommand.startsWith('claude ')) provider = 'claude'
+        else if (initialCommand === 'gemini' || initialCommand.startsWith('gemini ')) provider = 'gemini'
       }
 
       // Create PTY session

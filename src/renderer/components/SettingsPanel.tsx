@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   claudeDetectionColor: '#C15F3C',
   codexDetectionColor: '#10a37f',
   copilotDetectionColor: '#e2538a',
+  geminiDetectionColor: '#4285F4',
   defaultAiProvider: 'claude',
   autoClauderEnabled: false,
   notificationSound: true,
@@ -393,6 +394,12 @@ export function SettingsPanel() {
                       onClick={() => updateSetting('defaultAiProvider', 'copilot')}
                     >
                       Copilot
+                    </button>
+                    <button
+                      className={`settings-radio-btn${settings.defaultAiProvider === 'gemini' ? ' settings-radio-btn--active' : ''}`}
+                      onClick={() => updateSetting('defaultAiProvider', 'gemini')}
+                    >
+                      Gemini
                     </button>
                   </div>
                 </div>
@@ -761,7 +768,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.detectionColor')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Couleur des indicateurs Claude dans les terminaux' : 'Color of Claude indicators in terminals'}</span>
+                    <span className="settings-hint">{t('settings.claudeColorHint')}</span>
                   </div>
                   <input
                     type="color"
@@ -772,8 +779,8 @@ export function SettingsPanel() {
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-info">
-                    <label className="settings-label">{locale === 'fr' ? 'Couleur Codex' : 'Codex Color'}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Couleur des indicateurs Codex dans les terminaux' : 'Color of Codex indicators in terminals'}</span>
+                    <label className="settings-label">{t('settings.codexColor')}</label>
+                    <span className="settings-hint">{t('settings.codexColorHint')}</span>
                   </div>
                   <input
                     type="color"
@@ -784,13 +791,25 @@ export function SettingsPanel() {
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-info">
-                    <label className="settings-label">{locale === 'fr' ? 'Couleur Copilot' : 'Copilot Color'}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Couleur des indicateurs Copilot dans les terminaux' : 'Color of Copilot indicators in terminals'}</span>
+                    <label className="settings-label">{t('settings.copilotColor')}</label>
+                    <span className="settings-hint">{t('settings.copilotColorHint')}</span>
                   </div>
                   <input
                     type="color"
                     value={settings.copilotDetectionColor}
                     onChange={(e) => updateSetting('copilotDetectionColor', e.target.value)}
+                    className="settings-color-input"
+                  />
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{t('settings.geminiColor')}</label>
+                    <span className="settings-hint">{t('settings.geminiColorHint')}</span>
+                  </div>
+                  <input
+                    type="color"
+                    value={settings.geminiDetectionColor}
+                    onChange={(e) => updateSetting('geminiDetectionColor', e.target.value)}
                     className="settings-color-input"
                   />
                 </div>

@@ -147,8 +147,8 @@
       subtitleEn: 'Write a ticket. Claude solves it. You review. That\u2019s it.',
       descFr: 'Le Kanban de Kanbai transforme chaque tâche en action concrète pour Claude AI. Il code, il met à jour le ticket en temps réel, vous gardez le contrôle. Plus Terminal, Git et 8 autres outils \u2014 dans une seule fenêtre.',
       descEn: 'Kanbai\u2019s Kanban turns every task into a concrete action for Claude AI. It codes, it updates the ticket in real time, you stay in control. Plus Terminal, Git and 8 more tools \u2014 in a single window.',
-      alsoFr: 'Tourne aussi avec <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>.',
-      alsoEn: 'Also works with <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>.'
+      alsoFr: 'Tourne aussi avec <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>, <em class="hero-gemini">Gemini</em>.',
+      alsoEn: 'Also works with <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>, <em class="hero-gemini">Gemini</em>.'
     },
     {
       fr: 'Arrêtez de coder<br>à la main. <em class="hero-codex">Codex.</em>',
@@ -157,8 +157,8 @@
       subtitleEn: 'Describe the task. Codex generates the code. You merge.',
       descFr: 'Kanbai connecte OpenAI Codex à votre workflow. Chaque ticket devient du code fonctionnel \u2014 révisé, testé, prêt à merger. Terminal, Git et 8 autres outils dans une seule fenêtre.',
       descEn: 'Kanbai connects OpenAI Codex to your workflow. Every ticket becomes working code \u2014 reviewed, tested, ready to merge. Terminal, Git and 8 more tools in a single window.',
-      alsoFr: 'Tourne aussi avec <em class="hero-claudez">Claude</em>, <em class="hero-copilot">Copilot</em>.',
-      alsoEn: 'Also works with <em class="hero-claudez">Claude</em>, <em class="hero-copilot">Copilot</em>.'
+      alsoFr: 'Tourne aussi avec <em class="hero-claudez">Claude</em>, <em class="hero-copilot">Copilot</em>, <em class="hero-gemini">Gemini</em>.',
+      alsoEn: 'Also works with <em class="hero-claudez">Claude</em>, <em class="hero-copilot">Copilot</em>, <em class="hero-gemini">Gemini</em>.'
     },
     {
       fr: 'Plus qu\u2019un IDE,<br>votre <em class="hero-copilot">Copilot.</em>',
@@ -167,8 +167,18 @@
       subtitleEn: 'Copilot codes. Kanbai orchestrates. You decide.',
       descFr: 'Kanbai intègre GitHub Copilot à votre workflow. Chaque ticket devient une session assistée \u2014 suggestions intelligentes, complétions contextuelles, prêt à merger. Terminal, Git et 8 autres outils dans une seule fenêtre.',
       descEn: 'Kanbai integrates GitHub Copilot into your workflow. Every ticket becomes an assisted session \u2014 smart suggestions, contextual completions, ready to merge. Terminal, Git and 8 more tools in a single window.',
-      alsoFr: 'Tourne aussi avec <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>.',
-      alsoEn: 'Also works with <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>.'
+      alsoFr: 'Tourne aussi avec <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>, <em class="hero-gemini">Gemini</em>.',
+      alsoEn: 'Also works with <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>, <em class="hero-gemini">Gemini</em>.'
+    },
+    {
+      fr: 'Votre code,<br>propulsé par <em class="hero-gemini">Gemini.</em>',
+      en: 'Your code,<br>powered by <em class="hero-gemini">Gemini.</em>',
+      subtitleFr: 'Gemini code. Kanbai orchestre. Vous validez.',
+      subtitleEn: 'Gemini codes. Kanbai orchestrates. You validate.',
+      descFr: 'Kanbai intègre Google Gemini CLI à votre workflow. Chaque ticket devient du code assisté \u2014 raisonnement avancé, long contexte, prêt à merger. Terminal, Git et 8 autres outils dans une seule fenêtre.',
+      descEn: 'Kanbai integrates Google Gemini CLI into your workflow. Every ticket becomes assisted code \u2014 advanced reasoning, long context, ready to merge. Terminal, Git and 8 more tools in a single window.',
+      alsoFr: 'Tourne aussi avec <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>.',
+      alsoEn: 'Also works with <em class="hero-claudez">Claude</em>, <em class="hero-codex">Codex</em>, <em class="hero-copilot">Copilot</em>.'
     }
   ];
 

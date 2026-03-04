@@ -429,6 +429,12 @@ export function Sidebar() {
                   >
                     Copilot
                   </button>
+                  <button
+                    className={`settings-radio-btn${newProjectAiProvider === 'gemini' ? ' settings-radio-btn--active' : ''}`}
+                    onClick={() => setNewProjectAiProvider('gemini')}
+                  >
+                    Gemini
+                  </button>
                 </div>
               </div>
             </div>
@@ -474,6 +480,12 @@ export function Sidebar() {
                   onClick={() => setNewProjectAiProvider('copilot')}
                 >
                   Copilot
+                </button>
+                <button
+                  className={`settings-radio-btn${newProjectAiProvider === 'gemini' ? ' settings-radio-btn--active' : ''}`}
+                  onClick={() => setNewProjectAiProvider('gemini')}
+                >
+                  Gemini
                 </button>
               </div>
             </div>

@@ -106,6 +106,10 @@ export class StorageService {
         data.settings.copilotDetectionColor = '#e2538a'
         needsSave = true
       }
+      if (data.settings && !data.settings.geminiDetectionColor) {
+        data.settings.geminiDetectionColor = '#4285F4'
+        needsSave = true
+      }
       if (data.settings && !data.settings.defaultAiProvider) {
         data.settings.defaultAiProvider = 'claude'
         needsSave = true

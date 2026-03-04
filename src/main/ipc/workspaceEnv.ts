@@ -38,36 +38,50 @@ export function renameWorkspaceEnv(oldName: string, newName: string): void {
 }
 
 /**
- * Copy .claude/ and CLAUDE.md from the first project that has Claude rules
- * into the workspace env root directory. This ensures Claude picks up
- * the project's rules when running from the env directory.
+ * AI provider config directory names and memory files.
+ * Used to preserve them during env cleanup and copy them from projects.
  */
-function applyCludeRulesToEnv(envDir: string, projectPaths: string[]): void {
-  // Remove existing Claude rules in env root (they are copies, not symlinks)
-  const envClaudeDir = path.join(envDir, '.claude')
-  const envClaudeMd = path.join(envDir, 'CLAUDE.md')
-  if (fs.existsSync(envClaudeDir) && !fs.lstatSync(envClaudeDir).isSymbolicLink()) {
-    fs.rmSync(envClaudeDir, { recursive: true, force: true })
-  }
-  if (fs.existsSync(envClaudeMd) && !fs.lstatSync(envClaudeMd).isSymbolicLink()) {
-    fs.unlinkSync(envClaudeMd)
-  }
+const AI_CONFIG_DIRS = ['.claude', '.codex', '.copilot', '.gemini'] as const
+const AI_MEMORY_FILES: Record<string, string> = {
+  '.claude': 'CLAUDE.md',
+  '.gemini': 'GEMINI.md',
+}
 
-  // Find the first project with .claude rules
-  for (const projectPath of projectPaths) {
-    const claudeDir = path.join(projectPath, '.claude')
-    const claudeMd = path.join(projectPath, 'CLAUDE.md')
-    const hasClaudeDir = fs.existsSync(claudeDir)
-    const hasClaudeMd = fs.existsSync(claudeMd)
+/**
+ * Copy AI config directories and memory files from the first project
+ * that has them into the workspace env root directory.
+ * Handles all AI providers: Claude, Codex, Copilot, Gemini.
+ */
+function applyAiRulesToEnv(envDir: string, projectPaths: string[]): void {
+  for (const configDir of AI_CONFIG_DIRS) {
+    const envConfigDir = path.join(envDir, configDir)
+    const memoryFile = AI_MEMORY_FILES[configDir]
+    const envMemoryFile = memoryFile ? path.join(envDir, memoryFile) : null
 
-    if (hasClaudeDir || hasClaudeMd) {
-      if (hasClaudeDir) {
-        fs.cpSync(claudeDir, envClaudeDir, { recursive: true })
+    // Remove existing copies (not symlinks)
+    if (fs.existsSync(envConfigDir) && !fs.lstatSync(envConfigDir).isSymbolicLink()) {
+      fs.rmSync(envConfigDir, { recursive: true, force: true })
+    }
+    if (envMemoryFile && fs.existsSync(envMemoryFile) && !fs.lstatSync(envMemoryFile).isSymbolicLink()) {
+      fs.unlinkSync(envMemoryFile)
+    }
+
+    // Find the first project with this AI's config
+    for (const projectPath of projectPaths) {
+      const projConfigDir = path.join(projectPath, configDir)
+      const projMemoryFile = memoryFile ? path.join(projectPath, memoryFile) : null
+      const hasConfigDir = fs.existsSync(projConfigDir)
+      const hasMemoryFile = projMemoryFile ? fs.existsSync(projMemoryFile) : false
+
+      if (hasConfigDir || hasMemoryFile) {
+        if (hasConfigDir) {
+          fs.cpSync(projConfigDir, envConfigDir, { recursive: true })
+        }
+        if (hasMemoryFile && projMemoryFile) {
+          fs.copyFileSync(projMemoryFile, envMemoryFile!)
+        }
+        break // Only use the first project's rules per AI
       }
-      if (hasClaudeMd) {
-        fs.copyFileSync(claudeMd, envClaudeMd)
-      }
-      break // Only use the first project's rules
     }
   }
 }
@@ -155,8 +169,11 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
 
         // Clean existing env dir: remove old symlinks/junctions AND leftover
         // copied directories (from a previous fs.cpSync fallback).
-        // Preserve .claude/ and CLAUDE.md which are managed by applyCludeRulesToEnv.
-        const PRESERVED = new Set(['.claude', 'CLAUDE.md'])
+        // Preserve AI config dirs and memory files which are managed by applyAiRulesToEnv.
+        const PRESERVED = new Set([
+          ...AI_CONFIG_DIRS,
+          ...Object.values(AI_MEMORY_FILES),
+        ])
         if (fs.existsSync(envDir)) {
           const existing = fs.readdirSync(envDir)
           for (const entry of existing) {
@@ -194,16 +211,28 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
           }
         }
 
-        // Auto-apply Claude rules from the first project that has them
-        applyCludeRulesToEnv(envDir, projectPaths)
+        // Auto-apply AI config rules from the first project that has them
+        applyAiRulesToEnv(envDir, projectPaths)
 
-        // Install activity hooks in the env directory for Claude status detection
-        installActivityHooks(envDir)
+        // Install activity hooks for all AI providers in the env directory
+        await installActivityHooks(envDir, workspaceName, 'claude')
+        await installActivityHooks(envDir, workspaceName, 'codex')
+        await installActivityHooks(envDir, workspaceName, 'copilot')
+        await installActivityHooks(envDir, workspaceName, 'gemini')
 
-        // Also install hooks in each project that has .claude/
+        // Also install hooks in each project for the AI providers they have configured
         for (const projectPath of projectPaths) {
           if (fs.existsSync(path.join(projectPath, '.claude'))) {
-            installActivityHooks(projectPath)
+            await installActivityHooks(projectPath, workspaceName, 'claude')
+          }
+          if (fs.existsSync(path.join(projectPath, '.codex'))) {
+            await installActivityHooks(projectPath, workspaceName, 'codex')
+          }
+          if (fs.existsSync(path.join(projectPath, '.copilot'))) {
+            await installActivityHooks(projectPath, workspaceName, 'copilot')
+          }
+          if (fs.existsSync(path.join(projectPath, '.gemini'))) {
+            await installActivityHooks(projectPath, workspaceName, 'gemini')
           }
         }
 

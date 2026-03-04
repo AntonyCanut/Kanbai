@@ -8,6 +8,7 @@ import { getDefaultShell } from '../platform'
  */
 export const DEFAULT_CODEX_DETECTION_COLOR = '#10a37f'
 export const DEFAULT_COPILOT_DETECTION_COLOR = '#e2538a'
+export const DEFAULT_GEMINI_DETECTION_COLOR = '#4285F4'
 
 export function createDefaultSettings(): AppSettings {
   return {
@@ -20,6 +21,7 @@ export function createDefaultSettings(): AppSettings {
     claudeDetectionColor: '#C15F3C',
     codexDetectionColor: DEFAULT_CODEX_DETECTION_COLOR,
     copilotDetectionColor: DEFAULT_COPILOT_DETECTION_COLOR,
+    geminiDetectionColor: DEFAULT_GEMINI_DETECTION_COLOR,
     defaultAiProvider: 'claude',
     autoClauderEnabled: false,
     notificationSound: true,

@@ -289,6 +289,9 @@ a:hover { color: var(--accent-hover); }
 .hero h1 em.hero-copilot {
   -webkit-text-fill-color: #e2538a;
 }
+.hero h1 em.hero-gemini {
+  -webkit-text-fill-color: #4285F4;
+}
 
 /* Punchline rotation */
 .hero-rotate {
@@ -333,6 +336,9 @@ a:hover { color: var(--accent-hover); }
 }
 .hero-also em.hero-copilot {
   color: #e2538a;
+}
+.hero-also em.hero-gemini {
+  color: #4285F4;
 }
 
 .hero-actions {

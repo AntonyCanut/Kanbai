@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../lib/i18n'
+import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
 import { CardSelector } from './CardSelector'
 import { FeatureToggleGrid } from './FeatureToggleGrid'
+
+const ACCENT_COLOR = AI_PROVIDERS.codex.detectionColor
 
 interface Props {
   projectPath: string
@@ -214,6 +217,7 @@ export function CodexGeneralTab({ projectPath }: Props) {
             options={modelOptions}
             value={config.model}
             onChange={(v) => saveConfig({ ...config, model: v })}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>
@@ -227,6 +231,7 @@ export function CodexGeneralTab({ projectPath }: Props) {
             options={approvalOptions}
             value={config.approvalPolicy}
             onChange={(v) => saveConfig({ ...config, approvalPolicy: v })}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>
@@ -240,6 +245,7 @@ export function CodexGeneralTab({ projectPath }: Props) {
             options={sandboxOptions}
             value={config.sandboxMode}
             onChange={(v) => saveConfig({ ...config, sandboxMode: v })}
+            accentColor={ACCENT_COLOR}
           />
         </div>
       </div>
@@ -248,7 +254,7 @@ export function CodexGeneralTab({ projectPath }: Props) {
       <div className="cs-general-section">
         <div className="cs-general-section-header">{t('codex.features')}</div>
         <div className="cs-general-card cs-agent-teams">
-          <FeatureToggleGrid features={features} />
+          <FeatureToggleGrid features={features} accentColor={ACCENT_COLOR} />
         </div>
       </div>
 

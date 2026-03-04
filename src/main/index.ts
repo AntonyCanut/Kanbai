@@ -28,6 +28,7 @@ import { registerClaudeMemoryHandlers } from './ipc/claudeMemory'
 import { registerHealthCheckHandlers } from './ipc/healthcheck'
 import { registerCodexConfigHandlers } from './ipc/codexConfig'
 import { registerCopilotConfigHandlers } from './ipc/copilotConfig'
+import { registerGeminiConfigHandlers } from './ipc/geminiConfig'
 import { registerAiProviderHandlers } from './ipc/aiProvider'
 import { registerPixelAgentsHandlers, shutdownPixelAgentsService } from './ipc/pixel-agents'
 import { cleanupTerminals } from './ipc/terminal'
@@ -361,6 +362,7 @@ app.whenReady().then(() => {
   registerHealthCheckHandlers(ipcMain)
   registerCodexConfigHandlers(ipcMain)
   registerCopilotConfigHandlers(ipcMain)
+  registerGeminiConfigHandlers(ipcMain)
   registerAiProviderHandlers(ipcMain)
   registerPixelAgentsHandlers(ipcMain, () => mainWindow)
 

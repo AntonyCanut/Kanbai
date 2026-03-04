@@ -919,9 +919,9 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
     if (!task || task.status !== 'DONE' || !workspaceId) return
 
-    reactivatingTaskIds.add(taskId)
-
     const isCurrentWorkspace = workspaceId === currentWorkspaceId
+
+    reactivatingTaskIds.add(taskId)
     const updateTask = (t: KanbanTask): KanbanTask =>
       t.id === taskId ? { ...t, status: 'WORKING' as KanbanStatus, updatedAt: Date.now() } : t
 

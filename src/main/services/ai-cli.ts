@@ -94,6 +94,14 @@ export function callAiCli(
           } catch {
             resolve(stdout.trim())
           }
+        } else if (provider === 'gemini') {
+          // Gemini with --output-format json returns JSON — extract the result
+          try {
+            const parsed = JSON.parse(stdout)
+            resolve(typeof parsed.result === 'string' ? parsed.result.trim() : stdout.trim())
+          } catch {
+            resolve(stdout.trim())
+          }
         } else {
           resolve(stdout.trim())
         }

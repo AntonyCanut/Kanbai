@@ -809,8 +809,8 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
     })
   })
 
-  describe('reactivateIfDone (user input on DONE terminal)', () => {
-    it('remet un ticket DONE en WORKING quand l\'utilisateur tape dans le terminal', () => {
+  describe('reactivateIfDone (user message submission on DONE terminal)', () => {
+    it('remet un ticket DONE en WORKING quand l\'utilisateur soumet un message (Enter)', () => {
       useKanbanStore.setState({
         tasks: [makeTask({ id: 'task-1', status: 'DONE' })],
         kanbanTabIds: { 'task-1': 'tab-abc' },

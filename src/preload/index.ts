@@ -637,6 +637,29 @@ const api = {
     delete: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.COPILOT_DELETE_SKILL, { projectPath, dirname }),
   },
 
+  // Gemini config
+  geminiConfig: {
+    read: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_READ_CONFIG, { projectPath }),
+    write: (projectPath: string, config: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_WRITE_CONFIG, { projectPath, config }),
+    check: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_CHECK_CONFIG, { projectPath }),
+  },
+
+  // Gemini memory (GEMINI.md)
+  geminiMemory: {
+    readMemory: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_READ_MEMORY, { projectPath }),
+    writeMemory: (projectPath: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_WRITE_MEMORY, { projectPath, content }),
+    readGlobalMemory: () => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_READ_GLOBAL_MEMORY),
+    writeGlobalMemory: (content: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_WRITE_GLOBAL_MEMORY, { content }),
+  },
+
+  // Gemini skills
+  geminiSkills: {
+    list: (projectPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_LIST_SKILLS, { projectPath }),
+    read: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_READ_SKILL, { projectPath, dirname }),
+    write: (projectPath: string, dirname: string, content: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_WRITE_SKILL, { projectPath, dirname, content }),
+    delete: (projectPath: string, dirname: string) => ipcRenderer.invoke(IPC_CHANNELS.GEMINI_DELETE_SKILL, { projectPath, dirname }),
+  },
+
   // AI provider
   aiProvider: {
     set: (projectId: string, provider: string) => ipcRenderer.invoke(IPC_CHANNELS.AI_PROVIDER_SET, { projectId, provider }),
