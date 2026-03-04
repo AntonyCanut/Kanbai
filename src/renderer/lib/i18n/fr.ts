@@ -968,6 +968,7 @@ export const fr = {
   'kanban.reopenComment': 'Que souhaitez-vous modifier ? (optionnel)',
   'kanban.reopenPlaceholder': 'Décrivez ce que l\'IA doit faire differemment...',
   'kanban.reopenAndSend': 'Rouvrir et envoyer',
+  'kanban.comments': 'Commentaires',
 
   // Predefined tasks
   'kanban.predefined.add': 'Ajouter',

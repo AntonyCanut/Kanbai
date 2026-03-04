@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { KanbanTask, KanbanStatus } from '../../../shared/types/index'
+import type { KanbanTask, KanbanStatus, KanbanComment } from '../../../shared/types/index'
 import { AI_PROVIDERS, type AiProviderId } from '../../../shared/types/ai-provider'
 import { useTerminalTabStore } from './terminalTabStore'
 import { useWorkspaceStore } from './workspaceStore'
@@ -126,7 +126,7 @@ interface KanbanActions {
   attachFromClipboard: (taskId: string, dataBase64: string, filename: string, mimeType: string) => Promise<void>
   removeAttachment: (taskId: string, attachmentId: string) => Promise<void>
   handleTabClosed: (tabId: string) => void
-  reactivateIfDone: (tabId: string) => void
+  reactivateIfDone: (tabId: string, message?: string) => void
 }
 
 type KanbanStore = KanbanState & KanbanActions
@@ -157,18 +157,27 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       set({ tasks })
 
       // Clean up terminals linked to closed tickets (DONE/FAILED)
-      const { kanbanTabIds: staleTabIds } = get()
-      const closedTabIds: string[] = []
-      for (const [taskId, tabId] of Object.entries(staleTabIds)) {
-        const task = tasks.find((t) => t.id === taskId)
-        if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
-          closedTabIds.push(tabId)
+      // only if autoClose setting is enabled
+      let autoCloseOnLoad = false
+      try {
+        const settings = await window.kanbai.settings.get()
+        autoCloseOnLoad = settings.autoCloseCompletedTerminals ?? false
+      } catch { /* default to false */ }
+
+      if (autoCloseOnLoad) {
+        const { kanbanTabIds: staleTabIds } = get()
+        const closedTabIds: string[] = []
+        for (const [taskId, tabId] of Object.entries(staleTabIds)) {
+          const task = tasks.find((t) => t.id === taskId)
+          if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
+            closedTabIds.push(tabId)
+          }
         }
-      }
-      if (closedTabIds.length > 0) {
-        const termStore = useTerminalTabStore.getState()
-        for (const tabId of closedTabIds) {
-          termStore.closeTab(tabId)
+        if (closedTabIds.length > 0) {
+          const termStore = useTerminalTabStore.getState()
+          for (const tabId of closedTabIds) {
+            termStore.closeTab(tabId)
+          }
         }
       }
 
@@ -322,13 +331,15 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
       set({ tasks: newTasks })
 
-      // Always clean up terminals linked to already-closed tickets (DONE/FAILED),
-      // regardless of autoClose setting — stale tabs from previous transitions
-      for (const [taskId, tabId] of Object.entries(kanbanTabIds)) {
-        if (tabsToClose.includes(tabId)) continue // already scheduled for close
-        const task = newTasks.find((t) => t.id === taskId)
-        if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
-          tabsToClose.push(tabId)
+      // Clean up terminals linked to already-closed tickets (DONE/FAILED)
+      // only if autoClose setting is enabled
+      if (autoCloseEnabled) {
+        for (const [taskId, tabId] of Object.entries(kanbanTabIds)) {
+          if (tabsToClose.includes(tabId)) continue // already scheduled for close
+          const task = newTasks.find((t) => t.id === taskId)
+          if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
+            tabsToClose.push(tabId)
+          }
         }
       }
 
@@ -922,7 +933,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     }
   },
 
-  reactivateIfDone: (tabId: string) => {
+  reactivateIfDone: (tabId: string, message?: string) => {
     const { kanbanTabIds } = get()
     const taskId = Object.keys(kanbanTabIds).find((id) => kanbanTabIds[id] === tabId)
     if (!taskId || reactivatingTaskIds.has(taskId)) return
@@ -955,9 +966,21 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
     const isCurrentWorkspace = workspaceId === currentWorkspaceId
 
+    // Create a comment from the terminal message if provided
+    const commentText = message?.trim()
+    let updatedComments = task.comments ?? []
+    if (commentText) {
+      const newComment: KanbanComment = {
+        id: crypto.randomUUID(),
+        text: commentText,
+        createdAt: Date.now(),
+      }
+      updatedComments = [...updatedComments, newComment]
+    }
+
     reactivatingTaskIds.add(taskId)
     const updateTask = (t: KanbanTask): KanbanTask =>
-      t.id === taskId ? { ...t, status: 'WORKING' as KanbanStatus, updatedAt: Date.now() } : t
+      t.id === taskId ? { ...t, status: 'WORKING' as KanbanStatus, comments: updatedComments, updatedAt: Date.now() } : t
 
     if (isCurrentWorkspace) {
       set((state) => ({ tasks: state.tasks.map(updateTask) }))
@@ -975,11 +998,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     const providerColor = AI_PROVIDERS[task.aiProvider ?? 'claude']?.detectionColor ?? null
     termStore.setTabColor(tabId, providerColor)
 
-    // Persist to file
+    // Persist to file (include comments if a message was captured)
     window.kanbai.kanban.update({
       id: taskId,
       status: 'WORKING',
       workspaceId,
+      ...(commentText ? { comments: updatedComments } : {}),
     }).then(() => {
       reactivatingTaskIds.delete(taskId)
     }).catch(() => {

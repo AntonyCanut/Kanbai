@@ -968,6 +968,7 @@ export const en = {
   'kanban.reopenComment': 'What do you want to change? (optional)',
   'kanban.reopenPlaceholder': 'Describe what the AI should do differently...',
   'kanban.reopenAndSend': 'Reopen and send',
+  'kanban.comments': 'Comments',
 
   // Predefined tasks
   'kanban.predefined.add': 'Add',

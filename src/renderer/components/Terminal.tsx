@@ -15,13 +15,14 @@ interface TerminalProps {
   tabId?: string
   isVisible: boolean
   fontSize: number
+  isSplit?: boolean
   onActivity?: () => void
   onClose?: () => void
   onSessionCreated?: (sessionId: string) => void
-  onUserInput?: () => void
+  onUserInput?: (message: string) => void
 }
 
-export function Terminal({ cwd, shell, initialCommand, externalSessionId, workspaceId, tabId, isVisible, fontSize, onActivity, onClose, onSessionCreated, onUserInput }: TerminalProps) {
+export function Terminal({ cwd, shell, initialCommand, externalSessionId, workspaceId, tabId, isVisible, fontSize, isSplit, onActivity, onClose, onSessionCreated, onUserInput }: TerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<XTerm | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -34,6 +35,7 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
   const onCloseRef = useRef(onClose)
   const onSessionCreatedRef = useRef(onSessionCreated)
   const onUserInputRef = useRef(onUserInput)
+  const inputBufferRef = useRef('')
 
   // Search bar state
   const [searchVisible, setSearchVisible] = useState(false)
@@ -215,7 +217,15 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
           // not on every keystroke. This prevents DONE tickets from being
           // reactivated to WORKING by accidental keystrokes.
           if (data.includes('\r') || data.includes('\n')) {
-            onUserInputRef.current?.()
+            const message = inputBufferRef.current.trim()
+            inputBufferRef.current = ''
+            onUserInputRef.current?.(message)
+          } else if (data === '\x7f') {
+            // Backspace: remove last character from buffer
+            inputBufferRef.current = inputBufferRef.current.slice(0, -1)
+          } else if (data.length === 1 && data >= ' ') {
+            // Printable character: accumulate in buffer
+            inputBufferRef.current += data
           }
         }
       })
@@ -227,6 +237,27 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
         else if (initialCommand === 'copilot' || initialCommand.startsWith('copilot ')) provider = 'copilot'
         else if (initialCommand === 'claude' || initialCommand.startsWith('claude ')) provider = 'claude'
         else if (initialCommand === 'gemini' || initialCommand.startsWith('gemini ')) provider = 'gemini'
+      }
+
+      // Show banner everywhere except AI terminals in split view (banner already shows on the plain side)
+      const showBanner = !(initialCommand && isSplit)
+      if (showBanner) {
+        const TC = '\x1b[38;2;204;108;72m' // terracotta
+        const WH = '\x1b[38;2;255;255;255m' // white
+        const DM = '\x1b[90m' // dim
+        const RS = '\x1b[0m' // reset
+        window.kanbai.app.version().then(({ version }) => {
+          const banner = [
+            `${TC}██╗  ██╗ █████╗ ███╗   ██╗██████╗ ${WH}  █████╗ ██╗${RS}`,
+            `${TC}██║ ██╔╝██╔══██╗████╗  ██║██╔══██╗${WH} ██╔══██╗██║${RS}`,
+            `${TC}█████╔╝ ███████║██╔██╗ ██║██████╔╝${WH} ███████║██║${RS}`,
+            `${TC}██╔═██╗ ██╔══██║██║╚██╗██║██╔══██╗${WH} ██╔══██║██║${RS}`,
+            `${TC}██║  ██╗██║  ██║██║ ╚████║██████╔╝${WH} ██║  ██║██║${RS}`,
+            `${TC}╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ${WH} ╚═╝  ╚═╝╚═╝${RS}`,
+            `${DM}v${version}${RS}`,
+          ]
+          xterm.write('\r\n' + banner.join('\r\n') + '\r\n\r\n')
+        })
       }
 
       // Create PTY session

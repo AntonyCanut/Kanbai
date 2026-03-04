@@ -71,6 +71,7 @@ export function SplitContainer({ tabId, fontSize }: SplitContainerProps) {
           initialCommand={findPaneInitialCommand(tab.paneTree, rect.id)}
           externalSessionId={findPaneExternalSessionId(tab.paneTree, rect.id)}
           componentType={findPaneComponent(tab.paneTree, rect.id)}
+          isSplit={allPaneRects.length > 1}
           rect={rect}
           fontSize={fontSize}
           setActivePane={setActivePane}
@@ -106,6 +107,7 @@ interface FlatPaneViewProps {
   initialCommand: string | null
   externalSessionId: string | null
   componentType: 'terminal' | 'pixel-agents'
+  isSplit: boolean
   rect: { x: number; y: number; w: number; h: number }
   fontSize: number
   setActivePane: (tabId: string, paneId: string) => void
@@ -125,6 +127,7 @@ function FlatPaneView({
   initialCommand,
   externalSessionId,
   componentType,
+  isSplit,
   rect,
   fontSize,
   setActivePane,
@@ -155,8 +158,8 @@ function FlatPaneView({
   )
 
   const reactivateIfDone = useKanbanStore((s) => s.reactivateIfDone)
-  const handleUserInput = useCallback(() => {
-    reactivateIfDone(tabId)
+  const handleUserInput = useCallback((message: string) => {
+    reactivateIfDone(tabId, message)
   }, [tabId, reactivateIfDone])
 
   // Gap for dividers (2px on each side = 1px effective divider)
@@ -177,7 +180,7 @@ function FlatPaneView({
       {componentType === 'pixel-agents' ? (
         <PixelAgentsPane isVisible={isTabVisible} workspaceId={workspaceId} />
       ) : (
-        <Terminal cwd={cwd} initialCommand={initialCommand} externalSessionId={externalSessionId} workspaceId={workspaceId} tabId={tabId} isVisible={isTabVisible} fontSize={fontSize} onActivity={handleActivity} onClose={handleClose} onSessionCreated={handleSessionCreated} onUserInput={handleUserInput} />
+        <Terminal cwd={cwd} initialCommand={initialCommand} externalSessionId={externalSessionId} workspaceId={workspaceId} tabId={tabId} isVisible={isTabVisible} fontSize={fontSize} isSplit={isSplit} onActivity={handleActivity} onClose={handleClose} onSessionCreated={handleSessionCreated} onUserInput={handleUserInput} />
       )}
     </div>
   )

@@ -1647,6 +1647,23 @@ function TaskDetailPanel({
         </div>
       )}
 
+      {/* Comments */}
+      {task.comments && task.comments.length > 0 && (
+        <div className="kanban-detail-section">
+          <span className="kanban-detail-section-title">{t('kanban.comments')} ({task.comments.length})</span>
+          <div className="kanban-detail-comments">
+            {task.comments.map((comment) => (
+              <div key={comment.id} className="kanban-detail-comment">
+                <span className="kanban-detail-comment-date">
+                  {new Date(comment.createdAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}
+                </span>
+                <p className="kanban-detail-comment-text">{comment.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Conversation History */}
       {task.conversationHistoryPath && (
         <div className="kanban-detail-section">
