@@ -84,10 +84,34 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
       const defaultNs = namespaces.find((n) => n.isDefault) || namespaces[0]!
       set({ activeNamespaceId: defaultNs.id })
     }
-    // Select first workspace by default if none is active
-    const { workspaces, activeWorkspaceId } = get()
+    // Select first workspace with projects in the active namespace
+    const { workspaces, activeWorkspaceId, activeNamespaceId: nsId, projects } = get()
     if (!activeWorkspaceId && workspaces.length > 0) {
-      get().setActiveWorkspace(workspaces[0]!.id)
+      const nsWorkspaces = nsId
+        ? workspaces.filter((w) => w.namespaceId === nsId)
+        : workspaces
+
+      const firstWsWithProjects = nsWorkspaces.find((w) =>
+        projects.some((p) => p.workspaceId === w.id),
+      )
+
+      if (firstWsWithProjects) {
+        get().setActiveWorkspace(firstWsWithProjects.id)
+      } else {
+        // Default namespace has no projects — find the first namespace that does
+        for (const ns of get().namespaces) {
+          if (ns.id === nsId) continue
+          const otherNsWs = workspaces.filter((w) => w.namespaceId === ns.id)
+          const wsWithProjects = otherNsWs.find((w) =>
+            projects.some((p) => p.workspaceId === w.id),
+          )
+          if (wsWithProjects) {
+            set({ activeNamespaceId: ns.id })
+            get().setActiveWorkspace(wsWithProjects.id)
+            break
+          }
+        }
+      }
     }
     set({ initialized: true })
     // Scan all projects for .claude folders after init

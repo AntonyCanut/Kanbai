@@ -32,6 +32,7 @@ export function Sidebar() {
   const namespaceDropdownRef = useRef<HTMLDivElement>(null)
   const namespaceInputRef = useRef<HTMLInputElement>(null)
   const renameNamespaceInputRef = useRef<HTMLInputElement>(null)
+  const namespaceCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Declare callbacks before useEffect hooks that reference them
 
@@ -232,6 +233,32 @@ export function Sidebar() {
     setShowNamespaceDropdown(false)
   }, [deleteNamespace, t])
 
+  const handleNamespaceMouseEnter = useCallback(() => {
+    if (namespaceCloseTimerRef.current) {
+      clearTimeout(namespaceCloseTimerRef.current)
+      namespaceCloseTimerRef.current = null
+    }
+    setShowNamespaceDropdown(true)
+  }, [])
+
+  const handleNamespaceMouseLeave = useCallback(() => {
+    namespaceCloseTimerRef.current = setTimeout(() => {
+      setShowNamespaceDropdown(false)
+      setShowNamespaceCreate(false)
+      setNewNamespaceName('')
+      namespaceCloseTimerRef.current = null
+    }, 500)
+  }, [])
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (namespaceCloseTimerRef.current) {
+        clearTimeout(namespaceCloseTimerRef.current)
+      }
+    }
+  }, [])
+
   const activeNamespace = namespaces.find((n) => n.id === activeNamespaceId)
 
   const getProjectsForWorkspace = useCallback(
@@ -248,10 +275,14 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div ref={namespaceDropdownRef} style={{ position: 'relative' }}>
+        <div
+          ref={namespaceDropdownRef}
+          style={{ position: 'relative' }}
+          onMouseEnter={handleNamespaceMouseEnter}
+          onMouseLeave={handleNamespaceMouseLeave}
+        >
           <button
             className="sidebar-namespace-trigger"
-            onClick={() => setShowNamespaceDropdown((v) => !v)}
           >
             {activeNamespace?.name ?? t('sidebar.title')}
             <span className={`namespace-chevron${showNamespaceDropdown ? ' namespace-chevron--open' : ''}`}>
