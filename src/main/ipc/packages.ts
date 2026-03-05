@@ -151,18 +151,7 @@ async function listNpmPackages(projectPath: string): Promise<PackageInfo[]> {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
     const allDeps: Record<string, string> = { ...pkg.dependencies }
     const allDevDeps: Record<string, string> = { ...pkg.devDependencies }
-
-    let outdatedData: Record<string, { current: string; wanted: string; latest: string; deprecated?: string }> = {}
-    try {
-      const { stdout } = await crossExecFile('npm', ['outdated', '--json'], { cwd: projectPath, timeout: 30000 })
-      outdatedData = JSON.parse(stdout || '{}')
-    } catch (err: unknown) {
-      // npm outdated returns exit code 1 when there ARE outdated packages — this is normal
-      const execErr = err as { stdout?: string }
-      if (execErr.stdout) {
-        outdatedData = JSON.parse(execErr.stdout || '{}')
-      }
-    }
+    const outdatedData = (await getNpmOutdatedData(projectPath)) ?? {}
 
     const packages: PackageInfo[] = []
     const addPackages = (deps: Record<string, string>, type: 'dependency' | 'devDependency') => {
@@ -188,6 +177,35 @@ async function listNpmPackages(projectPath: string): Promise<PackageInfo[]> {
     return packages
   } catch {
     return []
+  }
+}
+
+interface NpmOutdatedEntry {
+  current: string
+  wanted: string
+  latest: string
+  deprecated?: string
+}
+
+async function getNpmOutdatedData(
+  projectPath: string,
+  packageName?: string,
+): Promise<Record<string, NpmOutdatedEntry> | null> {
+  const args = packageName ? ['outdated', packageName, '--json'] : ['outdated', '--json']
+  try {
+    const { stdout } = await crossExecFile('npm', args, { cwd: projectPath, timeout: 30000 })
+    return JSON.parse(stdout || '{}')
+  } catch (err: unknown) {
+    // npm outdated returns exit code 1 when there ARE outdated packages — this is normal.
+    const execErr = err as { stdout?: string }
+    if (execErr.stdout) {
+      try {
+        return JSON.parse(execErr.stdout || '{}')
+      } catch {
+        return null
+      }
+    }
+    return null
   }
 }
 
@@ -382,6 +400,8 @@ function getInstalledNpmVersion(projectPath: string, packageName: string): strin
 }
 
 async function updateNpmPackage(projectPath: string, packageName: string): Promise<{ success: boolean; error?: string; versionBefore?: string | null; versionAfter?: string | null }> {
+  const outdatedBefore = await getNpmOutdatedData(projectPath, packageName)
+  const wasOutdatedBefore = Boolean(outdatedBefore?.[packageName])
   const versionBefore = getInstalledNpmVersion(projectPath, packageName)
   const args = ['install', `${packageName}@latest`]
 
@@ -397,6 +417,27 @@ async function updateNpmPackage(projectPath: string, packageName: string): Promi
   }
 
   const versionAfter = getInstalledNpmVersion(projectPath, packageName)
+
+  const outdatedAfter = await getNpmOutdatedData(projectPath, packageName)
+  if (outdatedAfter?.[packageName]) {
+    const remaining = outdatedAfter[packageName]
+    return {
+      success: false,
+      error: `${packageName} is still outdated after update (${remaining.current} -> ${remaining.latest})`,
+      versionBefore,
+      versionAfter,
+    }
+  }
+
+  if (wasOutdatedBefore && outdatedAfter === null && versionBefore === versionAfter) {
+    return {
+      success: false,
+      error: `Unable to verify ${packageName} update and installed version did not change`,
+      versionBefore,
+      versionAfter,
+    }
+  }
+
   const result: { success: boolean; versionBefore?: string | null; versionAfter?: string | null } = { success: true }
   if (versionBefore !== null || versionAfter !== null) {
     result.versionBefore = versionBefore
@@ -416,6 +457,23 @@ async function updateAllNpmPackages(projectPath: string): Promise<{ success: boo
       throw installErr
     }
   }
+
+  const outdatedAfter = await getNpmOutdatedData(projectPath)
+  if (outdatedAfter === null) {
+    return {
+      success: false,
+      error: 'Update completed but unable to verify remaining outdated packages',
+    }
+  }
+
+  const remainingCount = Object.keys(outdatedAfter).length
+  if (remainingCount > 0) {
+    return {
+      success: false,
+      error: `${remainingCount} package(s) are still outdated after npm update`,
+    }
+  }
+
   return { success: true }
 }
 

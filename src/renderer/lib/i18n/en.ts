@@ -147,6 +147,10 @@ export const en = {
   'settings.french': 'Francais',
   'settings.english': 'English',
   'settings.kanban': 'Kanban',
+  'settings.tools': 'Tools',
+  'settings.toolsAutoCheck': 'Automatic tool update checks',
+  'settings.toolsAutoCheckHint': 'Checks tool updates automatically every hour',
+  'settings.toolsManageHint': 'Install missing tools and update installed ones',
   'settings.autoCloseCompletedTerminals': 'Auto-close terminals of completed tickets',
   'settings.autoCloseCtoTerminals': 'Auto-close CTO mode terminals',
   'settings.autoCreateAiMemoryRefactorTickets': 'Auto-create AI memory refactor tickets',
@@ -1282,6 +1286,9 @@ export const en = {
   'updates.failedUninstall': 'Failed to uninstall {tool}: {error}',
   'updates.installViaClaude': 'Install via Claude',
   'updates.copyError': 'Copy error to clipboard',
+  'updates.checkingNow': 'Checking for updates...',
+  'updates.allUpToDate': 'Everything is up to date.',
+  'updates.openToolsSettings': 'View applications',
 
   // About
   'about.version': 'Version',

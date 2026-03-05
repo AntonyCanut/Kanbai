@@ -3,33 +3,69 @@ import { useUpdateStore } from '../lib/stores/updateStore'
 import { useAppUpdateStore } from '../lib/stores/appUpdateStore'
 import { useI18n } from '../lib/i18n'
 
-const IS_WIN_RENDERER = navigator.platform.startsWith('Win')
-
 export function UpdateCenter() {
   const { t, locale } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
-  const { updates, isChecking, lastChecked, installingTool, installStatus, checkUpdates, installUpdate, uninstallUpdate, clearInstallStatus } =
-    useUpdateStore()
-  const { status: appUpdateStatus, version: appNewVersion, downloadPercent, checkForUpdate, downloadUpdate, installUpdate: installAppUpdate } =
-    useAppUpdateStore()
+  const [appVersion, setAppVersion] = useState<string>('')
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const {
+    status: appUpdateStatus,
+    version: appUpdateVersion,
+    downloadPercent,
+    checkForUpdate,
+    downloadUpdate,
+    installUpdate: installAppUpdate,
+  } = useAppUpdateStore()
+  const {
+    updates,
+    isChecking,
+    lastChecked,
+    installingTool,
+    installStatus,
+    checkUpdates,
+    installUpdate,
+    clearInstallStatus,
+  } = useUpdateStore()
 
-  const [currentAppVersion, setCurrentAppVersion] = useState<string | null>(null)
-
-  const availableUpdates = updates.filter((u) => u.updateAvailable)
-  const appUpdateAvailable = appUpdateStatus === 'available' || appUpdateStatus === 'downloading' || appUpdateStatus === 'downloaded'
-  const badgeCount = availableUpdates.length + (appUpdateAvailable ? 1 : 0)
+  const isAppUpdateVisible = ['available', 'downloading', 'downloaded'].includes(appUpdateStatus)
+  const isAnyChecking = isChecking || appUpdateStatus === 'checking'
+  const availableUpdates = updates.filter((u) => u.installed && u.updateAvailable)
+  const badgeCount = availableUpdates.length + (isAppUpdateVisible ? 1 : 0)
 
   useEffect(() => {
-    checkUpdates()
-    window.kanbai.app.version().then((info) => {
-      setCurrentAppVersion(info.version)
+    void checkUpdates()
+    void checkForUpdate()
+    void window.kanbai.app.version().then((v) => setAppVersion(v.version)).catch(() => {
+      // Silently ignore app version/read errors.
     })
-    const interval = setInterval(() => checkUpdates(), 3600000)
+
+    const interval = setInterval(() => {
+      void window.kanbai.settings.get().then((settings) => {
+        if (settings.toolAutoCheckEnabled !== false) {
+          return Promise.all([checkUpdates(), checkForUpdate()])
+        }
+      }).catch(() => {
+        // Silently ignore settings/read errors.
+      })
+    }, 3600000)
+
     return () => clearInterval(interval)
-  }, [checkUpdates])
+  }, [checkUpdates, checkForUpdate])
 
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null
+      if (!target) return
+      if (containerRef.current?.contains(target)) return
+      setIsOpen(false)
+    }
+    window.addEventListener('mousedown', handleOutsideClick)
+    return () => window.removeEventListener('mousedown', handleOutsideClick)
+  }, [isOpen])
 
   // Auto-dismiss install status after 5 seconds (success only — errors stay)
   useEffect(() => {
@@ -46,29 +82,31 @@ export function UpdateCenter() {
   }, [])
 
   const handleInstall = useCallback(
-    (tool: string, scope: string) => {
+    (tool: string, scope: 'global' | 'project' | 'unit') => {
       installUpdate(tool, scope)
     },
     [installUpdate],
   )
 
-  const handleUninstall = useCallback(
-    (tool: string) => {
-      uninstallUpdate(tool)
-    },
-    [uninstallUpdate],
-  )
-
   const handleInstallAll = useCallback(() => {
-    for (const update of availableUpdates) {
-      installUpdate(update.tool, update.scope, update.projectId)
+    const run = async () => {
+      for (const update of availableUpdates) {
+        await installUpdate(update.tool, update.scope, update.projectId)
+      }
     }
+    void run()
   }, [availableUpdates, installUpdate])
 
   const handleCheckAll = useCallback(() => {
-    checkUpdates()
-    checkForUpdate()
+    void checkUpdates()
+    void checkForUpdate()
   }, [checkUpdates, checkForUpdate])
+
+  const openToolsSettings = useCallback(() => {
+    window.sessionStorage.setItem('kanbai:settingsSection', 'tools')
+    window.dispatchEvent(new CustomEvent('kanbai:open-settings-section', { detail: { section: 'tools' } }))
+    setIsOpen(false)
+  }, [])
 
   const formatTime = (ts: number | null) => {
     if (!ts) return t('time.never')
@@ -77,7 +115,7 @@ export function UpdateCenter() {
   }
 
   return (
-    <div className="notification-center">
+    <div className="notification-center" ref={containerRef}>
       <button
         className="notification-bell"
         onClick={handleToggle}
@@ -99,10 +137,10 @@ export function UpdateCenter() {
               <button
                 className="notification-refresh"
                 onClick={handleCheckAll}
-                disabled={isChecking || appUpdateStatus === 'checking'}
+                disabled={isAnyChecking}
                 title={t('updates.checkTooltip')}
               >
-                {isChecking || appUpdateStatus === 'checking' ? '...' : '\u21BB'}
+                {isAnyChecking ? '...' : '\u21BB'}
               </button>
               {availableUpdates.length > 1 && (
                 <button className="notification-update-all" onClick={handleInstallAll}>
@@ -143,122 +181,68 @@ export function UpdateCenter() {
           )}
 
           <div className="notification-panel-content">
-            {/* App update entry */}
-            <div
-              className={`notification-item${appUpdateAvailable ? ' notification-item--update' : ''}`}
-            >
-              <div className="notification-item-info">
-                <span className="notification-item-name">Kanbai</span>
-                <span className="notification-item-version">
-                  {currentAppVersion ?? '...'}
-                  {appUpdateStatus === 'available' && appNewVersion && (
-                    <>{' \u2192 '}<span className="notification-item-latest">{appNewVersion}</span></>
-                  )}
-                  {appUpdateStatus === 'downloading' && (
-                    <>{' \u2192 '}<span className="notification-item-latest">{appNewVersion} ({downloadPercent}%)</span></>
-                  )}
-                  {appUpdateStatus === 'downloaded' && appNewVersion && (
-                    <>{' \u2192 '}<span className="notification-item-latest">{appNewVersion}</span></>
-                  )}
-                  {appUpdateStatus === 'checking' && (
-                    <> &mdash; {t('appUpdate.checking')}</>
-                  )}
-                  {(appUpdateStatus === 'idle' || appUpdateStatus === 'not-available') && (
-                    <> &mdash; {t('appUpdate.upToDate')}</>
-                  )}
-                </span>
-                <span className="notification-item-scope">{t('appUpdate.appScope')}</span>
+            {isAnyChecking && (
+              <div className="notification-checking">{t('updates.checkingNow')}</div>
+            )}
+            {availableUpdates.length === 0 && !isAppUpdateVisible && !isAnyChecking ? (
+              <div className="notification-empty">
+                <p>{t('updates.allUpToDate')}</p>
+                <button className="notification-item-btn notification-item-btn--install" onClick={openToolsSettings}>
+                  {t('updates.openToolsSettings')}
+                </button>
               </div>
-              <div className="notification-item-actions">
-                {appUpdateStatus === 'available' && (
-                  <button className="notification-item-btn" onClick={downloadUpdate}>
-                    {t('appUpdate.download')}
-                  </button>
-                )}
-                {appUpdateStatus === 'downloading' && (
-                  <button className="notification-item-btn" disabled>
-                    {downloadPercent}%
-                  </button>
-                )}
-                {appUpdateStatus === 'downloaded' && (
-                  <button className="notification-item-btn notification-item-btn--install" onClick={installAppUpdate}>
-                    {t('appUpdate.installAndRestart')}
-                  </button>
-                )}
-                {appUpdateStatus === 'error' && (
-                  <button className="notification-item-btn" onClick={checkForUpdate}>
-                    {t('appUpdate.checkNow')}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tool updates */}
-            {updates.length === 0 && !isChecking ? (
-              !appUpdateAvailable && <p className="notification-empty">{t('updates.noInfo')}</p>
             ) : (
-              updates.map((update) => (
-                <div
-                  key={`${update.tool}-${update.scope}`}
-                  className={`notification-item${update.updateAvailable ? ' notification-item--update' : ''}${!update.installed ? ' notification-item--missing' : ''}`}
-                >
-                  <div className="notification-item-info">
-                    <span className="notification-item-name">{update.tool}</span>
-                    {update.installed ? (
+              <>
+                {isAppUpdateVisible && (
+                  <div className="notification-item notification-item--update">
+                    <div className="notification-item-info">
+                      <span className="notification-item-name">Kanbai</span>
+                      <span className="notification-item-version">
+                        {appVersion || '?'}
+                        <> {' \u2192 '} <span className="notification-item-latest">{appUpdateVersion || '?'}</span> </>
+                      </span>
+                      <span className="notification-item-scope">{t('appUpdate.appScope')}</span>
+                    </div>
+                    <div className="notification-item-actions">
+                      {appUpdateStatus === 'available' && (
+                        <button className="notification-item-btn" onClick={() => void downloadUpdate()}>
+                          {t('appUpdate.download')}
+                        </button>
+                      )}
+                      {appUpdateStatus === 'downloading' && (
+                        <button className="notification-item-btn" disabled>
+                          {downloadPercent}%
+                        </button>
+                      )}
+                      {appUpdateStatus === 'downloaded' && (
+                        <button className="notification-item-btn" onClick={installAppUpdate}>
+                          {t('appUpdate.installAndRestart')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {availableUpdates.map((update) => (
+                  <div
+                    key={`${update.tool}-${update.scope}`}
+                    className="notification-item notification-item--update"
+                  >
+                    <div className="notification-item-info">
+                      <span className="notification-item-name">{update.tool}</span>
                       <span className="notification-item-version">
                         {update.currentVersion}
-                        {update.updateAvailable && (
-                          <> {' \u2192 '} <span className="notification-item-latest">{update.latestVersion.split('+')[0]}</span> </>
-                        )}
+                        <> {' \u2192 '} <span className="notification-item-latest">{update.latestVersion.split('+')[0]}</span> </>
                       </span>
-                    ) : (
-                      <span className="notification-item-version notification-item-version--missing">
-                        {t('updates.notInstalled')}
-                      </span>
-                    )}
-                    <span className="notification-item-scope">{update.scope}</span>
-                  </div>
-                  <div className="notification-item-actions">
-                    {update.installed && update.updateAvailable && (
+                      <span className="notification-item-scope">{update.scope}</span>
+                    </div>
+                    <div className="notification-item-actions">
                       <button className="notification-item-btn" onClick={() => handleInstall(update.tool, update.scope)} disabled={installingTool === update.tool}>
                         {installingTool === update.tool ? '...' : t('updates.update')}
                       </button>
-                    )}
-                    {IS_WIN_RENDERER && !update.installed && update.tool === 'cargo' && (
-                      <button className="notification-item-btn notification-item-btn--install" onClick={() => handleInstall(update.tool, update.scope)} disabled={installingTool === update.tool}>
-                        {installingTool === update.tool ? '...' : t('updates.install')}
-                      </button>
-                    )}
-                    {IS_WIN_RENDERER && !update.installed && update.tool === 'rtk' && (
-                      <button className="notification-item-btn notification-item-btn--install" onClick={() => handleInstall(update.tool, update.scope)} disabled={installingTool === update.tool}>
-                        {installingTool === update.tool ? '...' : t('updates.install')}
-                      </button>
-                    )}
-                    {IS_WIN_RENDERER && update.installed && update.tool === 'rtk' && (
-                      <button className="notification-item-btn notification-item-btn--uninstall" onClick={() => handleUninstall(update.tool)} disabled={installingTool === update.tool}>
-                        {installingTool === update.tool ? '...' : t('updates.uninstall')}
-                      </button>
-                    )}
-                    {!update.installed && update.tool === 'pixel-agents' && (
-                      <button className="notification-item-btn notification-item-btn--install" onClick={() => handleInstall(update.tool, update.scope)} disabled={installingTool === update.tool}>
-                        {installingTool === update.tool ? '...' : t('updates.install')}
-                      </button>
-                    )}
-                    {update.installed && update.tool === 'pixel-agents' && (
-                      <>
-                        {update.updateAvailable && (
-                          <button className="notification-item-btn" onClick={() => handleInstall(update.tool, update.scope)} disabled={installingTool === update.tool}>
-                            {installingTool === update.tool ? '...' : t('updates.update')}
-                          </button>
-                        )}
-                        <button className="notification-item-btn notification-item-btn--uninstall" onClick={() => handleUninstall(update.tool)} disabled={installingTool === update.tool}>
-                          {installingTool === update.tool ? '...' : t('updates.uninstall')}
-                        </button>
-                      </>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </>
             )}
           </div>
 

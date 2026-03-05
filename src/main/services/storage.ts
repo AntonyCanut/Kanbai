@@ -114,6 +114,10 @@ export class StorageService {
         data.settings.defaultAiProvider = 'claude'
         needsSave = true
       }
+      if (data.settings && typeof data.settings.toolAutoCheckEnabled !== 'boolean') {
+        data.settings.toolAutoCheckEnabled = true
+        needsSave = true
+      }
       // Migration: hasClaude → aiProvider
       if (data.projects) {
         for (const project of data.projects) {

@@ -17,6 +17,19 @@ function ensureSuccessfulUpdate(result: UpdateActionResult, fallback: string): v
   throw new Error(result.error || fallback)
 }
 
+function findToolUpdate(
+  updates: UpdateInfo[],
+  tool: string,
+  scope: UpdateInfo['scope'],
+  projectId?: string,
+): UpdateInfo | undefined {
+  return updates.find((u) => {
+    if (u.tool !== tool || u.scope !== scope) return false
+    if (scope !== 'project') return true
+    return u.projectId === projectId
+  })
+}
+
 interface UpdateState {
   updates: UpdateInfo[]
   isChecking: boolean
@@ -27,7 +40,7 @@ interface UpdateState {
 
 interface UpdateActions {
   checkUpdates: () => Promise<void>
-  installUpdate: (tool: string, scope: string, projectId?: string) => Promise<void>
+  installUpdate: (tool: string, scope: UpdateInfo['scope'], projectId?: string) => Promise<void>
   uninstallUpdate: (tool: string) => Promise<void>
   clearUpdates: () => void
   clearInstallStatus: () => void
@@ -54,14 +67,29 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
     }
   },
 
-  installUpdate: async (tool: string, scope: string, projectId?: string) => {
+  installUpdate: async (tool: string, scope: UpdateInfo['scope'], projectId?: string) => {
     set({ installingTool: tool, installStatus: null })
     try {
-      const result = await window.kanbai.updates.install(tool, scope, projectId)
+      const currentTool = findToolUpdate(get().updates, tool, scope, projectId)
+      const result = await window.kanbai.updates.install(tool, scope, projectId, currentTool?.installSource)
       ensureSuccessfulUpdate(result, 'Unknown error during update')
+
+      // Re-check immediately and verify that the tool is no longer outdated.
+      const refreshedUpdates: UpdateInfo[] = await window.kanbai.updates.check()
+      set({ updates: refreshedUpdates, lastChecked: Date.now() })
+
+      const updatedTool = findToolUpdate(refreshedUpdates, tool, scope, projectId)
+      if (!updatedTool) {
+        throw new Error(`Unable to verify ${tool} status after update`)
+      }
+      if (!updatedTool.installed) {
+        throw new Error(`${tool} is no longer detected after update`)
+      }
+      if (updatedTool.updateAvailable) {
+        throw new Error(`${tool} still reports an available update after installation`)
+      }
+
       set({ installStatus: { tool, success: true } })
-      // Re-check after install
-      await get().checkUpdates()
     } catch (err: unknown) {
       const error = err instanceof Error ? err.message : String(err)
       set({ installStatus: { tool, success: false, error } })
@@ -75,8 +103,20 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
     try {
       const result = await window.kanbai.updates.uninstall(tool)
       ensureSuccessfulUpdate(result, 'Unknown error during uninstall')
+
+      // Re-check and verify uninstall really happened.
+      const refreshedUpdates: UpdateInfo[] = await window.kanbai.updates.check()
+      set({ updates: refreshedUpdates, lastChecked: Date.now() })
+
+      const updatedTool = refreshedUpdates.find((u) => u.tool === tool)
+      if (!updatedTool) {
+        throw new Error(`Unable to verify ${tool} status after uninstall`)
+      }
+      if (updatedTool.installed) {
+        throw new Error(`${tool} still appears installed after uninstall`)
+      }
+
       set({ installStatus: { tool, success: true } })
-      await get().checkUpdates()
     } catch (err: unknown) {
       const error = err instanceof Error ? err.message : String(err)
       set({ installStatus: { tool, success: false, error } })

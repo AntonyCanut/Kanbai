@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { AppSettings, SshKeyInfo, SshKeyType, Namespace } from '../../shared/types'
 import { useI18n } from '../lib/i18n'
 import { useAppUpdateStore } from '../lib/stores/appUpdateStore'
+import { useUpdateStore } from '../lib/stores/updateStore'
 
 const FONT_FAMILIES = [
   'Menlo',
@@ -43,6 +44,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   notificationSound: true,
   notificationBadge: true,
   checkUpdatesOnLaunch: true,
+  toolAutoCheckEnabled: true,
   autoCloseCompletedTerminals: false,
   autoCloseCtoTerminals: true,
   autoApprove: true,
@@ -51,7 +53,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoCreateAiMemoryRefactorTickets: true,
 }
 
-type SettingsSection = 'general' | 'appearance' | 'terminal' | 'git' | 'ssh' | 'claude' | 'ai' | 'kanban' | 'notifications' | 'about'
+type SettingsSection = 'general' | 'appearance' | 'terminal' | 'git' | 'ssh' | 'claude' | 'ai' | 'kanban' | 'tools' | 'notifications' | 'about'
 
 const SECTIONS: { id: SettingsSection; icon: string }[] = [
   { id: 'general', icon: '⚙' },
@@ -61,13 +63,36 @@ const SECTIONS: { id: SettingsSection; icon: string }[] = [
   { id: 'ssh', icon: '🔑' },
   { id: 'ai', icon: '✦' },
   { id: 'kanban', icon: '☰' },
+  { id: 'tools', icon: '⬆' },
   { id: 'notifications', icon: '🔔' },
   { id: 'about', icon: 'ℹ' },
 ]
 
+function isSettingsSection(value: string | null): value is SettingsSection {
+  return value !== null && SECTIONS.some((section) => section.id === value)
+}
+
 export function SettingsPanel() {
   const { t, locale, setLocale } = useI18n()
-  const { status: updateStatus, checkForUpdate } = useAppUpdateStore()
+  const {
+    status: appUpdateStatus,
+    version: appUpdateVersion,
+    downloadPercent,
+    checkForUpdate,
+    downloadUpdate,
+    installUpdate: installAppUpdate,
+  } = useAppUpdateStore()
+  const {
+    updates: toolUpdates,
+    isChecking: toolsChecking,
+    lastChecked: toolsLastChecked,
+    installingTool,
+    installStatus,
+    checkUpdates: checkToolUpdates,
+    installUpdate: installToolUpdate,
+    uninstallUpdate: uninstallToolUpdate,
+    clearInstallStatus: clearToolInstallStatus,
+  } = useUpdateStore()
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [appVersion, setAppVersion] = useState<{ version: string; name: string; isElevated?: boolean } | null>(null)
@@ -187,6 +212,24 @@ export function SettingsPanel() {
     })
   }, [setLocale, loadSshKeys, loadGitConfig])
 
+  useEffect(() => {
+    const fromStorage = window.sessionStorage.getItem('kanbai:settingsSection')
+    if (isSettingsSection(fromStorage)) {
+      setActiveSection(fromStorage)
+      window.sessionStorage.removeItem('kanbai:settingsSection')
+    }
+
+    const handleOpenSection = (event: Event) => {
+      const custom = event as CustomEvent<{ section?: string }>
+      const section = custom.detail?.section ?? null
+      if (isSettingsSection(section)) {
+        setActiveSection(section)
+      }
+    }
+    window.addEventListener('kanbai:open-settings-section', handleOpenSection as EventListener)
+    return () => window.removeEventListener('kanbai:open-settings-section', handleOpenSection as EventListener)
+  }, [])
+
   const updateSetting = useCallback(<K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }))
     window.kanbai.settings.set({ [key]: value })
@@ -299,6 +342,26 @@ export function SettingsPanel() {
     window.kanbai.ssh.openDirectory()
   }, [])
 
+  useEffect(() => {
+    if (activeSection !== 'tools') return
+    if (toolUpdates.length > 0) return
+    checkToolUpdates()
+  }, [activeSection, toolUpdates.length, checkToolUpdates])
+
+  useEffect(() => {
+    if (!installStatus?.success) return
+    const timer = setTimeout(() => clearToolInstallStatus(), 5000)
+    return () => clearTimeout(timer)
+  }, [installStatus, clearToolInstallStatus])
+
+  const handleToolInstall = useCallback((tool: string, scope: 'global' | 'project' | 'unit') => {
+    installToolUpdate(tool, scope)
+  }, [installToolUpdate])
+
+  const handleToolUninstall = useCallback((tool: string) => {
+    uninstallToolUpdate(tool)
+  }, [uninstallToolUpdate])
+
   if (loading) {
     return <div className="file-viewer-empty">{t('common.loading')}</div>
   }
@@ -313,6 +376,7 @@ export function SettingsPanel() {
       claude: t('settings.claude'),
       ai: t('settings.ai') ?? t('settings.claude'),
       kanban: t('settings.kanban'),
+      tools: t('settings.tools'),
       notifications: t('settings.notifications'),
       about: t('settings.about'),
     }
@@ -894,6 +958,113 @@ export function SettingsPanel() {
             </div>
           )}
 
+          {/* Tools */}
+          {activeSection === 'tools' && (
+            <div className="settings-section">
+              <div className="settings-card">
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{t('settings.toolsAutoCheck')}</label>
+                    <span className="settings-hint">{t('settings.toolsAutoCheckHint')}</span>
+                  </div>
+                  <button
+                    className={`settings-toggle${settings.toolAutoCheckEnabled ? ' settings-toggle--active' : ''}`}
+                    onClick={() => updateSetting('toolAutoCheckEnabled', !settings.toolAutoCheckEnabled)}
+                  >
+                    <span className="settings-toggle-knob" />
+                  </button>
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{t('updates.lastCheck', { time: toolsLastChecked ? new Date(toolsLastChecked).toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' }) : t('time.never') })}</label>
+                    <span className="settings-hint">{t('settings.toolsManageHint')}</span>
+                  </div>
+                  <button
+                    className="settings-btn"
+                    onClick={checkToolUpdates}
+                    disabled={toolsChecking}
+                  >
+                    {toolsChecking ? t('common.loading') : t('updates.checkTooltip')}
+                  </button>
+                </div>
+              </div>
+
+              {installStatus && (
+                <div
+                  className={`notification-status ${installStatus.success ? 'notification-status--success' : 'notification-status--error'}`}
+                  onClick={clearToolInstallStatus}
+                >
+                  {installStatus.success
+                    ? `${'\u2713'} ${t('updates.updated', { tool: installStatus.tool })}`
+                    : `${'\u2717'} ${t('updates.failedUpdate', { tool: installStatus.tool, error: installStatus.error || '' })}`}
+                </div>
+              )}
+
+              <div className="settings-card">
+                {toolUpdates.length === 0 && !toolsChecking ? (
+                  <p className="notification-empty">{t('updates.noInfo')}</p>
+                ) : (
+                  <div className="notification-panel-content">
+                    {[...toolUpdates]
+                      .sort((a, b) => Number(b.updateAvailable) - Number(a.updateAvailable) || Number(a.installed) - Number(b.installed) || a.tool.localeCompare(b.tool))
+                      .map((update) => (
+                        <div
+                          key={`${update.tool}-${update.scope}`}
+                          className={`notification-item${update.updateAvailable ? ' notification-item--update' : ''}${!update.installed ? ' notification-item--missing' : ''}`}
+                        >
+                          <div className="notification-item-info">
+                            <span className="notification-item-name">{update.tool}</span>
+                            {update.installed ? (
+                              <span className="notification-item-version">
+                                {update.currentVersion}
+                                {update.updateAvailable && (
+                                  <> {' \u2192 '} <span className="notification-item-latest">{update.latestVersion.split('+')[0]}</span> </>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="notification-item-version notification-item-version--missing">
+                                {t('updates.notInstalled')}
+                              </span>
+                            )}
+                            <span className="notification-item-scope">{update.scope}</span>
+                          </div>
+                          <div className="notification-item-actions">
+                            {update.installed && update.updateAvailable && (
+                              <button
+                                className="notification-item-btn"
+                                onClick={() => handleToolInstall(update.tool, update.scope)}
+                                disabled={installingTool === update.tool}
+                              >
+                                {installingTool === update.tool ? '...' : t('updates.update')}
+                              </button>
+                            )}
+                            {!update.installed && update.canInstall && (
+                              <button
+                                className="notification-item-btn notification-item-btn--install"
+                                onClick={() => handleToolInstall(update.tool, update.scope)}
+                                disabled={installingTool === update.tool}
+                              >
+                                {installingTool === update.tool ? '...' : t('updates.install')}
+                              </button>
+                            )}
+                            {update.installed && update.canUninstall && (
+                              <button
+                                className="notification-item-btn notification-item-btn--uninstall"
+                                onClick={() => handleToolUninstall(update.tool)}
+                                disabled={installingTool === update.tool}
+                              >
+                                {installingTool === update.tool ? '...' : t('updates.uninstall')}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Notifications */}
           {activeSection === 'notifications' && (
             <div className="settings-section">
@@ -972,15 +1143,47 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('appUpdate.checkNow')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Verifier si une nouvelle version est disponible' : 'Check if a new version is available'}</span>
+                    <span className="settings-hint">
+                      {appUpdateStatus === 'available' && appUpdateVersion
+                        ? t('appUpdate.newVersion', { version: appUpdateVersion })
+                        : appUpdateStatus === 'downloading'
+                          ? t('appUpdate.downloading')
+                          : appUpdateStatus === 'downloaded'
+                            ? t('appUpdate.ready')
+                            : appUpdateStatus === 'error'
+                              ? t('appUpdate.error')
+                              : (locale === 'fr' ? 'Verifier si une nouvelle version est disponible' : 'Check if a new version is available')}
+                    </span>
                   </div>
-                  <button
-                    className="settings-btn"
-                    onClick={checkForUpdate}
-                    disabled={updateStatus === 'checking'}
-                  >
-                    {updateStatus === 'checking' ? t('common.loading') : t('appUpdate.checkNow')}
-                  </button>
+                  {appUpdateStatus === 'available' && (
+                    <button className="settings-btn" onClick={downloadUpdate}>
+                      {t('appUpdate.download')}
+                    </button>
+                  )}
+                  {appUpdateStatus === 'downloading' && (
+                    <button className="settings-btn" disabled>
+                      {downloadPercent}%
+                    </button>
+                  )}
+                  {appUpdateStatus === 'downloaded' && (
+                    <button className="settings-btn" onClick={installAppUpdate}>
+                      {t('appUpdate.installAndRestart')}
+                    </button>
+                  )}
+                  {(appUpdateStatus === 'idle' || appUpdateStatus === 'not-available' || appUpdateStatus === 'checking') && (
+                    <button
+                      className="settings-btn"
+                      onClick={checkForUpdate}
+                      disabled={appUpdateStatus === 'checking'}
+                    >
+                      {appUpdateStatus === 'checking' ? t('common.loading') : t('appUpdate.checkNow')}
+                    </button>
+                  )}
+                  {appUpdateStatus === 'error' && (
+                    <button className="settings-btn" onClick={checkForUpdate}>
+                      {t('appUpdate.retry')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -27,6 +27,7 @@ export function createDefaultSettings(): AppSettings {
     notificationSound: true,
     notificationBadge: true,
     checkUpdatesOnLaunch: true,
+    toolAutoCheckEnabled: true,
     autoCloseCompletedTerminals: false,
     autoCloseCtoTerminals: true,
     autoApprove: true,

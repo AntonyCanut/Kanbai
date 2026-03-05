@@ -169,6 +169,9 @@ export interface UpdateInfo {
   installed: boolean
   scope: 'global' | 'project' | 'unit'
   projectId?: string
+  installSource?: string
+  canInstall?: boolean
+  canUninstall?: boolean
 }
 
 export interface AutoClauderTemplate {
@@ -218,6 +221,7 @@ export interface AppSettings {
   notificationSound: boolean
   notificationBadge: boolean
   checkUpdatesOnLaunch: boolean
+  toolAutoCheckEnabled: boolean
   autoCloseCompletedTerminals: boolean
   autoCloseCtoTerminals: boolean
   autoApprove: boolean

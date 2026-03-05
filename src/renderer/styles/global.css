@@ -232,6 +232,16 @@ body {
   padding: 4px;
 }
 
+.notification-checking {
+  margin: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+
 .notification-empty {
   color: var(--text-muted);
   font-size: 12px;

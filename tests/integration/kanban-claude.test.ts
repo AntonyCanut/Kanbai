@@ -49,6 +49,7 @@ const mockCreateTab = vi.fn().mockReturnValue('tab-new-1')
 const mockSetTabColor = vi.fn()
 const mockSetActiveTab = vi.fn()
 const mockSetTabActivity = vi.fn()
+const mockCloseTab = vi.fn()
 const mockSetViewMode = vi.fn()
 
 function makeTask(overrides: Record<string, unknown> = {}) {
@@ -79,6 +80,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       isLoading: false,
       draggedTaskId: null,
       currentWorkspaceId: 'ws-1',
+      startupDoneCleanupPerformed: false,
       kanbanTabIds: {},
       kanbanPromptCwds: {},
     })
@@ -91,6 +93,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       setTabColor: mockSetTabColor,
       setActiveTab: mockSetActiveTab as ReturnType<typeof useTerminalTabStore.getState>['setActiveTab'],
       setTabActivity: mockSetTabActivity,
+      closeTab: mockCloseTab as ReturnType<typeof useTerminalTabStore.getState>['closeTab'],
     })
 
     // Inject mock setViewMode into viewStore
@@ -410,6 +413,19 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       expect(mockSetTabColor).toHaveBeenCalledWith('tab-abc', '#a6e3a1')
     })
 
+    it('ne ferme pas le terminal quand WORKING → DONE', async () => {
+      useKanbanStore.setState({
+        tasks: [makeTask({ status: 'WORKING' })],
+        kanbanTabIds: { 'task-1': 'tab-abc' },
+      })
+
+      mockKanbanList.mockResolvedValue([makeTask({ status: 'DONE' })])
+
+      await useKanbanStore.getState().syncTasksFromFile()
+
+      expect(mockCloseTab).not.toHaveBeenCalled()
+    })
+
     it('colore le tab en rouge quand WORKING → FAILED', async () => {
       useKanbanStore.setState({
         tasks: [makeTask({ status: 'WORKING' })],
@@ -421,6 +437,19 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       await useKanbanStore.getState().syncTasksFromFile()
 
       expect(mockSetTabColor).toHaveBeenCalledWith('tab-abc', '#f38ba8')
+    })
+
+    it('ne ferme pas le terminal quand WORKING → FAILED', async () => {
+      useKanbanStore.setState({
+        tasks: [makeTask({ status: 'WORKING' })],
+        kanbanTabIds: { 'task-1': 'tab-abc' },
+      })
+
+      mockKanbanList.mockResolvedValue([makeTask({ status: 'FAILED' })])
+
+      await useKanbanStore.getState().syncTasksFromFile()
+
+      expect(mockCloseTab).not.toHaveBeenCalled()
     })
 
     it('colore le tab en jaune et active l\'activite quand WORKING → PENDING', async () => {
@@ -448,6 +477,32 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       await useKanbanStore.getState().syncTasksFromFile()
 
       expect(mockSetTabColor).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('startup terminal cleanup', () => {
+    it('loadTasks ferme uniquement les tabs DONE au demarrage, une seule fois', async () => {
+      useKanbanStore.setState({
+        startupDoneCleanupPerformed: false,
+        kanbanTabIds: {
+          'task-done': 'tab-done',
+          'task-failed': 'tab-failed',
+        },
+      })
+
+      mockKanbanList.mockResolvedValue([
+        makeTask({ id: 'task-done', status: 'DONE' }),
+        makeTask({ id: 'task-failed', status: 'FAILED' }),
+      ])
+
+      await useKanbanStore.getState().loadTasks('ws-1')
+
+      expect(mockCloseTab).toHaveBeenCalledTimes(1)
+      expect(mockCloseTab).toHaveBeenCalledWith('tab-done')
+
+      mockCloseTab.mockClear()
+      await useKanbanStore.getState().loadTasks('ws-1')
+      expect(mockCloseTab).not.toHaveBeenCalled()
     })
   })
 

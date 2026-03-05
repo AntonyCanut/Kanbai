@@ -27,8 +27,6 @@ interface ToolCheck {
   name: string
   checkCommand: string
   checkArgs: string[]
-  latestCommand?: string
-  latestArgs?: string[]
 }
 
 const TOOLS_TO_CHECK: ToolCheck[] = [
@@ -40,6 +38,16 @@ const TOOLS_TO_CHECK: ToolCheck[] = [
   {
     name: 'npm',
     checkCommand: 'npm',
+    checkArgs: ['--version'],
+  },
+  {
+    name: 'pnpm',
+    checkCommand: 'pnpm',
+    checkArgs: ['--version'],
+  },
+  {
+    name: 'yarn',
+    checkCommand: 'yarn',
     checkArgs: ['--version'],
   },
   {
@@ -62,6 +70,21 @@ const TOOLS_TO_CHECK: ToolCheck[] = [
     checkCommand: 'copilot',
     checkArgs: ['--version'],
   },
+  {
+    name: 'go',
+    checkCommand: 'go',
+    checkArgs: ['version'],
+  },
+  {
+    name: 'python',
+    checkCommand: IS_WIN ? 'python' : 'python3',
+    checkArgs: ['--version'],
+  },
+  {
+    name: 'pip',
+    checkCommand: IS_WIN ? 'pip' : 'pip3',
+    checkArgs: ['--version'],
+  },
   // cargo & rtk — Windows only
   ...(IS_WIN
     ? [
@@ -79,18 +102,99 @@ const TOOLS_TO_CHECK: ToolCheck[] = [
     : []),
 ]
 
+type ToolInstallSource =
+  | 'brew-formula'
+  | 'brew-cask'
+  | 'npm-global'
+  | 'winget'
+  | 'rustup'
+  | 'cargo'
+  | 'internal'
+  | 'system'
+  | 'unknown'
+
+interface ToolMetadata {
+  npmPackage?: string
+  brewCandidates?: string[]
+  canUninstall?: boolean
+}
+
+interface BrewPackageMatch extends BrewPackageInfo {
+  name: string
+}
+
+interface ToolInstallResolution {
+  source: ToolInstallSource
+  npmPackage?: string
+  brew?: BrewPackageMatch
+}
+
+const TOOL_METADATA: Record<string, ToolMetadata> = {
+  node: {
+    brewCandidates: ['node'],
+  },
+  npm: {
+    npmPackage: 'npm',
+    brewCandidates: ['node'],
+  },
+  pnpm: {
+    npmPackage: 'pnpm',
+    brewCandidates: ['pnpm'],
+  },
+  yarn: {
+    npmPackage: 'yarn',
+    brewCandidates: ['yarn'],
+  },
+  claude: {
+    npmPackage: '@anthropic-ai/claude-code',
+    brewCandidates: ['claude-code', 'claude'],
+  },
+  codex: {
+    npmPackage: '@openai/codex',
+    brewCandidates: ['codex'],
+  },
+  copilot: {
+    npmPackage: '@github/copilot',
+    brewCandidates: ['github-copilot', 'copilot'],
+  },
+  git: {
+    brewCandidates: ['git'],
+  },
+  go: {
+    brewCandidates: ['go'],
+  },
+  python: {
+    brewCandidates: ['python@3.13', 'python@3.12', 'python@3.11', 'python'],
+  },
+  pip: {
+    brewCandidates: ['python@3.13', 'python@3.12', 'python@3.11', 'python'],
+  },
+  cargo: {
+    brewCandidates: ['rustup'],
+  },
+  rtk: {
+    canUninstall: true,
+  },
+  'pixel-agents': {
+    canUninstall: true,
+  },
+}
+
 async function getVersion(command: string, args: string[]): Promise<string | null> {
   try {
-    const { stdout } = await enrichedExecFile(command, args, 10000)
-    const version = stdout
+    const { stdout, stderr } = await enrichedExecFile(command, args, 10000)
+    const version = (stdout || stderr)
       .trim()
       .replace(/^v/, '')
       .replace(/^git version /, '')
+      .replace(/^go version go/, '')
+      .replace(/^Python /, '')
       .replace(/^Claude Code /, '')
       .replace(/^cargo /, '')
       .replace(/^codex\s+/i, '')
       .replace(/^copilot\s+/i, '')
       .replace(/ \(.+\)$/, '')
+    if (!version) return null
     return version
   } catch {
     return null
@@ -117,13 +221,9 @@ function compareVersions(current: string, latest: string): boolean {
 
 async function isBrewManaged(command: string): Promise<boolean> {
   if (IS_WIN) return false
-  try {
-    const { stdout } = await enrichedExecFile(getWhichCommand(), [command], 5000)
-    const binPath = stdout.trim()
-    return binPath.startsWith('/opt/homebrew/') || binPath.startsWith('/usr/local/Cellar/')
-  } catch {
-    return false
-  }
+  const commandPath = await getCommandPath(command)
+  if (!commandPath) return false
+  return isBrewBinPath(commandPath)
 }
 
 async function getLatestNpmVersion(pkg: string): Promise<string | null> {
@@ -135,14 +235,252 @@ async function getLatestNpmVersion(pkg: string): Promise<string | null> {
   }
 }
 
-async function getLatestBrewVersion(formula: string): Promise<string | null> {
+interface BrewPackageInfo {
+  kind: 'formula' | 'cask'
+  latestVersion: string | null
+  installed: boolean
+}
+
+async function getBrewPackageInfo(name: string): Promise<BrewPackageInfo | null> {
   try {
-    const { stdout } = await enrichedExecFile('brew', ['info', '--json=v2', formula], 15000)
-    const data = JSON.parse(stdout)
-    return data.formulae?.[0]?.versions?.stable || null
+    const { stdout } = await enrichedExecFile('brew', ['info', '--json=v2', name], 15000)
+    const data = JSON.parse(stdout) as {
+      formulae?: Array<{ versions?: { stable?: string }; installed?: unknown[] }>
+      casks?: Array<{ version?: string; installed?: string }>
+    }
+
+    const formula = data.formulae?.[0]
+    if (formula) {
+      return {
+        kind: 'formula',
+        latestVersion: formula.versions?.stable ?? null,
+        installed: Array.isArray(formula.installed) && formula.installed.length > 0,
+      }
+    }
+
+    const cask = data.casks?.[0]
+    if (cask) {
+      return {
+        kind: 'cask',
+        latestVersion: cask.version ?? null,
+        installed: Boolean(cask.installed),
+      }
+    }
+  } catch {
+    // Ignore and fallback to non-brew strategies.
+  }
+
+  return null
+}
+
+async function getLatestBrewVersion(name: string): Promise<string | null> {
+  const info = await getBrewPackageInfo(name)
+  return info?.latestVersion ?? null
+}
+
+function isBrewBinPath(binPath: string): boolean {
+  const normalize = (value: string): string => value.trim().replace(/\\/g, '/')
+  const isBrewInstallPath = (value: string): boolean => {
+    const normalized = normalize(value)
+    return normalized.startsWith('/opt/homebrew/Cellar/')
+      || normalized.startsWith('/opt/homebrew/Caskroom/')
+      || normalized.startsWith('/opt/homebrew/opt/')
+      || normalized.startsWith('/usr/local/Cellar/')
+      || normalized.startsWith('/usr/local/Caskroom/')
+      || normalized.startsWith('/usr/local/opt/')
+      || normalized.includes('/Homebrew/Cellar/')
+      || normalized.includes('/Homebrew/Caskroom/')
+  }
+
+  if (isBrewInstallPath(binPath)) return true
+
+  try {
+    const resolvedPath = fsSync.realpathSync(binPath)
+    return isBrewInstallPath(resolvedPath)
+  } catch {
+    return false
+  }
+}
+
+async function getCommandPath(command: string): Promise<string | null> {
+  try {
+    const { stdout } = await enrichedExecFile(getWhichCommand(), [command], 5000)
+    const firstLine = stdout.split(/\r?\n/).find((line) => line.trim())
+    return firstLine?.trim() || null
   } catch {
     return null
   }
+}
+
+async function findInstalledBrewPackage(candidates: string[] | undefined): Promise<BrewPackageMatch | null> {
+  if (IS_WIN || !candidates || candidates.length === 0) return null
+  for (const candidate of candidates) {
+    const info = await getBrewPackageInfo(candidate)
+    if (info?.installed) {
+      return { ...info, name: candidate }
+    }
+  }
+  return null
+}
+
+async function isNpmGlobalPackageInstalled(pkg: string): Promise<boolean> {
+  try {
+    await enrichedExecFile('npm', ['ls', '-g', '--depth=0', pkg], 15000)
+    return true
+  } catch (err: unknown) {
+    const stdout = String((err as { stdout?: string }).stdout ?? '')
+    return stdout.includes(`${pkg}@`)
+  }
+}
+
+async function resolveToolInstallSource(tool: string): Promise<ToolInstallResolution> {
+  const meta = TOOL_METADATA[tool] ?? {}
+
+  if (tool === 'pixel-agents') {
+    return { source: 'internal' }
+  }
+  if (tool === 'rtk') {
+    return { source: 'cargo' }
+  }
+  if (tool === 'cargo') {
+    if (IS_WIN) return { source: 'winget' }
+    const brew = await findInstalledBrewPackage(meta.brewCandidates)
+    if (brew) return { source: brew.kind === 'cask' ? 'brew-cask' : 'brew-formula', brew }
+    return { source: 'rustup' }
+  }
+
+  if (!IS_WIN) {
+    const commandPath = await getCommandPath(tool)
+    const brew = await findInstalledBrewPackage(meta.brewCandidates)
+    if (brew && (!commandPath || isBrewBinPath(commandPath))) {
+      return {
+        source: brew.kind === 'cask' ? 'brew-cask' : 'brew-formula',
+        brew,
+        npmPackage: meta.npmPackage,
+      }
+    }
+  }
+
+  if (meta.npmPackage) {
+    const npmInstalled = await isNpmGlobalPackageInstalled(meta.npmPackage)
+    if (npmInstalled) {
+      return { source: 'npm-global', npmPackage: meta.npmPackage }
+    }
+  }
+
+  if (tool === 'node' || tool === 'git') {
+    return { source: IS_WIN ? 'winget' : 'system' }
+  }
+  if (tool === 'go' || tool === 'python') {
+    return { source: IS_WIN ? 'winget' : 'system' }
+  }
+  if (tool === 'pip') {
+    return { source: IS_WIN ? 'winget' : 'system' }
+  }
+  if (tool === 'npm') {
+    if (!IS_WIN && await isBrewManaged('npm')) {
+      return {
+        source: 'brew-formula',
+        brew: { kind: 'formula', latestVersion: null, installed: true, name: 'node' },
+      }
+    }
+    return { source: 'npm-global', npmPackage: 'npm' }
+  }
+  if (tool === 'pnpm' || tool === 'yarn') {
+    return { source: 'npm-global', npmPackage: meta.npmPackage }
+  }
+  if (tool === 'claude' || tool === 'codex' || tool === 'copilot') {
+    return { source: 'npm-global', npmPackage: meta.npmPackage }
+  }
+
+  return { source: 'unknown' }
+}
+
+async function getLatestVersionForTool(
+  tool: string,
+  currentVersion: string,
+  resolution: ToolInstallResolution,
+): Promise<string | null> {
+  if (tool === 'cargo' || tool === 'rtk') {
+    // cargo and crates do not expose reliable "latest" through a simple command.
+    return null
+  }
+
+  if (tool === 'node') {
+    if (IS_WIN) return getLatestNpmVersion('node')
+    if (resolution.brew?.name) return getLatestBrewVersion(resolution.brew.name)
+    return null
+  }
+
+  if (tool === 'npm') {
+    if (resolution.source.startsWith('brew')) {
+      // npm is bundled with brew node; updating node updates npm.
+      return currentVersion
+    }
+    return getLatestNpmVersion('npm')
+  }
+
+  if (tool === 'claude' || tool === 'codex' || tool === 'copilot') {
+    if (resolution.brew?.name) {
+      return getLatestBrewVersion(resolution.brew.name)
+    }
+    if (resolution.npmPackage) {
+      return getLatestNpmVersion(resolution.npmPackage)
+    }
+    return null
+  }
+
+  if (tool === 'pnpm' || tool === 'yarn') {
+    if (resolution.brew?.name) {
+      return getLatestBrewVersion(resolution.brew.name)
+    }
+    if (resolution.npmPackage) {
+      return getLatestNpmVersion(resolution.npmPackage)
+    }
+    return null
+  }
+
+  if (tool === 'go' || tool === 'python') {
+    if (resolution.brew?.name) {
+      return getLatestBrewVersion(resolution.brew.name)
+    }
+    return null
+  }
+
+  if (tool === 'pip') {
+    if (resolution.source.startsWith('brew')) {
+      return currentVersion
+    }
+    return null
+  }
+
+  if (tool === 'git') {
+    if (resolution.brew?.name) {
+      return getLatestBrewVersion(resolution.brew.name)
+    }
+    return null
+  }
+
+  return null
+}
+
+function canInstallTool(tool: string): boolean {
+  return [
+    'node',
+    'npm',
+    'pnpm',
+    'yarn',
+    'claude',
+    'codex',
+    'copilot',
+    'go',
+    'python',
+    'pip',
+    'git',
+    'cargo',
+    'rtk',
+    'pixel-agents',
+  ].includes(tool)
 }
 
 /** In dev, pixel-agents source lives under vendor/. In release, under userData/. */
@@ -216,9 +554,20 @@ async function checkToolUpdates(): Promise<UpdateInfo[]> {
 
   for (const tool of TOOLS_TO_CHECK) {
     const currentVersion = await getVersion(tool.checkCommand, tool.checkArgs)
+    const canUninstall = Boolean(TOOL_METADATA[tool.name]?.canUninstall)
 
     if (!currentVersion) {
-      // Tool not installed
+      const fallbackSource: ToolInstallSource =
+        tool.name === 'cargo' ? (IS_WIN ? 'winget' : 'rustup')
+          : tool.name === 'rtk' ? 'cargo'
+            : tool.name === 'pixel-agents' ? 'internal'
+              : (tool.name === 'node'
+                || tool.name === 'git'
+                || tool.name === 'go'
+                || tool.name === 'python'
+                || tool.name === 'pip') ? (IS_WIN ? 'winget' : 'system')
+                : tool.name === 'npm' ? (IS_WIN ? 'winget' : 'npm-global')
+                  : 'npm-global'
       results.push({
         tool: tool.name,
         currentVersion: '',
@@ -226,40 +575,15 @@ async function checkToolUpdates(): Promise<UpdateInfo[]> {
         updateAvailable: false,
         installed: false,
         scope: 'global',
+        installSource: fallbackSource,
+        canInstall: canInstallTool(tool.name),
+        canUninstall,
       })
       continue
     }
 
-    let latestVersion: string | null = null
-
-    // Try to get latest version based on tool
-    if (tool.name === 'node') {
-      if (IS_WIN) {
-        latestVersion = await getLatestNpmVersion('node')
-      } else {
-        latestVersion = await getLatestBrewVersion('node')
-      }
-    } else if (tool.name === 'npm') {
-      if (await isBrewManaged('npm')) {
-        // npm is bundled with Homebrew's node — don't check npm registry
-        // The 'node' entry already handles brew updates; upgrading node updates npm too
-        latestVersion = currentVersion
-      } else {
-        latestVersion = await getLatestNpmVersion('npm')
-      }
-    } else if (tool.name === 'claude') {
-      latestVersion = await getLatestNpmVersion('@anthropic-ai/claude-code')
-    } else if (tool.name === 'cargo') {
-      // cargo version is managed by rustup — no easy remote version check
-      latestVersion = null
-    } else if (tool.name === 'codex') {
-      latestVersion = await getLatestNpmVersion('@openai/codex')
-    } else if (tool.name === 'copilot') {
-      latestVersion = await getLatestNpmVersion('@github/copilot')
-    } else if (tool.name === 'rtk') {
-      // rtk is a cargo crate — no easy remote version check, skip
-      latestVersion = null
-    }
+    const installResolution = await resolveToolInstallSource(tool.name)
+    const latestVersion = await getLatestVersionForTool(tool.name, currentVersion, installResolution)
 
     results.push({
       tool: tool.name,
@@ -268,6 +592,9 @@ async function checkToolUpdates(): Promise<UpdateInfo[]> {
       updateAvailable: latestVersion !== null && compareVersions(currentVersion, latestVersion),
       installed: true,
       scope: 'global',
+      installSource: installResolution.source,
+      canInstall: canInstallTool(tool.name),
+      canUninstall,
     })
   }
 
@@ -299,6 +626,9 @@ async function checkToolUpdates(): Promise<UpdateInfo[]> {
     updateAvailable: paUpdateAvailable,
     installed: pixelAgentsInstalled,
     scope: 'global',
+    installSource: 'internal',
+    canInstall: true,
+    canUninstall: true,
   })
 
   return results
@@ -381,67 +711,188 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
       try {
         let command: string
         let args: string[]
-
-        const npmIsBrewManaged = tool === 'npm' && (await isBrewManaged('npm'))
+        const toolCheck = TOOLS_TO_CHECK.find((entry) => entry.name === tool)
+        let isInstalled = tool === 'pixel-agents'
+          ? await isPixelAgentsInstalled()
+          : Boolean(toolCheck && await getVersion(toolCheck.checkCommand, toolCheck.checkArgs))
+        const installResolution = await resolveToolInstallSource(tool)
+        if (!isInstalled && installResolution.brew?.installed) {
+          isInstalled = true
+        }
 
         switch (tool) {
           case 'node':
             if (IS_WIN) {
               command = 'winget'
-              args = ['upgrade', '--id', 'OpenJS.NodeJS.LTS', '--silent', '--accept-source-agreements', '--accept-package-agreements']
-            } else {
+              args = [
+                isInstalled ? 'upgrade' : 'install',
+                '--id', 'OpenJS.NodeJS.LTS', '--silent',
+                '--accept-source-agreements', '--accept-package-agreements',
+              ]
+            } else if (installResolution.source.startsWith('brew')) {
               command = 'brew'
-              args = ['upgrade', 'node']
+              args = [isInstalled ? 'upgrade' : 'install', installResolution.brew?.name || 'node']
+            } else if (!isInstalled) {
+              command = 'brew'
+              args = ['install', 'node']
+            } else {
+              throw new Error('Cannot upgrade node automatically for non-Homebrew install on macOS')
             }
             break
           case 'npm':
-            if (IS_WIN) {
+            if (!isInstalled) {
+              if (IS_WIN) {
+                command = 'winget'
+                args = [
+                  'install', '--id', 'OpenJS.NodeJS.LTS', '--silent',
+                  '--accept-source-agreements', '--accept-package-agreements',
+                ]
+              } else {
+                command = 'brew'
+                args = ['install', 'node']
+              }
+            } else if (IS_WIN) {
               command = 'npm'
               args = ['install', '-g', 'npm@latest']
-            } else if (npmIsBrewManaged) {
+            } else if (installResolution.source.startsWith('brew')) {
               command = 'brew'
-              args = ['upgrade', 'node']
+              args = ['upgrade', installResolution.brew?.name || 'node']
             } else {
               command = 'npm'
               args = ['install', '-g', 'npm@latest']
             }
             break
+          case 'pnpm':
+            if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = installResolution.brew.kind === 'cask'
+                ? [isInstalled ? 'upgrade' : 'install', '--cask', installResolution.brew.name]
+                : [isInstalled ? 'upgrade' : 'install', installResolution.brew.name]
+            } else {
+              command = 'npm'
+              args = ['install', '-g', 'pnpm@latest']
+            }
+            break
+          case 'yarn':
+            if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = installResolution.brew.kind === 'cask'
+                ? [isInstalled ? 'upgrade' : 'install', '--cask', installResolution.brew.name]
+                : [isInstalled ? 'upgrade' : 'install', installResolution.brew.name]
+            } else {
+              command = 'npm'
+              args = ['install', '-g', 'yarn@latest']
+            }
+            break
           case 'claude':
-            command = 'npm'
-            args = ['install', '-g', '@anthropic-ai/claude-code@latest']
+            if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = installResolution.brew.kind === 'cask'
+                ? [isInstalled ? 'upgrade' : 'install', '--cask', installResolution.brew.name]
+                : [isInstalled ? 'upgrade' : 'install', installResolution.brew.name]
+            } else {
+              command = 'npm'
+              args = ['install', '-g', '@anthropic-ai/claude-code@latest']
+            }
             break
           case 'codex':
-            command = 'npm'
-            args = ['install', '-g', '@openai/codex@latest']
+            if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = installResolution.brew.kind === 'cask'
+                ? [isInstalled ? 'upgrade' : 'install', '--cask', installResolution.brew.name]
+                : [isInstalled ? 'upgrade' : 'install', installResolution.brew.name]
+            } else {
+              command = 'npm'
+              args = ['install', '-g', '@openai/codex@latest']
+            }
             break
           case 'copilot':
-            command = 'npm'
-            args = ['install', '-g', '@github/copilot@latest']
+            if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = installResolution.brew.kind === 'cask'
+                ? [isInstalled ? 'upgrade' : 'install', '--cask', installResolution.brew.name]
+                : [isInstalled ? 'upgrade' : 'install', installResolution.brew.name]
+            } else {
+              command = 'npm'
+              args = ['install', '-g', '@github/copilot@latest']
+            }
             break
           case 'git':
             if (IS_WIN) {
               command = 'winget'
-              args = ['upgrade', '--id', 'Git.Git', '--silent', '--accept-source-agreements', '--accept-package-agreements']
+              args = [
+                isInstalled ? 'upgrade' : 'install',
+                '--id', 'Git.Git', '--silent',
+                '--accept-source-agreements', '--accept-package-agreements',
+              ]
+            } else if (installResolution.source.startsWith('brew')) {
+              command = 'brew'
+              args = [isInstalled ? 'upgrade' : 'install', installResolution.brew?.name || 'git']
+            } else if (!isInstalled) {
+              command = 'brew'
+              args = ['install', 'git']
             } else {
               throw new Error(`Cannot upgrade git automatically on macOS`)
             }
             break
+          case 'go':
+            if (IS_WIN) {
+              command = 'winget'
+              args = [
+                isInstalled ? 'upgrade' : 'install',
+                '--id', 'GoLang.Go', '--silent',
+                '--accept-source-agreements', '--accept-package-agreements',
+              ]
+            } else if (installResolution.source.startsWith('brew')) {
+              command = 'brew'
+              args = [isInstalled ? 'upgrade' : 'install', installResolution.brew?.name || 'go']
+            } else if (!isInstalled) {
+              command = 'brew'
+              args = ['install', 'go']
+            } else {
+              throw new Error('Cannot upgrade go automatically for non-Homebrew install on macOS')
+            }
+            break
+          case 'python':
+            if (IS_WIN) {
+              command = 'winget'
+              args = [
+                isInstalled ? 'upgrade' : 'install',
+                '--id', 'Python.Python.3.13', '--silent',
+                '--accept-source-agreements', '--accept-package-agreements',
+              ]
+            } else if (installResolution.source.startsWith('brew')) {
+              command = 'brew'
+              args = [isInstalled ? 'upgrade' : 'install', installResolution.brew?.name || 'python']
+            } else if (!isInstalled) {
+              command = 'brew'
+              args = ['install', 'python']
+            } else {
+              throw new Error('Cannot upgrade python automatically for non-Homebrew install on macOS')
+            }
+            break
+          case 'pip':
+            if (!IS_WIN && installResolution.source.startsWith('brew')) {
+              command = 'brew'
+              args = ['upgrade', installResolution.brew?.name || 'python']
+            } else {
+              command = IS_WIN ? 'python' : 'python3'
+              args = ['-m', 'pip', 'install', '--upgrade', 'pip']
+            }
+            break
           case 'cargo': {
-            // Check if cargo is already installed — if so, update via rustup
-            let cargoExists = false
-            try {
-              await enrichedExecFile(getWhichCommand(), ['cargo'], 5000)
-              cargoExists = true
-            } catch { /* not installed */ }
-            if (cargoExists) {
-              command = 'rustup'
-              args = ['update']
-            } else if (IS_WIN) {
+            if (IS_WIN && !isInstalled) {
               command = 'winget'
               args = ['install', '--id', 'Rustlang.Rustup', '--silent', '--accept-source-agreements', '--accept-package-agreements']
-            } else {
+            } else if (!IS_WIN && !isInstalled) {
               command = 'brew'
-              args = ['install', 'rustup']
+              args = ['install', installResolution.brew?.name || 'rustup']
+            } else if (installResolution.source.startsWith('brew') && installResolution.brew?.name) {
+              command = 'brew'
+              args = ['upgrade', installResolution.brew.name]
+            } else {
+              command = 'rustup'
+              args = ['update']
             }
             break
           }

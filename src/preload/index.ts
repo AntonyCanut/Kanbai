@@ -358,8 +358,13 @@ const api = {
   // Updates
   updates: {
     check: () => ipcRenderer.invoke(IPC_CHANNELS.UPDATE_CHECK),
-    install: (tool: string, scope: string, projectId?: string): Promise<{ success: boolean; error?: string }> =>
-      ipcRenderer.invoke(IPC_CHANNELS.UPDATE_INSTALL, { tool, scope, projectId }),
+    install: (
+      tool: string,
+      scope: string,
+      projectId?: string,
+      installSource?: string,
+    ): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.UPDATE_INSTALL, { tool, scope, projectId, installSource }),
     uninstall: (tool: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.UPDATE_UNINSTALL, { tool }),
     onStatus: (callback: (data: unknown) => void) => {

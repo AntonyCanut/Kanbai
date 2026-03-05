@@ -29,7 +29,7 @@ function ensureKanbanHook(projectPath: string): void {
 # PENDING + CTO → auto-approve: revert to TODO (unblock CTO cycle)
 # PENDING + regular → activity "waiting" (double bell in Electron)
 # FAILED  → activity "failed"  (quad bell in Electron)
-# WORKING → interrupted, revert to TODO (renderer handles re-launch)
+# WORKING → block Claude from stopping and remind ticket update
 # DONE    → activity "done" (already written by kanbai-activity.sh)
 ACTIVITY_SCRIPT="$HOME/.kanbai/hooks/kanbai-activity.sh"
 
@@ -74,20 +74,17 @@ try {
     bash "$ACTIVITY_SCRIPT" failed
     ;;
   WORKING)
-    # Claude was interrupted — revert to TODO
+    # Claude forgot to update the ticket — block and remind
     node -e "
-const fs = require('fs');
-const file = process.env.KANBAI_KANBAN_FILE;
-const taskId = process.env.KANBAI_KANBAN_TASK_ID;
-try {
-  const tasks = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  const task = tasks.find(t => t.id === taskId);
-  if (task && task.status === 'WORKING') {
-    task.status = 'TODO';
-    task.updatedAt = Date.now();
-    fs.writeFileSync(file, JSON.stringify(tasks, null, 2), 'utf-8');
-  }
-} catch(e) { /* ignore */ }
+const reason = 'RAPPEL: Tu n as pas mis a jour le ticket kanban !\\n'
+  + 'Fichier: ' + process.env.KANBAI_KANBAN_FILE + '\\n'
+  + 'Ticket ID: ' + process.env.KANBAI_KANBAN_TASK_ID + '\\n\\n'
+  + 'Tu DOIS editer le fichier kanban pour mettre a jour ce ticket:\\n'
+  + '- Change status a DONE (succes), FAILED (echec), ou PENDING (question)\\n'
+  + '- Ajoute result, error, ou question selon le cas\\n'
+  + '- Mets a jour updatedAt avec Date.now()\\n\\n'
+  + 'Fais-le MAINTENANT avant de terminer.';
+process.stdout.write(JSON.stringify({ decision: 'block', reason: reason }));
 "
     ;;
 esac

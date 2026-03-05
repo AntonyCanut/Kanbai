@@ -31,6 +31,16 @@ describe('useUpdateStore', () => {
 
   it('marque une install comme succes uniquement si l IPC retourne success: true', async () => {
     mockUpdatesApi.install.mockResolvedValue({ success: true })
+    mockUpdatesApi.check.mockResolvedValue([
+      {
+        tool: 'codex',
+        currentVersion: '0.110.0',
+        latestVersion: '0.110.0',
+        updateAvailable: false,
+        installed: true,
+        scope: 'global',
+      },
+    ])
 
     await useUpdateStore.getState().installUpdate('codex', 'global')
 

@@ -146,9 +146,16 @@ function FlatPaneView({
     setActivePane(tabId, paneId)
   }, [tabId, paneId, setActivePane])
 
+  const isKanbanLinkedTab = useKanbanStore((s) =>
+    Object.values(s.kanbanTabIds).includes(tabId),
+  )
+
   const handleClose = useCallback(() => {
+    // For Kanban-linked terminals, never auto-close on PTY exit.
+    // The tab stays visible and can only be closed explicitly by the user.
+    if (isKanbanLinkedTab) return
     closePane(tabId, paneId)
-  }, [tabId, paneId, closePane])
+  }, [tabId, paneId, closePane, isKanbanLinkedTab])
 
   const handleSessionCreated = useCallback(
     (sessionId: string) => {

@@ -96,6 +96,7 @@ interface KanbanState {
   isLoading: boolean
   draggedTaskId: string | null
   currentWorkspaceId: string | null
+  startupDoneCleanupPerformed: boolean
   kanbanTabIds: Record<string, string>
   kanbanPromptCwds: Record<string, string>
   backgroundTasks: Record<string, KanbanTask[]>
@@ -136,6 +137,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
   isLoading: false,
   draggedTaskId: null,
   currentWorkspaceId: null,
+  startupDoneCleanupPerformed: false,
   kanbanTabIds: {},
   kanbanPromptCwds: {},
   backgroundTasks: {},
@@ -156,20 +158,14 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       const tasks: KanbanTask[] = await window.kanbai.kanban.list(workspaceId)
       set({ tasks })
 
-      // Clean up terminals linked to closed tickets (DONE/FAILED)
-      // only if autoClose setting is enabled
-      let autoCloseOnLoad = false
-      try {
-        const settings = await window.kanbai.settings.get()
-        autoCloseOnLoad = settings.autoCloseCompletedTerminals ?? false
-      } catch { /* default to false */ }
-
-      if (autoCloseOnLoad) {
+      // Startup-only cleanup: close stale terminals linked to DONE tickets.
+      if (!get().startupDoneCleanupPerformed) {
+        set({ startupDoneCleanupPerformed: true })
         const { kanbanTabIds: staleTabIds } = get()
         const closedTabIds: string[] = []
         for (const [taskId, tabId] of Object.entries(staleTabIds)) {
           const task = tasks.find((t) => t.id === taskId)
-          if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
+          if (task && task.status === 'DONE') {
             closedTabIds.push(tabId)
           }
         }
@@ -217,20 +213,9 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       const newTasks: KanbanTask[] = await window.kanbai.kanban.list(currentWorkspaceId)
 
       let taskFinished = false
-      const tabsToClose: string[] = []
-
-      // Check auto-close settings
-      let autoCloseEnabled = false
-      let autoCloseCtoEnabled = true
-      try {
-        const settings = await window.kanbai.settings.get()
-        autoCloseEnabled = settings.autoCloseCompletedTerminals ?? false
-        autoCloseCtoEnabled = settings.autoCloseCtoTerminals ?? true
-      } catch { /* default to false / true */ }
 
       // Detect status transitions for all tasks
       const tasksToLaunch: KanbanTask[] = []
-      const tasksToRelaunch: KanbanTask[] = []
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id)
         if (!oldTask) continue
@@ -256,20 +241,8 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
             workspaceId: currentWorkspaceId!,
           }).catch(() => { /* best-effort */ })
           newTask.status = 'TODO'
-          if (tabId && autoCloseCtoEnabled) tabsToClose.push(tabId)
           taskFinished = true
           continue
-        }
-
-        // Re-launch: when a ticket was WORKING and reverted to TODO (hook detected interruption),
-        // re-launch once to remind Claude to update the ticket status
-        if (newTask.status === 'TODO' && oldTask.status === 'WORKING' && !isCtoMode) {
-          if (!relaunchedTaskIds.has(newTask.id)) {
-            relaunchedTaskIds.add(newTask.id)
-            if (tabId) tabsToClose.push(tabId)
-            tasksToRelaunch.push(newTask)
-            continue
-          }
         }
 
         if (!tabId) continue
@@ -279,7 +252,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#a6e3a1')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id) // allow future re-launch
-          if (autoCloseEnabled) tabsToClose.push(tabId)
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -300,7 +272,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#f38ba8')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id) // allow future re-launch
-          if (autoCloseEnabled) tabsToClose.push(tabId)
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -323,57 +294,13 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabActivity(tabId, true)
           // PENDING does NOT trigger next task — the task is still "in progress"
         }
-        // CTO-mode tickets return to TODO when their session ends — auto-close their terminal
-        if (newTask.status === 'TODO' && oldTask.status === 'WORKING' && isCtoMode && autoCloseCtoEnabled) {
-          tabsToClose.push(tabId)
-        }
       }
 
       set({ tasks: newTasks })
 
-      // Clean up terminals linked to already-closed tickets (DONE/FAILED)
-      // only if autoClose setting is enabled
-      if (autoCloseEnabled) {
-        for (const [taskId, tabId] of Object.entries(kanbanTabIds)) {
-          if (tabsToClose.includes(tabId)) continue // already scheduled for close
-          const task = newTasks.find((t) => t.id === taskId)
-          if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
-            tabsToClose.push(tabId)
-          }
-        }
-      }
-
       // Launch Claude terminals for tasks manually moved to WORKING
       for (const task of tasksToLaunch) {
         get().sendToAi(task)
-      }
-
-      // Re-launch tasks that were WORKING but reverted to TODO by the hook
-      // This reminds Claude to properly update the ticket status
-      if (tasksToRelaunch.length > 0) {
-        setTimeout(() => {
-          for (const task of tasksToRelaunch) {
-            get().sendToAi(task)
-          }
-        }, 3000) // delay to let tabs close first
-      }
-
-      // Auto-close terminal tabs for completed tasks if setting is enabled
-      if (tabsToClose.length > 0) {
-        const termStore = useTerminalTabStore.getState()
-        // Remove kanban tab mappings for closed tabs
-        const newKanbanTabIds = { ...get().kanbanTabIds }
-        for (const tabId of tabsToClose) {
-          const taskId = Object.keys(newKanbanTabIds).find((id) => newKanbanTabIds[id] === tabId)
-          if (taskId) delete newKanbanTabIds[taskId]
-        }
-        set({ kanbanTabIds: newKanbanTabIds })
-        // Close tabs with a small delay to let the color change be visible
-        setTimeout(() => {
-          for (const tabId of tabsToClose) {
-            termStore.closeTab(tabId)
-          }
-        }, 2000)
       }
 
       // After a task finishes (DONE/FAILED), pick the next one with a delay
@@ -764,18 +691,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       const { kanbanTabIds, kanbanPromptCwds } = get()
 
       let taskFinished = false
-      const tabsToClose: string[] = []
-
-      // Check auto-close settings
-      let autoCloseEnabled = false
-      let autoCloseCtoEnabled = true
-      try {
-        const settings = await window.kanbai.settings.get()
-        autoCloseEnabled = settings.autoCloseCompletedTerminals ?? false
-        autoCloseCtoEnabled = settings.autoCloseCtoTerminals ?? true
-      } catch { /* defaults */ }
-
-      const tasksToRelaunch: KanbanTask[] = []
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id)
         if (!oldTask) continue
@@ -794,19 +709,8 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
             workspaceId: wsId,
           }).catch(() => { /* best-effort */ })
           newTask.status = 'TODO'
-          if (tabId && autoCloseCtoEnabled) tabsToClose.push(tabId)
           taskFinished = true
           continue
-        }
-
-        // Re-launch: WORKING → TODO (hook interrupted)
-        if (newTask.status === 'TODO' && oldTask.status === 'WORKING' && !isCtoMode) {
-          if (!relaunchedTaskIds.has(newTask.id)) {
-            relaunchedTaskIds.add(newTask.id)
-            if (tabId) tabsToClose.push(tabId)
-            tasksToRelaunch.push(newTask)
-            continue
-          }
         }
 
         if (!tabId) continue
@@ -816,7 +720,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#a6e3a1')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id)
-          if (autoCloseEnabled) tabsToClose.push(tabId)
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -836,7 +739,6 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#f38ba8')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id)
-          if (autoCloseEnabled) tabsToClose.push(tabId)
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -857,40 +759,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#f9e2af')
           termStore.setTabActivity(tabId, true)
         }
-        if (newTask.status === 'TODO' && oldTask.status === 'WORKING' && isCtoMode && autoCloseCtoEnabled) {
-          tabsToClose.push(tabId)
-        }
       }
 
       // Update background cache
       set((state) => ({
         backgroundTasks: { ...state.backgroundTasks, [wsId]: newTasks },
       }))
-
-      // Auto-close tabs
-      if (tabsToClose.length > 0) {
-        const termStore = useTerminalTabStore.getState()
-        const newKanbanTabIds = { ...get().kanbanTabIds }
-        for (const tabId of tabsToClose) {
-          const taskId = Object.keys(newKanbanTabIds).find((id) => newKanbanTabIds[id] === tabId)
-          if (taskId) delete newKanbanTabIds[taskId]
-        }
-        set({ kanbanTabIds: newKanbanTabIds })
-        setTimeout(() => {
-          for (const tabId of tabsToClose) {
-            termStore.closeTab(tabId)
-          }
-        }, 2000)
-      }
-
-      // Re-launch interrupted tasks
-      if (tasksToRelaunch.length > 0) {
-        setTimeout(() => {
-          for (const task of tasksToRelaunch) {
-            get().sendToAi(task, wsId)
-          }
-        }, 3000)
-      }
 
       // Pick next TODO after a task finishes
       if (taskFinished) {

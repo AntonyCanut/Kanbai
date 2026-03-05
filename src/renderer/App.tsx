@@ -22,7 +22,6 @@ import { ApiTesterPanel } from './components/ApiTesterPanel'
 import { HealthCheckPanel } from './components/HealthCheckPanel'
 import { DatabaseExplorer } from './components/DatabaseExplorer'
 import { CodeAnalysisPanel } from './components/CodeAnalysisPanel'
-import { AppUpdateModal } from './components/AppUpdateModal'
 import { TutorialModal } from './components/TutorialModal'
 import { ToastContainer } from './components/ToastContainer'
 import { useWorkspaceStore } from './lib/stores/workspaceStore'
@@ -145,12 +144,12 @@ export function App() {
         return false
       }
 
-      // Skip tabs linked to closed tickets (DONE/FAILED) — no need to restore them
+      // Skip tabs linked to closed tickets (DONE) — no need to restore them
       const { kanbanTabIds, tasks: kanbanTasks } = useKanbanStore.getState()
       const closedTicketTabIds = new Set<string>()
       for (const [taskId, tabId] of Object.entries(kanbanTabIds)) {
         const task = kanbanTasks.find((t) => t.id === taskId)
-        if (task && (task.status === 'DONE' || task.status === 'FAILED')) {
+        if (task && task.status === 'DONE') {
           closedTicketTabIds.add(tabId)
         }
       }
@@ -224,6 +223,19 @@ export function App() {
       }
     })
     return unsubscribe
+  }, [setViewMode])
+
+  // Open settings (optionally on a specific section) from global UI events.
+  useEffect(() => {
+    const openSettings = (event: Event) => {
+      const custom = event as CustomEvent<{ section?: string }>
+      if (custom.detail?.section) {
+        window.sessionStorage.setItem('kanbai:settingsSection', custom.detail.section)
+      }
+      setViewMode('settings')
+    }
+    window.addEventListener('kanbai:open-settings-section', openSettings as EventListener)
+    return () => window.removeEventListener('kanbai:open-settings-section', openSettings as EventListener)
   }, [setViewMode])
 
   // Global keyboard shortcuts
@@ -585,7 +597,6 @@ export function App() {
         open={commandPaletteOpen || quickSwitchOpen}
         onClose={() => { setCommandPaletteOpen(false); setQuickSwitchOpen(false) }}
       />
-      <AppUpdateModal />
       <ToastContainer />
       {tutorialSection !== null && (
         <TutorialModal

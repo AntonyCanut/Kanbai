@@ -111,6 +111,44 @@ describe('Update IPC Handlers', () => {
       expect(npmInfo.updateAvailable).toBe(true)
     })
 
+    if (!IS_WIN) {
+      it('utilise brew pour verifier codex quand il est installe via Homebrew', async () => {
+        mockExecFile.mockImplementation((command: string, args: string[]) => {
+          if (command === 'codex' && args[0] === '--version') {
+            return Promise.resolve({ stdout: 'codex-cli 0.107.0\n' })
+          }
+          if (command === 'brew' && args[0] === 'info' && args[2] === 'codex') {
+            return Promise.resolve({
+              stdout: JSON.stringify({
+                formulae: [],
+                casks: [{ version: '0.108.0', installed: '0.107.0' }],
+              }),
+            })
+          }
+          if (command === 'npm' && args[0] === 'view' && args[1] === '@openai/codex') {
+            return Promise.reject(new Error('unexpected npm lookup for brew-managed codex'))
+          }
+          return Promise.reject(new Error('not found'))
+        })
+
+        const results = await mockIpcMain._invoke('update:check')
+        const codexInfo = results.find((r: { tool: string }) => r.tool === 'codex')
+
+        expect(codexInfo).toBeDefined()
+        expect(codexInfo.currentVersion).toBe('0.107.0')
+        expect(codexInfo.latestVersion).toBe('0.108.0')
+        expect(codexInfo.updateAvailable).toBe(true)
+
+        const npmCodexViewCalls = mockExecFile.mock.calls.filter(
+          (call: unknown[]) =>
+            call[0] === 'npm'
+            && (call[1] as string[])[0] === 'view'
+            && (call[1] as string[])[1] === '@openai/codex',
+        )
+        expect(npmCodexViewCalls).toHaveLength(0)
+      })
+    }
+
     it('retourne les outils introuvables avec installed a false', async () => {
       mockExecFile.mockImplementation((command: string, args: string[]) => {
         if (command === 'node' && args[0] === '--version') {
@@ -268,6 +306,92 @@ describe('Update IPC Handlers', () => {
       )
       expect(installCall).toBeDefined()
     })
+
+    if (!IS_WIN) {
+      it('installe codex via brew --cask quand codex est gere par Homebrew', async () => {
+        mockExecFile.mockImplementation((command: string, args: string[]) => {
+          if (command === 'codex' && args[0] === '--version') {
+            return Promise.resolve({ stdout: 'codex-cli 0.107.0\n' })
+          }
+          if (command === 'brew' && args[0] === 'info' && args[2] === 'codex') {
+            return Promise.resolve({
+              stdout: JSON.stringify({
+                formulae: [],
+                casks: [{ version: '0.108.0', installed: '0.107.0' }],
+              }),
+            })
+          }
+          if (
+            command === 'brew'
+            && args[0] === 'upgrade'
+            && args[1] === '--cask'
+            && args[2] === 'codex'
+          ) {
+            return Promise.resolve({ stdout: '', stderr: '' })
+          }
+          return Promise.reject(new Error(`Unexpected command: ${command} ${args.join(' ')}`))
+        })
+
+        const result = await mockIpcMain._invoke('update:install', {
+          tool: 'codex',
+          scope: 'global',
+        })
+
+        expect(result).toEqual({ success: true })
+
+        const brewUpgradeCall = mockExecFile.mock.calls.find(
+          (call: unknown[]) =>
+            call[0] === 'brew'
+            && (call[1] as string[])[0] === 'upgrade'
+            && (call[1] as string[])[1] === '--cask'
+            && (call[1] as string[])[2] === 'codex',
+        )
+        expect(brewUpgradeCall).toBeDefined()
+
+        const npmCodexInstallCall = mockExecFile.mock.calls.find(
+          (call: unknown[]) =>
+            call[0] === 'npm' && (call[1] as string[]).includes('@openai/codex@latest'),
+        )
+        expect(npmCodexInstallCall).toBeUndefined()
+      })
+    }
+
+    if (!IS_WIN) {
+      it('installe go via brew quand go est gere par Homebrew', async () => {
+        mockExecFile.mockImplementation((command: string, args: string[]) => {
+          if (command === 'go' && args[0] === 'version') {
+            return Promise.resolve({ stdout: 'go version go1.22.1 darwin/arm64\n' })
+          }
+          if (command === 'brew' && args[0] === 'info' && args[2] === 'go') {
+            return Promise.resolve({
+              stdout: JSON.stringify({
+                formulae: [{ versions: { stable: '1.22.2' }, installed: [{}] }],
+                casks: [],
+              }),
+            })
+          }
+          if (command === 'brew' && args[0] === 'upgrade' && args[1] === 'go') {
+            return Promise.resolve({ stdout: '', stderr: '' })
+          }
+          return Promise.reject(new Error(`Unexpected command: ${command} ${args.join(' ')}`))
+        })
+
+        const result = await mockIpcMain._invoke('update:install', {
+          tool: 'go',
+          scope: 'global',
+        })
+
+        expect(result).toEqual({ success: true })
+
+        const brewUpgradeCall = mockExecFile.mock.calls.find(
+          (call: unknown[]) =>
+            call[0] === 'brew'
+            && (call[1] as string[])[0] === 'upgrade'
+            && (call[1] as string[])[1] === 'go',
+        )
+        expect(brewUpgradeCall).toBeDefined()
+      })
+    }
 
     it('echoue pour un outil inconnu', async () => {
       const result = await mockIpcMain._invoke('update:install', {
