@@ -53,6 +53,7 @@ export function HealthCheckPanel() {
     schedulerRunning,
     loading,
     loadData,
+    importData,
     refreshData,
     addCheck,
     updateCheck,
@@ -64,13 +65,14 @@ export function HealthCheckPanel() {
     handleStatusUpdate,
     clearHistory,
     selectCheck,
+    flushSave,
   } = useHealthCheckStore()
 
   const [executingIds, setExecutingIds] = useState<Set<string>>(new Set())
   const [historyPage, setHistoryPage] = useState(0)
   const autoStartAttempted = useRef(false)
 
-  // Resolve workspace env path
+  // Resolve workspace env path and flush saves when workspace changes
   useEffect(() => {
     if (!activeWorkspace) {
       setWorkspacePath('')
@@ -81,12 +83,17 @@ export function HealthCheckPanel() {
     })
   }, [activeWorkspace])
 
-  // Load data when workspace changes
+  // Load data when workspace path changes — flush old saves first
   useEffect(() => {
     if (!workspacePath) return
     autoStartAttempted.current = false
     loadData(workspacePath)
-  }, [workspacePath, loadData])
+
+    // On cleanup (workspace change or unmount), flush pending debounced saves
+    return () => {
+      flushSave(workspacePath)
+    }
+  }, [workspacePath, loadData, flushSave])
 
   // Auto-start scheduler when data is loaded and checks have enabled schedules
   useEffect(() => {
@@ -223,10 +230,9 @@ export function HealthCheckPanel() {
   const handleImport = useCallback(async () => {
     const result = await window.kanbai.healthcheck.import()
     if (result.success && result.data && workspacePath) {
-      await window.kanbai.healthcheck.save(workspacePath, result.data)
-      await loadData(workspacePath)
+      await importData(workspacePath, result.data)
     }
-  }, [workspacePath, loadData])
+  }, [workspacePath, importData])
 
   const handleAddHeader = useCallback(() => {
     if (!selectedCheck) return

@@ -34,8 +34,13 @@ function ensureKanbaiDir(projectPath: string): void {
 }
 
 function saveHealthCheckFile(projectPath: string, data: HealthCheckFile): void {
+  if (!projectPath) {
+    console.error('[HealthCheck] saveHealthCheckFile called with empty projectPath')
+    return
+  }
   ensureKanbaiDir(projectPath)
-  fs.writeFileSync(getHealthChecksPath(projectPath), JSON.stringify(data, null, 2), 'utf-8')
+  const filePath = getHealthChecksPath(projectPath)
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
 
 /**
@@ -86,8 +91,10 @@ export function registerHealthCheckHandlers(ipcMain: IpcMain): void {
     IPC_CHANNELS.HEALTHCHECK_LOAD,
     async (_event, { projectPath }: { projectPath: string }) => {
       const filePath = getHealthChecksPath(projectPath)
+      const exists = fs.existsSync(filePath)
+      console.log(`[HealthCheck] load from ${filePath} (exists: ${exists})`)
 
-      if (!fs.existsSync(filePath)) {
+      if (!exists) {
         // Try migration from api-tests.json
         const migrated = migrateFromApiTests(projectPath)
         if (migrated) {
@@ -99,8 +106,11 @@ export function registerHealthCheckHandlers(ipcMain: IpcMain): void {
 
       try {
         const raw = fs.readFileSync(filePath, 'utf-8')
-        return JSON.parse(raw) as HealthCheckFile
-      } catch {
+        const parsed = JSON.parse(raw) as HealthCheckFile
+        console.log(`[HealthCheck] loaded ${parsed.checks.length} checks`)
+        return parsed
+      } catch (err) {
+        console.error('[HealthCheck] failed to read file:', err)
         return defaultHealthCheckFile()
       }
     },
@@ -110,6 +120,7 @@ export function registerHealthCheckHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(
     IPC_CHANNELS.HEALTHCHECK_SAVE,
     async (_event, { projectPath, data }: { projectPath: string; data: HealthCheckFile }) => {
+      console.log(`[HealthCheck] save ${data.checks.length} checks to ${getHealthChecksPath(projectPath)}`)
       saveHealthCheckFile(projectPath, data)
       return { success: true }
     },

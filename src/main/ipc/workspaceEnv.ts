@@ -229,10 +229,11 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
 
         // Clean existing env dir: remove old symlinks/junctions AND leftover
         // copied directories (from a previous fs.cpSync fallback).
-        // Preserve AI config dirs and memory files which are managed by applyAiRulesToEnv.
+        // Preserve AI config dirs, memory files, and .kanbai (user data: health checks, hooks, etc.)
         const PRESERVED = new Set([
           ...AI_CONFIG_DIRS,
           ...Object.values(AI_MEMORY_FILES),
+          '.kanbai',
         ])
         if (fs.existsSync(envDir)) {
           const existing = fs.readdirSync(envDir)

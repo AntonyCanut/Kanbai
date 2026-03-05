@@ -20,12 +20,15 @@ interface HealthCheckState {
   selectedCheckId: string | null
   schedulerRunning: boolean
   loading: boolean
+  currentProjectPath: string | null
+  dirty: boolean
 
   loadData: (projectPath: string) => Promise<void>
+  importData: (projectPath: string, data: HealthCheckFile) => Promise<void>
   saveData: (projectPath: string) => Promise<void>
-  addCheck: (projectPath: string) => void
+  addCheck: (projectPath: string) => Promise<void>
   updateCheck: (projectPath: string, checkId: string, updates: Partial<HealthCheckConfig>) => void
-  deleteCheck: (projectPath: string, checkId: string) => void
+  deleteCheck: (projectPath: string, checkId: string) => Promise<void>
   executeCheck: (projectPath: string, checkId: string) => Promise<HealthCheckLogEntry | null>
   startScheduler: (projectPath: string) => Promise<void>
   stopScheduler: (projectPath: string) => Promise<void>
@@ -34,7 +37,26 @@ interface HealthCheckState {
   refreshData: (projectPath: string) => Promise<void>
   clearHistory: (projectPath: string) => Promise<void>
   selectCheck: (checkId: string | null) => void
+  flushSave: (projectPath: string) => Promise<void>
   reset: () => void
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+async function persistData(projectPath: string, data: HealthCheckFile): Promise<void> {
+  try {
+    await window.kanbai.healthcheck.save(projectPath, data)
+  } catch (err) {
+    console.error('[HealthCheck] Failed to save data:', err)
+  }
+}
+
+function debouncedSave(projectPath: string, data: HealthCheckFile): void {
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    saveTimer = null
+    persistData(projectPath, data)
+  }, 300)
 }
 
 export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
@@ -43,8 +65,17 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
   selectedCheckId: null,
   schedulerRunning: false,
   loading: false,
+  currentProjectPath: null,
+  dirty: false,
 
   loadData: async (projectPath: string) => {
+    const { currentProjectPath, dirty } = get()
+
+    // If we already have data for this project and it hasn't been flushed yet, skip reload
+    if (currentProjectPath === projectPath && dirty) {
+      return
+    }
+
     set({ loading: true })
     try {
       const data = await window.kanbai.healthcheck.load(projectPath)
@@ -58,18 +89,28 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
         statuses: statusMap,
         schedulerRunning: statuses.length > 0,
         loading: false,
+        currentProjectPath: projectPath,
+        dirty: false,
       })
-    } catch {
-      set({ data: defaultHealthCheckFile(), loading: false })
+    } catch (err) {
+      console.error('[HealthCheck] Failed to load data:', err)
+      set({ data: defaultHealthCheckFile(), loading: false, currentProjectPath: projectPath, dirty: false })
     }
+  },
+
+  importData: async (projectPath: string, data: HealthCheckFile) => {
+    set({ data, currentProjectPath: projectPath, dirty: true })
+    await persistData(projectPath, data)
+    set({ dirty: false })
   },
 
   saveData: async (projectPath: string) => {
     const { data } = get()
-    await window.kanbai.healthcheck.save(projectPath, data)
+    await persistData(projectPath, data)
+    set({ dirty: false })
   },
 
-  addCheck: (projectPath: string) => {
+  addCheck: async (projectPath: string) => {
     const { data } = get()
     const now = Date.now()
     const newCheck: HealthCheckConfig = {
@@ -85,8 +126,9 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
       updatedAt: now,
     }
     const updated = { ...data, checks: [...data.checks, newCheck] }
-    set({ data: updated, selectedCheckId: newCheck.id })
-    window.kanbai.healthcheck.save(projectPath, updated)
+    set({ data: updated, selectedCheckId: newCheck.id, dirty: true })
+    await persistData(projectPath, updated)
+    set({ dirty: false })
   },
 
   updateCheck: (projectPath: string, checkId: string, updates: Partial<HealthCheckConfig>) => {
@@ -97,11 +139,11 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
         c.id === checkId ? { ...c, ...updates, updatedAt: Date.now() } : c,
       ),
     }
-    set({ data: updated })
-    window.kanbai.healthcheck.save(projectPath, updated)
+    set({ data: updated, dirty: true })
+    debouncedSave(projectPath, updated)
   },
 
-  deleteCheck: (projectPath: string, checkId: string) => {
+  deleteCheck: async (projectPath: string, checkId: string) => {
     const { data, selectedCheckId } = get()
     const updated = {
       ...data,
@@ -112,8 +154,10 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
     set({
       data: updated,
       selectedCheckId: selectedCheckId === checkId ? null : selectedCheckId,
+      dirty: true,
     })
-    window.kanbai.healthcheck.save(projectPath, updated)
+    await persistData(projectPath, updated)
+    set({ dirty: false })
   },
 
   executeCheck: async (projectPath: string, checkId: string) => {
@@ -124,7 +168,7 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
     const logEntry = await window.kanbai.healthcheck.execute(projectPath, check, data)
     // Reload data after execution (scheduler updates it)
     const freshData = await window.kanbai.healthcheck.load(projectPath)
-    set({ data: freshData })
+    set({ data: freshData, dirty: false })
     return logEntry
   },
 
@@ -153,6 +197,9 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
   },
 
   refreshData: async (projectPath: string) => {
+    const { dirty } = get()
+    // Don't reload from disk if we have unsaved changes
+    if (dirty) return
     try {
       const freshData = await window.kanbai.healthcheck.load(projectPath)
       set({ data: freshData })
@@ -172,13 +219,31 @@ export const useHealthCheckStore = create<HealthCheckState>((set, get) => ({
     set({ selectedCheckId: checkId })
   },
 
+  flushSave: async (projectPath: string) => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    const { data, dirty } = get()
+    if (dirty) {
+      await persistData(projectPath, data)
+      set({ dirty: false })
+    }
+  },
+
   reset: () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
     set({
       data: defaultHealthCheckFile(),
       statuses: {},
       selectedCheckId: null,
       schedulerRunning: false,
       loading: false,
+      currentProjectPath: null,
+      dirty: false,
     })
   },
 }))
