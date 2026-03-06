@@ -160,7 +160,7 @@ export function registerAnalysisTools(server: McpServer, ctx: WorkspaceContext):
           description: buildTicketDescription(findings),
           status: 'TODO',
           priority: 'high',
-          labels: ['refactor', 'bug', report.toolName.toLowerCase()],
+          type: 'bug',
           createdAt: Date.now(),
           updatedAt: Date.now(),
         }

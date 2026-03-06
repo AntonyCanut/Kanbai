@@ -169,13 +169,7 @@ export function TodoScanner() {
         `### ${e.file}:${e.line}\n- **Type**: ${e.type}\n- **Message**: ${e.text}\n\`\`\`\n${e.codeLine}\n\`\`\``
       ).join('\n\n')
 
-      await createTask(activeWorkspaceId, title, description, 'medium', activeProjectId || undefined)
-      // Get the newly created task and add labels
-      const tasks = useKanbanStore.getState().tasks
-      const newest = tasks[tasks.length - 1]
-      if (newest) {
-        await updateTask(newest.id, { labels: ['refactor'] })
-      }
+      await createTask(activeWorkspaceId, title, description, 'medium', 'refactor' as const, activeProjectId || undefined)
     }
 
     setSelectedEntries(new Set())

@@ -120,7 +120,7 @@ export function CodeAnalysisPanel() {
   const [groupBy] = useState<GroupBy>('file')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [ticketGroupBy, setTicketGroupBy] = useState<TicketGroupBy>('individual')
-  const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
+  const [ticketPriority, setTicketPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [showTicketModal, setShowTicketModal] = useState(false)
   const [detectingTools, setDetectingTools] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
@@ -1248,12 +1248,11 @@ export function CodeAnalysisPanel() {
                 <select
                   className="analysis-modal-select"
                   value={ticketPriority}
-                  onChange={(e) => setTicketPriority(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
+                  onChange={(e) => setTicketPriority(e.target.value as 'low' | 'medium' | 'high')}
                 >
                   <option value="low">{t('kanban.low')}</option>
                   <option value="medium">{t('kanban.medium')}</option>
                   <option value="high">{t('kanban.high')}</option>
-                  <option value="critical">{t('kanban.critical')}</option>
                 </select>
               </div>
 

@@ -1,15 +1,17 @@
 import { IpcMain, BrowserWindow, dialog } from 'electron'
+import { type ChildProcess } from 'child_process'
 import { v4 as uuid } from 'uuid'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { IPC_CHANNELS, KanbanTask, KanbanStatus, KanbanAttachment } from '../../shared/types'
+import { IPC_CHANNELS, KanbanTask, KanbanTaskType, KanbanStatus, KanbanAttachment } from '../../shared/types'
 import {
   getKanbanPath,
   readKanbanTasks,
   writeKanbanTasks,
   maybeCreateMemoryRefactorTicket,
 } from '../../mcp-server/lib/kanban-store'
+import { callAiCli } from '../services/ai-cli'
 
 /**
  * Ensures a Claude Stop hook exists to auto-update kanban task status.
@@ -231,6 +233,46 @@ function findNewestClaudeConversation(cwd: string): string | null {
   }
 }
 
+/**
+ * Migrates a legacy task: infers type from labels, removes labels,
+ * downgrades critical priority to high.
+ */
+function migrateTask(task: KanbanTask & { labels?: string[] }): boolean {
+  let changed = false
+
+  if (!task.type) {
+    const labels = (task as { labels?: string[] }).labels ?? []
+    const labelMap: Record<string, KanbanTaskType> = {
+      bug: 'bug',
+      feature: 'feature',
+      refactor: 'refactor',
+      docs: 'doc',
+      test: 'test',
+    }
+    let inferred: KanbanTaskType = 'feature'
+    for (const label of labels) {
+      if (label in labelMap) {
+        inferred = labelMap[label]!
+        break
+      }
+    }
+    task.type = inferred
+    changed = true
+  }
+
+  if ((task.priority as string) === 'critical') {
+    task.priority = 'high'
+    changed = true
+  }
+
+  if ('labels' in task) {
+    delete (task as unknown as Record<string, unknown>).labels
+    changed = true
+  }
+
+  return changed
+}
+
 // Multi-workspace file watcher state for kanban files
 const watchers = new Map<string, { watcher: fs.FSWatcher; debounceTimer: ReturnType<typeof setTimeout> | null }>()
 
@@ -299,22 +341,29 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
       if (!workspaceId) return []
       const tasks = readKanbanTasks(workspaceId)
 
+      let needsWrite = false
+
       // Migration: assign ticketNumber to tasks that don't have one
-      const needsMigration = tasks.some((t) => t.ticketNumber == null)
-      if (needsMigration) {
-        // Sort by createdAt to assign numbers in chronological order
+      const needsTicketMigration = tasks.some((t) => t.ticketNumber == null)
+      if (needsTicketMigration) {
         const sorted = [...tasks].sort((a, b) => a.createdAt - b.createdAt)
         let nextNum = 1
         for (const t of sorted) {
           if (t.ticketNumber == null) {
-            // Find the actual task in the array and assign
             const original = tasks.find((o) => o.id === t.id)!
             original.ticketNumber = nextNum
           }
           nextNum = Math.max(nextNum, (t.ticketNumber ?? nextNum) + 1)
         }
-        writeKanbanTasks(workspaceId, tasks)
+        needsWrite = true
       }
+
+      // Migration: labels → type, critical → high
+      for (const task of tasks) {
+        if (migrateTask(task)) needsWrite = true
+      }
+
+      if (needsWrite) writeKanbanTasks(workspaceId, tasks)
 
       return tasks
     },
@@ -329,11 +378,11 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
         targetProjectId?: string
         title: string
         description: string
-        priority: 'low' | 'medium' | 'high' | 'critical'
+        priority: 'low' | 'medium' | 'high'
+        type?: KanbanTaskType
         status?: KanbanStatus
         isCtoTicket?: boolean
         disabled?: boolean
-        labels?: string[]
         aiProvider?: string
       },
     ) => {
@@ -341,6 +390,25 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
 
       // Calculate next ticket number
       const maxTicketNumber = tasks.reduce((max, t) => Math.max(max, t.ticketNumber ?? 0), 0)
+
+      // Auto-prioritize bugs to high if setting enabled
+      let finalPriority = data.priority
+      const taskType = data.type ?? 'feature'
+      if (taskType === 'bug') {
+        try {
+          const dataPath = path.join(os.homedir(), '.kanbai', 'data.json')
+          if (fs.existsSync(dataPath)) {
+            const appData = JSON.parse(fs.readFileSync(dataPath, 'utf-8'))
+            if (appData.settings?.kanbanSettings?.autoPrioritizeBugs !== false) {
+              finalPriority = 'high'
+            }
+          } else {
+            finalPriority = 'high'
+          }
+        } catch {
+          finalPriority = 'high'
+        }
+      }
 
       const task: KanbanTask = {
         id: uuid(),
@@ -350,10 +418,10 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
         title: data.title,
         description: data.description,
         status: data.status || 'TODO',
-        priority: data.priority,
+        priority: finalPriority,
+        type: taskType,
         isCtoTicket: data.isCtoTicket,
         disabled: data.disabled,
-        labels: data.labels,
         aiProvider: data.aiProvider as KanbanTask['aiProvider'],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -577,6 +645,7 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
       return {
         ticketNumber: active.ticketNumber ?? null,
         isCtoTicket: isCto,
+        type: active.type,
       }
     },
   )
@@ -628,6 +697,42 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
       }
 
       return conversationPath
+    },
+  )
+
+  const prequalifyProcesses = new Map<string, ChildProcess>()
+
+  ipcMain.handle(
+    IPC_CHANNELS.KANBAN_PREQUALIFY,
+    async (
+      _event,
+      { title, description }: { title: string; description: string },
+    ) => {
+      const prompt = `Analyse ce ticket Kanban et retourne UNIQUEMENT un JSON valide (pas de markdown, pas de texte autour) avec cette structure exacte :
+{"suggestedType":"bug"|"feature"|"test"|"doc"|"ia"|"refactor","suggestedPriority":"low"|"medium"|"high","clarifiedDescription":"description amelioree","isVague":true|false}
+
+IMPORTANT : La "clarifiedDescription" doit IMPERATIVEMENT conserver l'idee originale du ticket. Tu ameliores la formulation pour qu'elle soit claire et actionnable par une IA, mais tu ne remplaces JAMAIS l'intention de l'utilisateur. Si le titre dit "fix le bug X", la description amelioree doit toujours parler de corriger le bug X, pas d'autre chose.
+
+Titre: ${title}
+Description: ${description || '(aucune)'}`
+
+      try {
+        console.log('[kanban-prequalify] Starting prequalification for:', title)
+        const output = await callAiCli('claude', prompt, 'kanban-prequalify', prequalifyProcesses)
+        console.log('[kanban-prequalify] Raw output:', output.slice(0, 200))
+        // Extract JSON from output (may contain markdown fences or extra text)
+        const jsonMatch = output.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          console.log('[kanban-prequalify] No JSON found in output')
+          return null
+        }
+        const parsed = JSON.parse(jsonMatch[0])
+        console.log('[kanban-prequalify] Result:', parsed)
+        return parsed
+      } catch (err) {
+        console.error('[kanban-prequalify] Error:', err)
+        return null
+      }
     },
   )
 }

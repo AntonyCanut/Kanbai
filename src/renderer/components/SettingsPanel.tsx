@@ -955,6 +955,32 @@ export function SettingsPanel() {
                   </button>
                 </div>
               </div>
+              <div className="settings-card">
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{t('settings.autoPrequalifyTickets')}</label>
+                    <span className="settings-hint">{t('settings.autoPrequalifyTicketsHint')}</span>
+                  </div>
+                  <button
+                    className={`settings-toggle${settings.kanbanSettings?.autoPrequalifyTickets ? ' settings-toggle--active' : ''}`}
+                    onClick={() => updateSetting('kanbanSettings', { autoPrequalifyTickets: !settings.kanbanSettings?.autoPrequalifyTickets, autoPrioritizeBugs: settings.kanbanSettings?.autoPrioritizeBugs ?? true })}
+                  >
+                    <span className="settings-toggle-knob" />
+                  </button>
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <label className="settings-label">{t('settings.autoPrioritizeBugs')}</label>
+                    <span className="settings-hint">{t('settings.autoPrioritizeBugsHint')}</span>
+                  </div>
+                  <button
+                    className={`settings-toggle${settings.kanbanSettings?.autoPrioritizeBugs !== false ? ' settings-toggle--active' : ''}`}
+                    onClick={() => updateSetting('kanbanSettings', { autoPrequalifyTickets: settings.kanbanSettings?.autoPrequalifyTickets ?? false, autoPrioritizeBugs: settings.kanbanSettings?.autoPrioritizeBugs === false })}
+                  >
+                    <span className="settings-toggle-knob" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

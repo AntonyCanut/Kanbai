@@ -131,6 +131,8 @@ export interface KanbanComment {
   createdAt: number
 }
 
+export type KanbanTaskType = 'bug' | 'feature' | 'test' | 'doc' | 'ia' | 'refactor'
+
 export interface KanbanTask {
   id: string
   workspaceId: string
@@ -139,12 +141,12 @@ export interface KanbanTask {
   title: string
   description: string
   status: KanbanStatus
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  priority: 'low' | 'medium' | 'high'
+  type?: KanbanTaskType
   agentId?: string
   question?: string
   result?: string
   error?: string
-  labels?: string[]
   attachments?: KanbanAttachment[]
   comments?: KanbanComment[]
   dueDate?: number
@@ -155,6 +157,7 @@ export interface KanbanTask {
   childTicketIds?: string[]
   conversationHistoryPath?: string
   aiProvider?: import('./ai-provider').AiProviderId
+  isPrequalifying?: boolean
   createdAt: number
   updatedAt: number
 }
@@ -226,6 +229,10 @@ export interface AppSettings {
   autoCloseCtoTerminals: boolean
   autoApprove: boolean
   autoCreateAiMemoryRefactorTickets: boolean
+  kanbanSettings?: {
+    autoPrequalifyTickets: boolean
+    autoPrioritizeBugs: boolean
+  }
   tutorialCompleted: boolean
   tutorialSeenSections: string[]
 }
@@ -809,7 +816,7 @@ export interface AnalysisTicketRequest {
   reportId: string
   workspaceId: string
   targetProjectId?: string
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  priority: 'low' | 'medium' | 'high'
   groupBy: 'individual' | 'file' | 'rule' | 'severity'
 }
 
@@ -884,6 +891,7 @@ export const IPC_CHANNELS = {
   KANBAN_WATCH_REMOVE: 'kanban:watchRemove',
   KANBAN_FILE_CHANGED: 'kanban:fileChanged',
   KANBAN_LINK_CONVERSATION: 'kanban:linkConversation',
+  KANBAN_PREQUALIFY: 'kanban:prequalify',
 
   // Updates
   UPDATE_CHECK: 'update:check',

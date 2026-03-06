@@ -36,6 +36,9 @@ vi.stubGlobal('window', {
     workspaceEnv: {
       setup: mockWorkspaceEnvSetup,
     },
+    settings: {
+      get: vi.fn().mockResolvedValue({ kanbanSettings: { autoPrequalifyTickets: false, autoPrioritizeBugs: true } }),
+    },
   },
 })
 
@@ -547,7 +550,7 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
 
       const tasks = [
         makeTask({ id: 'task-1', status: 'WORKING', priority: 'low', createdAt: 1000 }),
-        makeTask({ id: 'task-2', status: 'TODO', priority: 'critical', createdAt: 2000 }),
+        makeTask({ id: 'task-2', status: 'TODO', priority: 'high', createdAt: 2000 }),
       ]
       mockKanbanList.mockResolvedValue(tasks)
       mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-1.md')
@@ -702,18 +705,17 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
         makeTask({ id: 'task-low', status: 'TODO', priority: 'low', createdAt: 1000 }),
         makeTask({ id: 'task-med', status: 'TODO', priority: 'medium', createdAt: 2000 }),
         makeTask({ id: 'task-high', status: 'TODO', priority: 'high', createdAt: 3000 }),
-        makeTask({ id: 'task-crit', status: 'TODO', priority: 'critical', createdAt: 4000 }),
       ]
       mockKanbanList.mockResolvedValue(tasks)
-      mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-crit.md')
+      mockKanbanWritePrompt.mockResolvedValue('/tmp/workspace-env/.workspaces/.kanban-prompt-task-high.md')
       mockKanbanUpdate.mockResolvedValue(undefined)
 
       await useKanbanStore.getState().loadTasks('ws-1')
 
       await vi.advanceTimersByTimeAsync(600)
 
-      // Should pick the critical task
-      expect(mockKanbanWritePrompt).toHaveBeenCalledWith(expect.any(String), 'task-crit', expect.any(String))
+      // Should pick the high priority task
+      expect(mockKanbanWritePrompt).toHaveBeenCalledWith(expect.any(String), 'task-high', expect.any(String))
 
       vi.useRealTimers()
     })

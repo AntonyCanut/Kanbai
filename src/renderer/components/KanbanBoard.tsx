@@ -6,7 +6,7 @@ import { useWorkspaceStore } from '../lib/stores/workspaceStore'
 import { useI18n } from '../lib/i18n'
 import { ContextMenu } from './ContextMenu'
 import type { ContextMenuItem } from './ContextMenu'
-import type { KanbanStatus, KanbanTask, KanbanComment, PromptTemplate, AiDefaults } from '../../shared/types/index'
+import type { KanbanStatus, KanbanTask, KanbanTaskType, KanbanComment, AiDefaults } from '../../shared/types/index'
 import { AI_PROVIDERS } from '../../shared/types/ai-provider'
 import type { AiProviderId } from '../../shared/types/ai-provider'
 import '../styles/kanban.css'
@@ -44,9 +44,19 @@ function getClipboardImageExtension(mimeType: string): string {
   return '.png'
 }
 
-function formatTicketNumber(n?: number): string {
+const TYPE_PREFIX: Record<KanbanTaskType, string> = {
+  bug: 'B',
+  feature: 'F',
+  test: 'T',
+  doc: 'D',
+  ia: 'A',
+  refactor: 'R',
+}
+
+function formatTicketNumber(n?: number, type?: KanbanTaskType, isPrequalifying?: boolean): string {
   if (n == null) return ''
-  return `T-${String(n).padStart(2, '0')}`
+  const prefix = isPrequalifying ? 'T' : TYPE_PREFIX[type ?? 'feature']
+  return `${prefix}-${String(n).padStart(2, '0')}`
 }
 
 const COLUMNS: { status: KanbanStatus; labelKey: string; color: string }[] = [
@@ -60,29 +70,26 @@ const COLUMNS: { status: KanbanStatus; labelKey: string; color: string }[] = [
 // Columns displayed in the main board (DONE is handled via archive)
 const ACTIVE_COLUMNS = COLUMNS.filter((c) => c.status !== 'DONE')
 
-const PRIORITIES = ['low', 'medium', 'high', 'critical'] as const
+const PRIORITIES = ['low', 'medium', 'high'] as const
 
-const LABEL_DEFS: Record<string, string> = {
-  bug: '#f38ba8',
-  feature: '#89b4fa',
-  refactor: '#cba6f7',
-  docs: '#a6e3a1',
-  urgent: '#fab387',
-  test: '#94e2d5',
-  cto: '#f5c2e7',
+const TASK_TYPES: KanbanTaskType[] = ['bug', 'feature', 'test', 'doc', 'ia', 'refactor']
+
+const TYPE_CONFIG: Record<KanbanTaskType, { color: string; labelFr: string; labelEn: string }> = {
+  bug:      { color: '#f38ba8', labelFr: 'Bug',      labelEn: 'Bug' },
+  feature:  { color: '#89b4fa', labelFr: 'Feature',  labelEn: 'Feature' },
+  test:     { color: '#94e2d5', labelFr: 'Test',     labelEn: 'Test' },
+  doc:      { color: '#a6e3a1', labelFr: 'Doc',      labelEn: 'Doc' },
+  ia:       { color: '#cba6f7', labelFr: 'IA',       labelEn: 'AI' },
+  refactor: { color: '#f5c2e7', labelFr: 'Refactor', labelEn: 'Refactor' },
 }
-
-const CTO_LABEL = 'cto'
-const ALL_LABELS = Object.keys(LABEL_DEFS)
-const USER_LABELS = ALL_LABELS.filter((l) => l !== CTO_LABEL)
 
 // --- Predefined task templates ---
 interface PredefinedTaskTemplate {
   id: string
   titleKey: string
   descriptionKey: string
-  priority: 'low' | 'medium' | 'high' | 'critical'
-  labels?: string[]
+  priority: 'low' | 'medium' | 'high'
+  type: KanbanTaskType
 }
 
 const PREDEFINED_TASKS: PredefinedTaskTemplate[] = [
@@ -91,42 +98,42 @@ const PREDEFINED_TASKS: PredefinedTaskTemplate[] = [
     titleKey: 'kanban.predefined.git.title',
     descriptionKey: 'kanban.predefined.git.description',
     priority: 'high',
-    labels: ['feature'],
+    type: 'feature',
   },
   {
     id: 'predefined-makefile',
     titleKey: 'kanban.predefined.makefile.title',
     descriptionKey: 'kanban.predefined.makefile.description',
     priority: 'medium',
-    labels: ['feature'],
+    type: 'feature',
   },
   {
     id: 'predefined-readme',
     titleKey: 'kanban.predefined.readme.title',
     descriptionKey: 'kanban.predefined.readme.description',
     priority: 'medium',
-    labels: ['docs'],
+    type: 'doc',
   },
   {
     id: 'predefined-testing',
     titleKey: 'kanban.predefined.testing.title',
     descriptionKey: 'kanban.predefined.testing.description',
     priority: 'medium',
-    labels: ['test'],
+    type: 'test',
   },
   {
     id: 'predefined-linting',
     titleKey: 'kanban.predefined.linting.title',
     descriptionKey: 'kanban.predefined.linting.description',
     priority: 'medium',
-    labels: ['feature'],
+    type: 'feature',
   },
   {
     id: 'predefined-ci',
     titleKey: 'kanban.predefined.ci.title',
     descriptionKey: 'kanban.predefined.ci.description',
     priority: 'low',
-    labels: ['feature'],
+    type: 'feature',
   },
 ]
 
@@ -151,8 +158,8 @@ function dismissPredefined(workspaceId: string, predefinedId: string): void {
 }
 
 export function KanbanBoard() {
-  const { t } = useI18n()
-  const { activeWorkspaceId, projects } = useWorkspaceStore()
+  const { t, locale } = useI18n()
+  const { activeWorkspaceId, workspaces, projects } = useWorkspaceStore()
   const {
     tasks,
     loadTasks,
@@ -178,13 +185,12 @@ export function KanbanBoard() {
   const [newTitle, setNewTitle] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newPriority, setNewPriority] = useState<(typeof PRIORITIES)[number]>('medium')
+  const [newType, setNewType] = useState<KanbanTaskType>('feature')
   const [newTargetProjectId, setNewTargetProjectId] = useState('')
-  const [newLabels, setNewLabels] = useState<string[]>([])
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([])
   const [pendingClipboardImages, setPendingClipboardImages] = useState<PendingClipboardImage[]>([])
   const [newIsCtoMode, setNewIsCtoMode] = useState(false)
   const [newAiProvider, setNewAiProvider] = useState<AiProviderId | ''>('')
-  const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([])
   const [selectedTask, setSelectedTask] = useState<KanbanTask | null>(null)
 
   // Edit modal state
@@ -192,8 +198,8 @@ export function KanbanBoard() {
   const [editTitle, setEditTitle] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editPriority, setEditPriority] = useState<(typeof PRIORITIES)[number]>('medium')
+  const [editType, setEditType] = useState<KanbanTaskType>('feature')
   const [editTargetProjectId, setEditTargetProjectId] = useState('')
-  const [editLabels, setEditLabels] = useState<string[]>([])
   const [editAiProvider, setEditAiProvider] = useState<AiProviderId | ''>('')
 
   // Context menu state
@@ -202,7 +208,7 @@ export function KanbanBoard() {
   // Filter & search state
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPriority, setFilterPriority] = useState<string>('all')
-  const [filterLabels, setFilterLabels] = useState<string[]>([])
+  const [filterType, setFilterType] = useState<string>('all')
   const [filterScope, setFilterScope] = useState<string>('all')
 
   // Archive state
@@ -234,9 +240,7 @@ export function KanbanBoard() {
       t(template.titleKey),
       t(template.descriptionKey),
       template.priority,
-      undefined,
-      undefined,
-      template.labels,
+      template.type,
     )
     dismissPredefined(activeWorkspaceId, template.id)
     setDismissedPredefined(getDismissedPredefined(activeWorkspaceId))
@@ -252,7 +256,7 @@ export function KanbanBoard() {
     setNewTitle(t(template.titleKey))
     setNewDesc(t(template.descriptionKey))
     setNewPriority(template.priority)
-    setNewLabels(template.labels ?? [])
+    setNewType(template.type)
     setNewTargetProjectId('')
     setNewAiProvider('')
     setNewIsCtoMode(false)
@@ -305,11 +309,6 @@ export function KanbanBoard() {
   }, [activeWorkspaceId, hasWorkingTasks, syncTasksFromFile])
 
   // Load prompt templates when create form opens
-  useEffect(() => {
-    if (showCreateForm) {
-      window.kanbai.prompts.list().then(setPromptTemplates).catch(() => {})
-    }
-  }, [showCreateForm])
 
   // Listen for prefill events from PromptTemplates
   useEffect(() => {
@@ -355,23 +354,21 @@ export function KanbanBoard() {
         const matchesTicketNumber =
           t.ticketNumber != null &&
           (String(t.ticketNumber).includes(q) ||
-            formatTicketNumber(t.ticketNumber).toLowerCase().includes(q))
+            formatTicketNumber(t.ticketNumber, t.type, t.isPrequalifying).toLowerCase().includes(q))
         if (!matchesTitle && !matchesDescription && !matchesTicketNumber) {
           return false
         }
       }
       // Priority filter
       if (filterPriority !== 'all' && t.priority !== filterPriority) return false
-      // Label filter
-      if (filterLabels.length > 0) {
-        if (!t.labels || !filterLabels.some((l) => t.labels!.includes(l))) return false
-      }
+      // Type filter
+      if (filterType !== 'all' && (t.type ?? 'feature') !== filterType) return false
       // Scope filter
       if (filterScope === 'workspace' && t.targetProjectId) return false
       if (filterScope !== 'all' && filterScope !== 'workspace' && t.targetProjectId !== filterScope) return false
       return true
     })
-  }, [tasks, searchQuery, filterPriority, filterLabels, filterScope])
+  }, [tasks, searchQuery, filterPriority, filterType, filterScope])
 
   // Split DONE tasks into active vs manually archived
   const doneTasks = useMemo(() => filteredTasks.filter((t) => t.status === 'DONE'), [filteredTasks])
@@ -425,20 +422,49 @@ export function KanbanBoard() {
     }
   }, [])
 
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const handleCreateModalDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const files = e.dataTransfer?.files
+    if (!files || files.length === 0) return
+    const paths: string[] = []
+    for (const file of Array.from(files)) {
+      try {
+        const filePath = window.kanbai.getFilePathFromDrop(file)
+        if (filePath) paths.push(filePath)
+      } catch {
+        // Fallback: try legacy file.path (non-sandbox environments)
+        const legacyPath = (file as unknown as { path?: string }).path
+        if (legacyPath) paths.push(legacyPath)
+      }
+    }
+    if (paths.length > 0) {
+      setPendingAttachments((prev) => [...prev, ...paths])
+    }
+  }, [])
+
+  const handleCreateModalDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }, [])
+
+  const handleCreateModalDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }, [])
+
   const handleCreate = useCallback(async () => {
     if (!activeWorkspaceId || !newTitle.trim()) return
-    // Build final labels: include 'cto' if CTO mode is on
-    const finalLabels = newIsCtoMode
-      ? [...new Set([...newLabels, CTO_LABEL])]
-      : newLabels
     await createTask(
       activeWorkspaceId,
       newTitle.trim(),
       newDesc.trim(),
       newPriority,
+      newType,
       newTargetProjectId || undefined,
       newIsCtoMode || undefined,
-      finalLabels.length > 0 ? finalLabels : undefined,
       newAiProvider || undefined,
     )
     // Attach pending files
@@ -471,15 +497,15 @@ export function KanbanBoard() {
     setNewTitle('')
     setNewDesc('')
     setNewPriority('medium')
+    setNewType('feature')
     setNewTargetProjectId('')
-    setNewLabels([])
     setNewIsCtoMode(false)
     setNewAiProvider('')
     setPendingAttachments([])
     setPendingClipboardImages([])
     setEditingPredefinedId(null)
     setShowCreateForm(false)
-  }, [activeWorkspaceId, newTitle, newDesc, newPriority, newTargetProjectId, newLabels, newIsCtoMode, newAiProvider, pendingAttachments, pendingClipboardImages, editingPredefinedId, createTask, loadTasks])
+  }, [activeWorkspaceId, newTitle, newDesc, newPriority, newType, newTargetProjectId, newIsCtoMode, newAiProvider, pendingAttachments, pendingClipboardImages, editingPredefinedId, createTask, loadTasks])
 
   const handleDragStart = useCallback(
     (taskId: string) => {
@@ -547,12 +573,6 @@ export function KanbanBoard() {
     updateTask(task.id, { archived: false })
   }, [updateTask])
 
-  const toggleFilterLabel = useCallback((label: string) => {
-    setFilterLabels((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
-    )
-  }, [])
-
   const handleArchiveTask = useCallback((task: KanbanTask) => {
     updateTask(task.id, { archived: true })
   }, [updateTask])
@@ -562,8 +582,8 @@ export function KanbanBoard() {
     setEditTitle(task.title)
     setEditDesc(task.description)
     setEditPriority(task.priority)
+    setEditType(task.type ?? 'feature')
     setEditTargetProjectId(task.targetProjectId || '')
-    setEditLabels(task.labels || [])
     setEditAiProvider(task.aiProvider || '')
   }, [])
 
@@ -577,19 +597,18 @@ export function KanbanBoard() {
     if (editTitle.trim() !== editingTask.title) updates.title = editTitle.trim()
     if (editDesc !== editingTask.description) updates.description = editDesc
     if (editPriority !== editingTask.priority) updates.priority = editPriority
+    if (editType !== (editingTask.type ?? 'feature')) updates.type = editType
     const newTargetProject = editTargetProjectId || undefined
     if (newTargetProject !== editingTask.targetProjectId) updates.targetProjectId = newTargetProject
-    const currentLabels = editingTask.labels || []
-    if (JSON.stringify([...editLabels].sort()) !== JSON.stringify([...currentLabels].sort())) updates.labels = editLabels
     const newProvider = editAiProvider || undefined
     if (newProvider !== editingTask.aiProvider) updates.aiProvider = newProvider
     if (Object.keys(updates).length > 0) {
       await updateTask(editingTask.id, updates)
     }
     setEditingTask(null)
-  }, [editingTask, editTitle, editDesc, editPriority, editTargetProjectId, editLabels, editAiProvider, updateTask])
+  }, [editingTask, editTitle, editDesc, editPriority, editType, editTargetProjectId, editAiProvider, updateTask])
 
-  const hasActiveFilters = filterPriority !== 'all' || filterLabels.length > 0 || filterScope !== 'all' || searchQuery !== ''
+  const hasActiveFilters = filterPriority !== 'all' || filterType !== 'all' || filterScope !== 'all' || searchQuery !== ''
 
   const getGoToTerminal = useCallback((taskId: string): (() => void) | null => {
     const tabId = kanbanTabIds[taskId]
@@ -646,20 +665,18 @@ export function KanbanBoard() {
           <option value="low">{t('kanban.low')}</option>
           <option value="medium">{t('kanban.medium')}</option>
           <option value="high">{t('kanban.high')}</option>
-          <option value="critical">{t('kanban.critical')}</option>
         </select>
 
-        <div className="kanban-filter-labels">
-          {ALL_LABELS.map((label) => (
-            <button
-              key={label}
-              className={`kanban-label-chip kanban-label-chip--${label}${filterLabels.includes(label) ? ' kanban-label-chip--active' : ''}`}
-              onClick={() => toggleFilterLabel(label)}
-            >
-              {label}
-            </button>
+        <select
+          className="kanban-filter-select"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="all">{t('kanban.allTypes')}</option>
+          {TASK_TYPES.map((tp) => (
+            <option key={tp} value={tp}>{t(`kanban.type.${tp}`)}</option>
           ))}
-        </div>
+        </select>
 
         <select
           className="kanban-filter-select"
@@ -678,7 +695,7 @@ export function KanbanBoard() {
             className="kanban-filter-clear"
             onClick={() => {
               setFilterPriority('all')
-              setFilterLabels([])
+              setFilterType('all')
               setFilterScope('all')
               setSearchQuery('')
             }}
@@ -688,11 +705,44 @@ export function KanbanBoard() {
         )}
       </div>
 
-      {showCreateForm && (
+      {showCreateForm && (() => {
+        const activeWs = workspaces.find((w) => w.id === activeWorkspaceId)
+        const resolvedProvider = newAiProvider || workspaceDefaultAiProvider
+        const providerInfo = AI_PROVIDERS[resolvedProvider]
+        return (
         <div className="modal-overlay" onClick={() => { setShowCreateForm(false); setNewIsCtoMode(false); setEditingPredefinedId(null) }}>
-          <div className={`kanban-create-modal${newIsCtoMode ? ' kanban-create-modal--cto' : ''}`} onClick={(e) => e.stopPropagation()} onPaste={handleCreateModalPaste}>
+          <div
+            className={`kanban-create-modal${newIsCtoMode ? ' kanban-create-modal--cto' : ''}${isDragOver ? ' kanban-create-modal--dragover' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+            onPaste={handleCreateModalPaste}
+            onDrop={handleCreateModalDrop}
+            onDragOver={handleCreateModalDragOver}
+            onDragLeave={handleCreateModalDragLeave}
+          >
             <button className="kanban-create-modal-close" onClick={() => { setShowCreateForm(false); setNewIsCtoMode(false); setEditingPredefinedId(null) }}>&times;</button>
             <div className="kanban-create-modal-body">
+              {/* Type Selector — visual buttons */}
+              <div className="kanban-create-type-bar">
+                {TASK_TYPES.map((tp) => {
+                  const conf = TYPE_CONFIG[tp]
+                  const isActive = newType === tp
+                  return (
+                    <button
+                      key={tp}
+                      className={`kanban-create-type-btn${isActive ? ' kanban-create-type-btn--active' : ''}`}
+                      style={isActive
+                        ? { color: conf.color, borderColor: conf.color, background: `${conf.color}15` }
+                        : { color: 'var(--text-muted)' }
+                      }
+                      onClick={() => setNewType(tp)}
+                    >
+                      {locale === 'en' ? conf.labelEn : conf.labelFr}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Title */}
               <input
                 className="kanban-create-modal-title-input"
                 placeholder={t('kanban.taskTitlePlaceholder')}
@@ -701,6 +751,8 @@ export function KanbanBoard() {
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                 autoFocus
               />
+
+              {/* Description */}
               <textarea
                 className="kanban-create-modal-desc"
                 placeholder={t('kanban.descriptionPlaceholder')}
@@ -708,105 +760,102 @@ export function KanbanBoard() {
                 onChange={(e) => setNewDesc(e.target.value)}
                 rows={4}
               />
-              {promptTemplates.length > 0 && (
-                <select
-                  className="kanban-select kanban-create-modal-template"
-                  value=""
-                  onChange={(e) => {
-                    const tpl = promptTemplates.find((t) => t.id === e.target.value)
-                    if (tpl) setNewDesc(tpl.content)
-                  }}
-                  title={t('kanban.useTemplate')}
-                >
-                  <option value="">{t('kanban.applyTemplate')}</option>
-                  {promptTemplates.map((tpl) => (
-                    <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
-                  ))}
-                </select>
-              )}
-              <div className="kanban-create-modal-options">
-                <select
-                  className="kanban-select"
-                  value={newPriority}
-                  onChange={(e) => setNewPriority(e.target.value as typeof newPriority)}
-                >
-                  <option value="low">{t('kanban.low')}</option>
-                  <option value="medium">{t('kanban.medium')}</option>
-                  <option value="high">{t('kanban.high')}</option>
-                  <option value="critical">{t('kanban.critical')}</option>
-                </select>
-                <select
-                  className="kanban-select"
-                  value={newTargetProjectId}
-                  onChange={(e) => setNewTargetProjectId(e.target.value)}
-                >
-                  <option value="">{t('kanban.entireWorkspace')}</option>
-                  {workspaceProjects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <select
-                  className="kanban-select"
-                  value={newAiProvider}
-                  onChange={(e) => setNewAiProvider(e.target.value as AiProviderId | '')}
-                >
-                  <option value="">{AI_PROVIDERS[workspaceDefaultAiProvider].displayName}</option>
-                  {Object.values(AI_PROVIDERS).filter((p) => p.id !== workspaceDefaultAiProvider).map((p) => (
-                    <option key={p.id} value={p.id}>{p.displayName}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="kanban-create-modal-labels">
-                {USER_LABELS.map((label) => (
-                  <button
-                    key={label}
-                    className={`kanban-label-chip kanban-label-chip--${label}${newLabels.includes(label) ? ' kanban-label-chip--active' : ''}`}
-                    onClick={() =>
-                      setNewLabels((prev) =>
-                        prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+
+              {/* Meta row: Priority, Scope, AI Provider */}
+              <div className="kanban-create-modal-meta">
+                {/* Priority pills */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">{t('kanban.priority')}</span>
+                  <div className="kanban-create-pill-row">
+                    {PRIORITIES.map((p) => {
+                      const pColors: Record<string, string> = { low: '#6c7086', medium: '#89b4fa', high: '#fab387' }
+                      const isActive = newPriority === p
+                      return (
+                        <button
+                          key={p}
+                          className={`kanban-create-pill${isActive ? ' kanban-create-pill--active' : ''}`}
+                          style={isActive ? { color: pColors[p], borderColor: pColors[p], background: `${pColors[p]}15` } : undefined}
+                          onClick={() => setNewPriority(p)}
+                        >
+                          {t(`kanban.${p}`)}
+                        </button>
                       )
-                    }
+                    })}
+                  </div>
+                </div>
+
+                {/* Scope */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">{t('kanban.scope')}</span>
+                  <select
+                    className="kanban-select"
+                    value={newTargetProjectId}
+                    onChange={(e) => setNewTargetProjectId(e.target.value)}
                   >
-                    {label}
-                  </button>
-                ))}
+                    <option value="">Workspace{activeWs ? ` (${activeWs.name})` : ''}</option>
+                    {workspaceProjects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* AI Provider pills */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">AI</span>
+                  <div className="kanban-create-pill-row">
+                    {Object.values(AI_PROVIDERS).map((p) => {
+                      const isActive = resolvedProvider === p.id
+                      const isDefault = p.id === workspaceDefaultAiProvider && !newAiProvider
+                      return (
+                        <button
+                          key={p.id}
+                          className={`kanban-create-pill kanban-create-pill--ai${isActive ? ' kanban-create-pill--active' : ''}`}
+                          style={isActive ? { color: p.detectionColor, borderColor: p.detectionColor, background: `${p.detectionColor}15` } : undefined}
+                          onClick={() => setNewAiProvider(isDefault ? '' : p.id)}
+                        >
+                          {p.displayName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
+
+              {/* CTO Mode */}
               <div className="kanban-create-modal-extras">
                 <button
                   className="kanban-create-modal-attach"
                   onClick={handleSelectPendingFiles}
                   title={t('kanban.attachFiles')}
                 >
-                  {t('kanban.attachFiles')}{pendingAttachments.length > 0 ? ` (${pendingAttachments.length})` : ''}
+                  {t('kanban.attachFiles')}{pendingAttachments.length + pendingClipboardImages.length > 0 ? ` (${pendingAttachments.length + pendingClipboardImages.length})` : ''}
                 </button>
-                <label className="kanban-create-modal-cto">
-                  <input
-                    type="checkbox"
-                    checked={newIsCtoMode}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setNewIsCtoMode(checked)
-                      if (checked) setNewPriority('low')
-                    }}
-                    disabled={hasActiveCtoTicket && !newIsCtoMode}
-                  />
-                  <span>{t('kanban.ctoModeToggle')}</span>
-                </label>
+                <button
+                  className={`kanban-create-cto-btn${newIsCtoMode ? ' kanban-create-cto-btn--active' : ''}`}
+                  onClick={() => {
+                    if (hasActiveCtoTicket && !newIsCtoMode) return
+                    const next = !newIsCtoMode
+                    setNewIsCtoMode(next)
+                    if (next) setNewPriority('low')
+                  }}
+                  disabled={hasActiveCtoTicket && !newIsCtoMode}
+                  title={hasActiveCtoTicket && !newIsCtoMode ? t('kanban.ctoModeAlreadyActive') : t('kanban.ctoModeToggle')}
+                >
+                  CTO
+                </button>
               </div>
-              {hasActiveCtoTicket && !newIsCtoMode && (
-                <div className="kanban-cto-already-active">
-                  {t('kanban.ctoModeAlreadyActive')}
-                </div>
-              )}
+
+              {/* CTO Warning */}
               {newIsCtoMode && (
                 <div className="kanban-cto-warning">
-                  <div className="kanban-cto-warning-icon">&#9888;</div>
                   <div className="kanban-cto-warning-content">
                     <strong>{t('kanban.ctoModeWarningTitle')}</strong>
                     <p>{t('kanban.ctoModeWarning')}</p>
                   </div>
                 </div>
               )}
+
+              {/* Attachments */}
               {(pendingAttachments.length > 0 || pendingClipboardImages.length > 0) && (
                 <div className="kanban-create-attachments">
                   {pendingAttachments.map((fp, i) => (
@@ -838,102 +887,155 @@ export function KanbanBoard() {
                   ))}
                 </div>
               )}
+
+              {/* Drag overlay */}
+              {isDragOver && (
+                <div className="kanban-create-drop-zone">
+                  {t('kanban.dropFiles')}
+                </div>
+              )}
             </div>
             <div className="kanban-create-modal-footer">
               <button className="kanban-create-modal-cancel" onClick={() => { setShowCreateForm(false); setNewIsCtoMode(false); setEditingPredefinedId(null) }}>
                 {t('common.cancel')}
               </button>
-              <button className={`kanban-create-modal-submit${newIsCtoMode ? ' kanban-create-modal-submit--cto' : ''}`} onClick={handleCreate}>
+              <button
+                className={`kanban-create-modal-submit${newIsCtoMode ? ' kanban-create-modal-submit--cto' : ''}`}
+                style={!newIsCtoMode ? { background: providerInfo.detectionColor } : undefined}
+                onClick={handleCreate}
+              >
                 {t('common.create')}
               </button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
-      {editingTask && (
+      {editingTask && (() => {
+        const editResolvedProvider: AiProviderId = (editAiProvider as AiProviderId) || workspaceDefaultAiProvider
+        const editProviderInfo = AI_PROVIDERS[editResolvedProvider]
+        return (
         <div className="modal-overlay" onClick={handleCloseEditModal}>
           <div className="kanban-create-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="kanban-create-modal-header">
-              <h3>{t('kanban.editTask')}</h3>
-              <button className="kanban-create-modal-close" onClick={handleCloseEditModal}>&times;</button>
-            </div>
+            <button className="kanban-create-modal-close" onClick={handleCloseEditModal}>&times;</button>
             <div className="kanban-create-modal-body">
+              {/* Type Selector — visual buttons */}
+              <div className="kanban-create-type-bar">
+                {TASK_TYPES.map((tp) => {
+                  const conf = TYPE_CONFIG[tp]
+                  const isActive = editType === tp
+                  return (
+                    <button
+                      key={tp}
+                      className={`kanban-create-type-btn${isActive ? ' kanban-create-type-btn--active' : ''}`}
+                      style={isActive
+                        ? { color: conf.color, borderColor: conf.color, background: `${conf.color}15` }
+                        : { color: 'var(--text-muted)' }
+                      }
+                      onClick={() => setEditType(tp)}
+                    >
+                      {locale === 'en' ? conf.labelEn : conf.labelFr}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Title */}
               <input
-                className="kanban-input"
+                className="kanban-create-modal-title-input"
                 placeholder={t('kanban.taskTitlePlaceholder')}
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                 autoFocus
               />
+
+              {/* Description */}
               <textarea
-                className="kanban-textarea kanban-create-modal-textarea"
+                className="kanban-create-modal-desc"
                 placeholder={t('kanban.descriptionPlaceholder')}
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                rows={6}
+                rows={4}
               />
-              <div className="kanban-create-row">
-                <select
-                  className="kanban-select"
-                  value={editPriority}
-                  onChange={(e) => setEditPriority(e.target.value as typeof editPriority)}
-                >
-                  <option value="low">{t('kanban.low')}</option>
-                  <option value="medium">{t('kanban.medium')}</option>
-                  <option value="high">{t('kanban.high')}</option>
-                  <option value="critical">{t('kanban.critical')}</option>
-                </select>
-                <select
-                  className="kanban-select"
-                  value={editTargetProjectId}
-                  onChange={(e) => setEditTargetProjectId(e.target.value)}
-                >
-                  <option value="">{t('kanban.entireWorkspace')}</option>
-                  {workspaceProjects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <select
-                  className="kanban-select"
-                  value={editAiProvider}
-                  onChange={(e) => setEditAiProvider(e.target.value as AiProviderId | '')}
-                >
-                  <option value="">{AI_PROVIDERS[workspaceDefaultAiProvider].displayName}</option>
-                  {Object.values(AI_PROVIDERS).filter((p) => p.id !== workspaceDefaultAiProvider).map((p) => (
-                    <option key={p.id} value={p.id}>{p.displayName}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="kanban-create-labels">
-                <span className="kanban-create-labels-title">{t('kanban.labels')} :</span>
-                {USER_LABELS.map((label) => (
-                  <button
-                    key={label}
-                    className={`kanban-label-chip kanban-label-chip--${label}${editLabels.includes(label) ? ' kanban-label-chip--active' : ''}`}
-                    onClick={() =>
-                      setEditLabels((prev) =>
-                        prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+
+              {/* Meta row: Priority, Scope, AI Provider */}
+              <div className="kanban-create-modal-meta">
+                {/* Priority pills */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">{t('kanban.priority')}</span>
+                  <div className="kanban-create-pill-row">
+                    {PRIORITIES.map((p) => {
+                      const pColors: Record<string, string> = { low: '#6c7086', medium: '#89b4fa', high: '#fab387' }
+                      const isActive = editPriority === p
+                      return (
+                        <button
+                          key={p}
+                          className={`kanban-create-pill${isActive ? ' kanban-create-pill--active' : ''}`}
+                          style={isActive ? { color: pColors[p], borderColor: pColors[p], background: `${pColors[p]}15` } : undefined}
+                          onClick={() => setEditPriority(p)}
+                        >
+                          {t(`kanban.${p}`)}
+                        </button>
                       )
-                    }
+                    })}
+                  </div>
+                </div>
+
+                {/* Scope */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">{t('kanban.scope')}</span>
+                  <select
+                    className="kanban-select"
+                    value={editTargetProjectId}
+                    onChange={(e) => setEditTargetProjectId(e.target.value)}
                   >
-                    {label}
-                  </button>
-                ))}
+                    <option value="">Workspace{(() => { const ws = workspaces.find((w) => w.id === activeWorkspaceId); return ws ? ` (${ws.name})` : '' })()}</option>
+                    {workspaceProjects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* AI Provider pills */}
+                <div className="kanban-create-meta-group">
+                  <span className="kanban-create-meta-label">AI</span>
+                  <div className="kanban-create-pill-row">
+                    {Object.values(AI_PROVIDERS).map((p) => {
+                      const isActive = editResolvedProvider === p.id
+                      const isDefault = p.id === workspaceDefaultAiProvider && !editAiProvider
+                      return (
+                        <button
+                          key={p.id}
+                          className={`kanban-create-pill kanban-create-pill--ai${isActive ? ' kanban-create-pill--active' : ''}`}
+                          style={isActive ? { color: p.detectionColor, borderColor: p.detectionColor, background: `${p.detectionColor}15` } : undefined}
+                          onClick={() => setEditAiProvider(isDefault ? '' : p.id)}
+                        >
+                          {p.displayName}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="kanban-create-modal-actions">
+            <div className="kanban-create-modal-footer">
               <button className="kanban-create-modal-cancel" onClick={handleCloseEditModal}>
                 {t('common.cancel')}
               </button>
-              <button className="kanban-submit-btn" onClick={handleSaveEdit}>
+              <button
+                className="kanban-create-modal-submit"
+                style={{ background: editProviderInfo.detectionColor }}
+                onClick={handleSaveEdit}
+              >
                 {t('common.save')}
               </button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       <div className="kanban-main">
         <div className="kanban-columns">
@@ -1033,7 +1135,7 @@ export function KanbanBoard() {
                       {sortTasks(archivedTasks, true).map((task) => (
                         <div key={task.id} className="kanban-archive-item">
                           <span className="kanban-archive-item-title">
-                            {task.ticketNumber != null && <span className="kanban-card-ticket-number">{formatTicketNumber(task.ticketNumber)}</span>}
+                            {task.ticketNumber != null && <span className="kanban-card-ticket-number">{formatTicketNumber(task.ticketNumber, task.type, task.isPrequalifying)}</span>}
                             {task.title}
                           </span>
                           <button
@@ -1098,15 +1200,19 @@ function PredefinedTaskCard({
 }) {
   const { t } = useI18n()
 
+  const { locale } = useI18n()
+
   const priorityColors: Record<string, string> = {
     low: '#6c7086',
     medium: '#89b4fa',
     high: '#fab387',
-    critical: '#f38ba8',
   }
+
+  const typeConf = TYPE_CONFIG[template.type] ?? TYPE_CONFIG.feature
 
   return (
     <div className="kanban-card kanban-card--predefined" onDoubleClick={onDoubleClick}>
+      <div className="kanban-card-type-strip" style={{ backgroundColor: typeConf.color }} />
       <div className="kanban-card-header">
         <span
           className="kanban-card-priority"
@@ -1114,19 +1220,13 @@ function PredefinedTaskCard({
         />
         <span className="kanban-card-title">{t(template.titleKey)}</span>
       </div>
+      <span
+        className="kanban-card-type-badge"
+        style={{ color: typeConf.color, background: `${typeConf.color}1a` }}
+      >
+        {locale === 'en' ? typeConf.labelEn : typeConf.labelFr}
+      </span>
       <p className="kanban-card-desc">{t(template.descriptionKey)}</p>
-      {template.labels && template.labels.length > 0 && (
-        <div className="kanban-card-labels">
-          {template.labels.map((label) => (
-            <span
-              key={label}
-              className={`kanban-label-chip kanban-label-chip--${label} kanban-label-chip--small`}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      )}
       <div className="kanban-predefined-actions">
         <button
           className="kanban-predefined-add"
@@ -1194,10 +1294,10 @@ function KanbanCard({
     low: '#6c7086',
     medium: '#89b4fa',
     high: '#fab387',
-    critical: '#f38ba8',
   }
 
   const isWorking = task.status === 'WORKING'
+  const typeConf = TYPE_CONFIG[task.type ?? 'feature'] ?? TYPE_CONFIG.feature
 
   const targetProject = projects.find((p) => p.id === task.targetProjectId)
   const resolvedProvider: AiProviderId = task.aiProvider
@@ -1208,7 +1308,7 @@ function KanbanCard({
 
   return (
     <div
-      className={`kanban-card${isSelected ? ' kanban-card--selected' : ''}${isWorking ? ' kanban-card--working' : ''}${task.disabled ? ' kanban-card--disabled' : ''}${task.isCtoTicket ? ' kanban-card--cto' : ''}`}
+      className={`kanban-card${isSelected ? ' kanban-card--selected' : ''}${isWorking ? ' kanban-card--working' : ''}${task.disabled ? ' kanban-card--disabled' : ''}${task.isCtoTicket ? ' kanban-card--cto' : ''}${task.isPrequalifying ? ' kanban-card--prequalifying' : ''}`}
       style={isWorking ? { '--working-color': workingColor } as React.CSSProperties : undefined}
       draggable={!task.disabled}
       onDragStart={onDragStart}
@@ -1216,13 +1316,14 @@ function KanbanCard({
       onDoubleClick={handleCardDoubleClick}
       onContextMenu={onContextMenu}
     >
+      <div className="kanban-card-type-strip" style={{ backgroundColor: typeConf.color }} />
       <div className="kanban-card-header">
         <span
           className="kanban-card-priority"
           style={{ backgroundColor: priorityColors[task.priority] }}
         />
         {task.ticketNumber != null && (
-          <span className="kanban-card-ticket-number">{formatTicketNumber(task.ticketNumber)}</span>
+          <span className="kanban-card-ticket-number">{formatTicketNumber(task.ticketNumber, task.type, task.isPrequalifying)}</span>
         )}
         <span className="kanban-card-title">{task.title}</span>
         <button
@@ -1233,26 +1334,20 @@ function KanbanCard({
           &times;
         </button>
       </div>
+      <span className="kanban-card-type-badge" style={{ color: typeConf.color, background: `${typeConf.color}1a` }}>
+        {locale === 'en' ? typeConf.labelEn : typeConf.labelFr}
+      </span>
       <span className="kanban-card-date">
         {new Date(task.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
         {', '}
         {new Date(task.createdAt).toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
       </span>
+      {task.isPrequalifying && (
+        <span className="kanban-card-prequalifying">{t('kanban.prequalifyRunning')}</span>
+      )}
       <p className="kanban-card-desc">
         {task.description || t('kanban.noDescription')}
       </p>
-      {task.labels && task.labels.length > 0 && (
-        <div className="kanban-card-labels">
-          {task.labels.map((label) => (
-            <span
-              key={label}
-              className={`kanban-label-chip kanban-label-chip--${label} kanban-label-chip--small`}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      )}
       {onGoToTerminal && (
         <button
           className="kanban-card-terminal-btn"
@@ -1430,26 +1525,15 @@ function TaskDetailPanel({
     low: '#6c7086',
     medium: '#89b4fa',
     high: '#fab387',
-    critical: '#f38ba8',
   }
 
   const priorityLabels: Record<string, string> = {
     low: t('kanban.low'),
     medium: t('kanban.medium'),
     high: t('kanban.high'),
-    critical: t('kanban.critical'),
   }
 
   const statusColumn = COLUMNS.find((c) => c.status === task.status)
-  const taskLabels = useMemo(() => task.labels || [], [task.labels])
-
-  const toggleLabel = useCallback((label: string) => {
-    if (label === CTO_LABEL) return
-    const updated = taskLabels.includes(label)
-      ? taskLabels.filter((l) => l !== label)
-      : [...taskLabels, label]
-    onUpdate({ labels: updated })
-  }, [taskLabels, onUpdate])
 
   const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items
@@ -1471,7 +1555,7 @@ function TaskDetailPanel({
   return (
     <div className="kanban-detail" onPaste={handlePaste} tabIndex={-1}>
       <div className="kanban-detail-header">
-        <span className="kanban-detail-id">{task.ticketNumber != null ? formatTicketNumber(task.ticketNumber) : `#${task.id.slice(0, 8)}`}</span>
+        <span className="kanban-detail-id">{task.ticketNumber != null ? formatTicketNumber(task.ticketNumber, task.type, task.isPrequalifying) : `#${task.id.slice(0, 8)}`}</span>
         <button className="kanban-detail-close" onClick={onClose}>&times;</button>
       </div>
 
@@ -1540,19 +1624,24 @@ function TaskDetailPanel({
       </div>
 
 
-      {/* Labels */}
+      {/* Type */}
       <div className="kanban-detail-section">
-        <span className="kanban-detail-section-title">{t('kanban.labels')}</span>
+        <span className="kanban-detail-section-title">{t('kanban.type')}</span>
         <div className="kanban-detail-labels">
-          {USER_LABELS.map((label) => (
-            <button
-              key={label}
-              className={`kanban-label-chip kanban-label-chip--${label}${taskLabels.includes(label) ? ' kanban-label-chip--active' : ''}`}
-              onClick={() => toggleLabel(label)}
-            >
-              {label}
-            </button>
-          ))}
+          {TASK_TYPES.map((tp) => {
+            const conf = TYPE_CONFIG[tp]
+            const isActive = (task.type ?? 'feature') === tp
+            return (
+              <button
+                key={tp}
+                className={`kanban-label-chip${isActive ? ' kanban-label-chip--active' : ''}`}
+                style={{ color: conf.color, background: isActive ? `${conf.color}25` : `${conf.color}10` }}
+                onClick={() => onUpdate({ type: tp })}
+              >
+                {locale === 'en' ? conf.labelEn : conf.labelFr}
+              </button>
+            )
+          })}
         </div>
       </div>
 

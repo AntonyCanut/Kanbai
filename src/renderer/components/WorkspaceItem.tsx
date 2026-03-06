@@ -101,13 +101,13 @@ export function WorkspaceItem({ workspace, projects, isActive }: WorkspaceItemPr
   const workspaceClaudeStatus = useClaudeStore((s) => s.workspaceClaudeStatus[workspace.id])
 
   const [workingTicketInfo, setWorkingTicketInfo] = useState<{
-    ticketNumber: number | null; isCtoTicket: boolean
+    ticketNumber: number | null; isCtoTicket: boolean; type?: string
   } | null>(null)
 
   useEffect(() => {
     if (workspaceClaudeStatus === 'working' || workspaceClaudeStatus === 'ask' || workspaceClaudeStatus === 'waiting' || workspaceClaudeStatus === 'failed') {
       window.kanbai.kanban.getWorkingTicket(workspace.id).then((result) => {
-        setWorkingTicketInfo(result ? { ticketNumber: result.ticketNumber, isCtoTicket: result.isCtoTicket } : null)
+        setWorkingTicketInfo(result ? { ticketNumber: result.ticketNumber, isCtoTicket: result.isCtoTicket, type: result.type } : null)
       }).catch(() => setWorkingTicketInfo(null))
     } else {
       setWorkingTicketInfo(null)
@@ -360,7 +360,7 @@ export function WorkspaceItem({ workspace, projects, isActive }: WorkspaceItemPr
               {workingTicketInfo?.isCtoTicket ? t('workspace.ctoMode') : t('workspace.aiWorking')}
             </span>
             {workingTicketInfo?.ticketNumber != null && (
-              <span className="workspace-ia-tag workspace-ia-tag--ticket">T-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
+              <span className="workspace-ia-tag workspace-ia-tag--ticket">{({'bug':'B','feature':'F','test':'T','doc':'D','ia':'A','refactor':'R'}[workingTicketInfo.type ?? 'feature'] ?? 'F')}-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
             )}
           </>
         )}
@@ -368,7 +368,7 @@ export function WorkspaceItem({ workspace, projects, isActive }: WorkspaceItemPr
           <>
             <span className="workspace-ia-tag workspace-ia-tag--ask">{t('workspace.aiAsk')}</span>
             {workingTicketInfo?.ticketNumber != null && (
-              <span className="workspace-ia-tag workspace-ia-tag--ticket">T-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
+              <span className="workspace-ia-tag workspace-ia-tag--ticket">{({'bug':'B','feature':'F','test':'T','doc':'D','ia':'A','refactor':'R'}[workingTicketInfo.type ?? 'feature'] ?? 'F')}-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
             )}
           </>
         )}
@@ -376,7 +376,7 @@ export function WorkspaceItem({ workspace, projects, isActive }: WorkspaceItemPr
           <>
             <span className="workspace-ia-tag workspace-ia-tag--waiting">{t('workspace.aiWaiting')}</span>
             {workingTicketInfo?.ticketNumber != null && (
-              <span className="workspace-ia-tag workspace-ia-tag--ticket">T-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
+              <span className="workspace-ia-tag workspace-ia-tag--ticket">{({'bug':'B','feature':'F','test':'T','doc':'D','ia':'A','refactor':'R'}[workingTicketInfo.type ?? 'feature'] ?? 'F')}-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
             )}
           </>
         )}
@@ -384,7 +384,7 @@ export function WorkspaceItem({ workspace, projects, isActive }: WorkspaceItemPr
           <>
             <span className="workspace-ia-tag workspace-ia-tag--failed">{t('workspace.aiFailed')}</span>
             {workingTicketInfo?.ticketNumber != null && (
-              <span className="workspace-ia-tag workspace-ia-tag--ticket">T-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
+              <span className="workspace-ia-tag workspace-ia-tag--ticket">{({'bug':'B','feature':'F','test':'T','doc':'D','ia':'A','refactor':'R'}[workingTicketInfo.type ?? 'feature'] ?? 'F')}-{String(workingTicketInfo.ticketNumber).padStart(2, '0')}</span>
             )}
           </>
         )}

@@ -575,7 +575,7 @@ export function TerminalArea() {
                   data-tooltip={t('terminal.goToKanban')}
                   onClick={() => navigateToKanbanTask(linkedTask.id)}
                 >
-                  <span className="terminal-kanban-notch-text">Ticket {linkedTask.ticketNumber != null ? `T-${linkedTask.ticketNumber}` : ''}</span>
+                  <span className="terminal-kanban-notch-text">Ticket {linkedTask.ticketNumber != null ? `${({'bug':'B','feature':'F','test':'T','doc':'D','ia':'A','refactor':'R'}[linkedTask.type ?? 'feature'])}-${linkedTask.ticketNumber}` : ''}</span>
                 </button>
               )}
               <SplitContainer tabId={tab.id} fontSize={terminalFontSize} />

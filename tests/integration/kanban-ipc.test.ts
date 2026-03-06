@@ -162,13 +162,13 @@ describe('Kanban IPC Handlers', () => {
       workspaceId: 'ws-1',
       title: 'Persistante',
       description: '',
-      priority: 'critical',
+      priority: 'high',
     })
 
     const kanbanPath = path.join(TEST_DIR, '.kanbai', 'kanban', 'ws-1.json')
     const raw = JSON.parse(fs.readFileSync(kanbanPath, 'utf-8'))
     expect(raw).toHaveLength(1)
     expect(raw[0].title).toBe('Persistante')
-    expect(raw[0].priority).toBe('critical')
+    expect(raw[0].priority).toBe('high')
   })
 })

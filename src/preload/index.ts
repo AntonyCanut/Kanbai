@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { IPC_CHANNELS, AppSettings, Workspace, Namespace, KanbanTask, KanbanAttachment, FileEntry, SessionData, NpmPackageInfo, TodoEntry, ProjectStatsData, SearchResult, PromptTemplate, HttpMethod, ApiHeader, ApiTestAssertion, ApiTestFile, ApiResponse, ApiTestResult, DbConnectionConfig, DbFile, DbTable, DbTableInfo, DbQueryResult, DbBackupResult, DbBackupEntry, DbRestoreResult, DbEnvironmentTag, DbBackupLogEntry, DbNlPermissions, DbNlQueryResponse, DbNlGenerateResponse, DbNlHistoryEntry, DbNlInterpretRequest, DbNlInterpretResponse, McpServerConfig, McpHelpResult, SshKeyInfo, SshKeyType, AnalysisToolDef, AnalysisRunOptions, AnalysisReport, AnalysisProgress, AnalysisTicketRequest, RuleEntry, TemplateRuleEntry, PackageManagerType, PackageInfo, ProjectPackageManager, PkgNlMessage, HealthCheckConfig, HealthCheckFile, HealthCheckLogEntry, HealthCheckSchedulerStatus } from '../shared/types'
 
 // Increase max listeners to accommodate multiple terminal tabs and event streams.
@@ -319,7 +319,7 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_ATTACH_FROM_CLIPBOARD, { taskId, workspaceId, dataBase64, filename, mimeType }),
     removeAttachment: (taskId: string, workspaceId: string, attachmentId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_REMOVE_ATTACHMENT, { taskId, workspaceId, attachmentId }),
-    getWorkingTicket: (workspaceId: string): Promise<{ ticketNumber: number | null; isCtoTicket: boolean } | null> =>
+    getWorkingTicket: (workspaceId: string): Promise<{ ticketNumber: number | null; isCtoTicket: boolean; type?: string } | null> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_GET_WORKING_TICKET, { workspaceId }),
     watch: (workspaceId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_WATCH, { workspaceId }),
@@ -331,6 +331,8 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_WATCH_REMOVE, { workspaceId }),
     linkConversation: (cwd: string, taskId: string, workspaceId: string): Promise<string | null> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_LINK_CONVERSATION, { cwd, taskId, workspaceId }),
+    prequalify: (data: { title: string; description: string }): Promise<{ suggestedType: string; suggestedPriority: string; clarifiedDescription: string; isVague: boolean } | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.KANBAN_PREQUALIFY, data),
     onFileChanged: (callback: (data: { workspaceId: string }) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { workspaceId: string }) =>
         callback(payload)
@@ -782,6 +784,9 @@ const api = {
     ipcRenderer.on(IPC_CHANNELS.MENU_ACTION, listener)
     return () => { ipcRenderer.removeListener(IPC_CHANNELS.MENU_ACTION, listener) }
   },
+
+  // Utility — resolve file path from drag & drop (required for sandbox mode)
+  getFilePathFromDrop: (file: File): string => webUtils.getPathForFile(file),
 }
 
 contextBridge.exposeInMainWorld('kanbai', api)

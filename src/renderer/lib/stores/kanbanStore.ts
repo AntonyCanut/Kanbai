@@ -1,12 +1,22 @@
 import { create } from 'zustand'
-import type { KanbanTask, KanbanStatus, KanbanComment } from '../../../shared/types/index'
+import type { KanbanTask, KanbanTaskType, KanbanStatus, KanbanComment } from '../../../shared/types/index'
 import { AI_PROVIDERS, type AiProviderId } from '../../../shared/types/ai-provider'
 import { useTerminalTabStore } from './terminalTabStore'
 import { useWorkspaceStore } from './workspaceStore'
 import { pushNotification } from './notificationStore'
 import { useI18n } from '../i18n'
 
-const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
+const TYPE_PREFIX: Record<KanbanTaskType, string> = {
+  bug: 'B', feature: 'F', test: 'T', doc: 'D', ia: 'A', refactor: 'R',
+}
+
+function formatTicketLabel(task: KanbanTask): string {
+  if (task.ticketNumber == null) return task.title
+  const prefix = task.isPrequalifying ? 'T' : TYPE_PREFIX[task.type ?? 'feature']
+  return `${prefix}-${String(task.ticketNumber).padStart(2, '0')}`
+}
 
 // Track tasks that have been re-launched once to avoid infinite loops
 const relaunchedTaskIds = new Set<string>()
@@ -15,7 +25,7 @@ const relaunchedTaskIds = new Set<string>()
 const reactivatingTaskIds = new Set<string>()
 
 export function pickNextTask(tasks: KanbanTask[]): KanbanTask | null {
-  const todo = tasks.filter((t) => t.status === 'TODO' && !t.disabled)
+  const todo = tasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
   if (!todo.length) return null
   todo.sort((a, b) => {
     // CTO tickets always go last — they should never block regular tickets
@@ -109,10 +119,10 @@ interface KanbanActions {
     workspaceId: string,
     title: string,
     description: string,
-    priority: 'low' | 'medium' | 'high' | 'critical',
+    priority: 'low' | 'medium' | 'high',
+    type?: KanbanTaskType,
     targetProjectId?: string,
     isCtoTicket?: boolean,
-    labels?: string[],
     aiProvider?: AiProviderId,
   ) => Promise<void>
   updateTaskStatus: (taskId: string, status: KanbanStatus) => Promise<void>
@@ -156,6 +166,10 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     set({ isLoading: true, currentWorkspaceId: workspaceId, ...(cached ? { tasks: cached } : {}) })
     try {
       const tasks: KanbanTask[] = await window.kanbai.kanban.list(workspaceId)
+      // isPrequalifying is transient (in-memory only) — clear any stale flags from file
+      for (const t of tasks) {
+        delete t.isPrequalifying
+      }
       set({ tasks })
 
       // Startup-only cleanup: close stale terminals linked to DONE tickets.
@@ -211,6 +225,15 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     if (!currentWorkspaceId) return
     try {
       const newTasks: KanbanTask[] = await window.kanbai.kanban.list(currentWorkspaceId)
+      // Preserve in-memory isPrequalifying flag (not persisted to file)
+      for (const newTask of newTasks) {
+        const oldTask = oldTasks.find((t) => t.id === newTask.id)
+        if (oldTask?.isPrequalifying) {
+          newTask.isPrequalifying = true
+        } else {
+          delete newTask.isPrequalifying
+        }
+      }
 
       let taskFinished = false
 
@@ -261,7 +284,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
           // Push notification
           const t = useI18n.getState().t
-          const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
+          const ticketLabel = formatTicketLabel(newTask)
           const todoCount = newTasks.filter((tt) => tt.status === 'TODO' && !tt.disabled).length
           const body = todoCount > 0
             ? t('notifications.ticketsRemaining', { ticket: ticketLabel, count: todoCount })
@@ -281,7 +304,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
           // Push notification
           const t = useI18n.getState().t
-          const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
+          const ticketLabel = formatTicketLabel(newTask)
           const todoCount = newTasks.filter((tt) => tt.status === 'TODO' && !tt.disabled).length
           pushNotification('error', t('notifications.taskFailed', { ticket: ticketLabel }),
             todoCount > 0
@@ -317,7 +340,14 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     } catch { /* ignore sync errors */ }
   },
 
-  createTask: async (workspaceId, title, description, priority, targetProjectId?, isCtoTicket?, labels?, aiProvider?) => {
+  createTask: async (workspaceId, title, description, priority, type?, targetProjectId?, isCtoTicket?, aiProvider?) => {
+    // Check if prequalification is enabled (defaults to false)
+    let prequalifyEnabled = false
+    try {
+      const settings = await window.kanbai.settings.get()
+      prequalifyEnabled = settings.kanbanSettings?.autoPrequalifyTickets === true
+    } catch { /* default to false */ }
+
     const task: KanbanTask = await window.kanbai.kanban.create({
       workspaceId,
       targetProjectId,
@@ -325,18 +355,67 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       description,
       status: 'TODO',
       priority,
+      type: type ?? 'feature',
       isCtoTicket,
-      labels,
       aiProvider,
     })
+
+    // Mark as prequalifying if enabled (in-memory flag, not persisted)
+    if (prequalifyEnabled) {
+      task.isPrequalifying = true
+    }
     set((state) => ({ tasks: [...state.tasks, task] }))
 
-    // Auto-send only if no WORKING task exists (one-at-a-time)
-    const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
-    if (!hasWorking) {
-      // Pick by priority — the new task might not be highest priority
-      const next = pickNextTask(get().tasks)
-      if (next) get().sendToAi(next)
+    if (prequalifyEnabled) {
+    // Run prequalification in the background
+    ;(async () => {
+      try {
+        const result = await window.kanbai.kanban.prequalify({ title, description })
+        const updates: Partial<KanbanTask> = {}
+        if (result) {
+          if (result.suggestedType && result.suggestedType !== (type ?? 'feature')) {
+            updates.type = result.suggestedType as KanbanTaskType
+          }
+          if (result.suggestedPriority && result.suggestedPriority !== priority) {
+            updates.priority = result.suggestedPriority as KanbanTask['priority']
+          }
+          if (result.clarifiedDescription && result.clarifiedDescription !== description) {
+            updates.description = result.clarifiedDescription
+          }
+        }
+        if (Object.keys(updates).length > 0) {
+          await window.kanbai.kanban.update({ id: task.id, ...updates, workspaceId })
+        }
+        set((state) => ({
+          tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, ...updates, isPrequalifying: false } : t)),
+        }))
+
+        // After prequalification finishes, try to auto-send if no WORKING task
+        const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
+        if (!hasWorking) {
+          const next = pickNextTask(get().tasks)
+          if (next) get().sendToAi(next)
+        }
+      } catch {
+        // On failure, clear prequalifying flag so the task becomes sendable
+        set((state) => ({
+          tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, isPrequalifying: false } : t)),
+        }))
+        // Still try to auto-send on failure
+        const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
+        if (!hasWorking) {
+          const next = pickNextTask(get().tasks)
+          if (next) get().sendToAi(next)
+        }
+      }
+    })()
+    } else {
+      // No prequalification — auto-send immediately
+      const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
+      if (!hasWorking) {
+        const next = pickNextTask(get().tasks)
+        if (next) get().sendToAi(next)
+      }
     }
   },
 
@@ -377,7 +456,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       description: task.description,
       status: 'TODO',
       priority: task.priority,
-      labels: task.labels,
+      type: task.type,
       dueDate: task.dueDate,
     })
     set((state) => ({ tasks: [...state.tasks, newTask] }))
@@ -458,7 +537,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       kanbanFilePath = `~/.kanbai/kanban/${workspaceId}.json`
     }
 
-    const ticketLabel = task.ticketNumber != null ? `T-${String(task.ticketNumber).padStart(2, '0')}` : task.id.slice(0, 8)
+    const ticketLabel = formatTicketLabel(task)
 
     let prompt: string
     if (task.isCtoTicket) {
@@ -688,6 +767,10 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     try {
       const newTasks: KanbanTask[] = await window.kanbai.kanban.list(wsId)
       const oldTasks = get().backgroundTasks[wsId] ?? []
+      // Clear stale isPrequalifying from file (transient flag, in-memory only)
+      for (const t of newTasks) {
+        delete t.isPrequalifying
+      }
       const { kanbanTabIds, kanbanPromptCwds } = get()
 
       let taskFinished = false
@@ -728,7 +811,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           }
 
           const t = useI18n.getState().t
-          const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
+          const ticketLabel = formatTicketLabel(newTask)
           const todoCount = newTasks.filter((tt) => tt.status === 'TODO' && !tt.disabled).length
           const body = todoCount > 0
             ? t('notifications.ticketsRemaining', { ticket: ticketLabel, count: todoCount })
@@ -747,7 +830,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           }
 
           const t = useI18n.getState().t
-          const ticketLabel = newTask.ticketNumber != null ? `T-${String(newTask.ticketNumber).padStart(2, '0')}` : newTask.title
+          const ticketLabel = formatTicketLabel(newTask)
           const todoCount = newTasks.filter((tt) => tt.status === 'TODO' && !tt.disabled).length
           pushNotification('error', t('notifications.taskFailed', { ticket: ticketLabel }),
             todoCount > 0

@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { v4 as uuid } from 'uuid'
-import type { KanbanTask, KanbanStatus } from '../../shared/types'
+import type { KanbanTask, KanbanTaskType, KanbanStatus } from '../../shared/types'
 
 export function getKanbanDir(): string {
   const dir = path.join(os.homedir(), '.kanbai', 'kanban')
@@ -16,12 +16,59 @@ export function getKanbanPath(workspaceId: string): string {
   return path.join(getKanbanDir(), `${workspaceId}.json`)
 }
 
+function migrateTask(task: KanbanTask & { labels?: string[] }): boolean {
+  let changed = false
+
+  if (!task.type) {
+    const labels = (task as { labels?: string[] }).labels ?? []
+    const labelMap: Record<string, KanbanTaskType> = {
+      bug: 'bug',
+      feature: 'feature',
+      refactor: 'refactor',
+      docs: 'doc',
+      test: 'test',
+    }
+    let inferred: KanbanTaskType = 'feature'
+    for (const label of labels) {
+      if (label in labelMap) {
+        inferred = labelMap[label]!
+        break
+      }
+    }
+    task.type = inferred
+    changed = true
+  }
+
+  if ((task.priority as string) === 'critical') {
+    task.priority = 'high'
+    changed = true
+  }
+
+  if ('labels' in task) {
+    delete (task as unknown as Record<string, unknown>).labels
+    changed = true
+  }
+
+  return changed
+}
+
 export function readKanbanTasks(workspaceId: string): KanbanTask[] {
   const filePath = getKanbanPath(workspaceId)
   if (!fs.existsSync(filePath)) return []
   try {
     const raw = fs.readFileSync(filePath, 'utf-8')
-    return JSON.parse(raw)
+    const tasks: KanbanTask[] = JSON.parse(raw)
+
+    // Migrate legacy tasks
+    let needsWrite = false
+    for (const task of tasks) {
+      if (migrateTask(task)) needsWrite = true
+    }
+    if (needsWrite) {
+      fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), 'utf-8')
+    }
+
+    return tasks
   } catch {
     return []
   }
@@ -166,16 +213,17 @@ export function maybeCreateMemoryRefactorTicket(
 ): KanbanTask | null {
   if (!readAutoMemoryRefactorSetting()) return null
 
+  const isRefactorTicket = (t: KanbanTask) =>
+    t.type === 'ia' && t.title === (MEMORY_REFACTOR_TITLES[readLocaleFromSettings()] ?? MEMORY_REFACTOR_TITLES['fr']!)
+
   const hasOpenRefactor = tasks.some(
     (t) =>
-      t.labels?.includes(AI_MEMORY_REFACTOR_LABEL) &&
+      isRefactorTicket(t) &&
       (t.status === 'TODO' || t.status === 'WORKING'),
   )
   if (hasOpenRefactor) return null
 
-  const hasAnyRefactorHistory = tasks.some(
-    (t) => t.labels?.includes(AI_MEMORY_REFACTOR_LABEL),
-  )
+  const hasAnyRefactorHistory = tasks.some(isRefactorTicket)
 
   const shouldCreate = !hasAnyRefactorHistory || tasks.length % MEMORY_REFACTOR_INTERVAL === 0
   if (!shouldCreate) return null
@@ -188,7 +236,7 @@ export function maybeCreateMemoryRefactorTicket(
     description: MEMORY_REFACTOR_DESCRIPTIONS[readLocaleFromSettings()] ?? MEMORY_REFACTOR_DESCRIPTIONS['fr']!,
     status: 'TODO',
     priority: 'medium',
-    labels: [AI_MEMORY_REFACTOR_LABEL, 'maintenance'],
+    type: 'ia',
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
@@ -202,10 +250,10 @@ export function createKanbanTask(
   data: {
     title: string
     description: string
-    priority: 'low' | 'medium' | 'high' | 'critical'
+    priority: 'low' | 'medium' | 'high'
+    type?: KanbanTaskType
     status?: KanbanStatus
     targetProjectId?: string
-    labels?: string[]
     isCtoTicket?: boolean
     disabled?: boolean
     parentTicketId?: string
@@ -221,7 +269,7 @@ export function createKanbanTask(
     description: data.description,
     status: data.status || 'TODO',
     priority: data.priority,
-    labels: data.labels,
+    type: data.type ?? 'feature',
     isCtoTicket: data.isCtoTicket,
     disabled: data.disabled,
     parentTicketId: data.parentTicketId,

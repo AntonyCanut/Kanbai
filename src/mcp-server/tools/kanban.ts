@@ -7,7 +7,14 @@ import {
   updateKanbanTask,
   deleteKanbanTask,
 } from '../lib/kanban-store.js'
-import type { KanbanStatus } from '../../shared/types/index.js'
+import type { KanbanStatus, KanbanTaskType } from '../../shared/types/index.js'
+
+const TYPE_PREFIX: Record<KanbanTaskType, string> = {
+  bug: 'B', feature: 'F', test: 'T', doc: 'D', ia: 'A', refactor: 'R',
+}
+function ticketLabel(n: number | undefined, type?: KanbanTaskType): string {
+  return `${TYPE_PREFIX[type ?? 'feature']}-${n ?? 0}`
+}
 
 export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): void {
   // kanban_list
@@ -16,7 +23,7 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
     'List kanban tickets with optional filters (status, priority)',
     {
       status: z.enum(['TODO', 'WORKING', 'PENDING', 'DONE', 'FAILED']).optional().describe('Filter by status'),
-      priority: z.enum(['low', 'medium', 'high', 'critical']).optional().describe('Filter by priority'),
+      priority: z.enum(['low', 'medium', 'high']).optional().describe('Filter by priority'),
     },
     async ({ status, priority }) => {
       let tasks = readKanbanTasks(ctx.workspaceId)
@@ -29,7 +36,7 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
         title: t.title,
         status: t.status,
         priority: t.priority,
-        labels: t.labels,
+        type: t.type,
         targetProjectId: t.targetProjectId,
         isCtoTicket: t.isCtoTicket,
         parentTicketId: t.parentTicketId,
@@ -79,12 +86,12 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
     {
       title: z.string().describe('Ticket title'),
       description: z.string().describe('Ticket description (markdown)'),
-      priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium').describe('Priority level'),
+      priority: z.enum(['low', 'medium', 'high']).default('medium').describe('Priority level'),
+      type: z.enum(['bug', 'feature', 'test', 'doc', 'ia', 'refactor']).default('feature').describe('Ticket type'),
       targetProjectId: z.string().optional().describe('Target project UUID'),
-      labels: z.array(z.string()).optional().describe('Labels/tags'),
       parentTicketId: z.string().optional().describe('Parent ticket UUID for linking (e.g. CTO ticket ID)'),
     },
-    async ({ title, description, priority, targetProjectId, labels, parentTicketId }) => {
+    async ({ title, description, priority, type, targetProjectId, parentTicketId }) => {
       // Validate parentTicketId exists if provided
       if (parentTicketId) {
         const tasks = readKanbanTasks(ctx.workspaceId)
@@ -101,9 +108,9 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
         title,
         description,
         priority,
+        type,
         status: 'TODO', // FORCED — AI tickets always start as TODO
         targetProjectId,
-        labels,
         parentTicketId,
       })
 
@@ -111,7 +118,7 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
       return {
         content: [{
           type: 'text' as const,
-          text: `Created ticket T-${task.ticketNumber}: ${task.title}${parentInfo}\n${JSON.stringify(task, null, 2)}`,
+          text: `Created ticket ${ticketLabel(task.ticketNumber, task.type)}: ${task.title}${parentInfo}\n${JSON.stringify(task, null, 2)}`,
         }],
       }
     },
@@ -126,12 +133,12 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
       title: z.string().optional().describe('New title'),
       description: z.string().optional().describe('New description'),
       status: z.enum(['TODO', 'WORKING', 'DONE', 'FAILED']).optional().describe('New status (PENDING not allowed)'),
-      priority: z.enum(['low', 'medium', 'high', 'critical']).optional().describe('New priority'),
+      priority: z.enum(['low', 'medium', 'high']).optional().describe('New priority'),
+      type: z.enum(['bug', 'feature', 'test', 'doc', 'ia', 'refactor']).optional().describe('Ticket type'),
       result: z.string().optional().describe('Result/output text'),
       error: z.string().optional().describe('Error message'),
-      labels: z.array(z.string()).optional().describe('Labels/tags'),
     },
-    async ({ id, title, description, status, priority, result, error, labels }) => {
+    async ({ id, title, description, status, priority, type, result, error }) => {
       // Double-check: PENDING is excluded from the enum, but guard anyway
       if (status === ('PENDING' as KanbanStatus)) {
         return {
@@ -160,16 +167,16 @@ export function registerKanbanTools(server: McpServer, ctx: WorkspaceContext): v
       if (description !== undefined) updates.description = description
       if (status !== undefined) updates.status = status
       if (priority !== undefined) updates.priority = priority
+      if (type !== undefined) updates.type = type
       if (result !== undefined) updates.result = result
       if (error !== undefined) updates.error = error
-      if (labels !== undefined) updates.labels = labels
 
       try {
         const task = updateKanbanTask(ctx.workspaceId, id, updates)
         return {
           content: [{
             type: 'text' as const,
-            text: `Updated ticket T-${task.ticketNumber}: ${task.title}\n${JSON.stringify(task, null, 2)}`,
+            text: `Updated ticket ${ticketLabel(task.ticketNumber, task.type)}: ${task.title}\n${JSON.stringify(task, null, 2)}`,
           }],
         }
       } catch (err) {
