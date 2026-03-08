@@ -192,6 +192,12 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.GIT_REMOVE_REMOTE, { cwd, name }),
     resetSoft: (cwd: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_RESET_SOFT, { cwd }),
+    worktreeAdd: (cwd: string, worktreePath: string, branch: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_ADD, { cwd, worktreePath, branch }),
+    worktreeRemove: (cwd: string, worktreePath: string, force?: boolean) =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_REMOVE, { cwd, worktreePath, force }),
+    worktreeList: (cwd: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_LIST, { cwd }),
   },
 
   // Claude
@@ -335,7 +341,7 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_PREQUALIFY, data),
     getConfig: (workspaceId: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_GET_CONFIG, { workspaceId }),
-    setConfig: (workspaceId: string, config: Record<string, boolean>) =>
+    setConfig: (workspaceId: string, config: Record<string, boolean | number>) =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_SET_CONFIG, { workspaceId, config }),
     onFileChanged: (callback: (data: { workspaceId: string }) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { workspaceId: string }) =>

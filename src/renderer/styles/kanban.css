@@ -61,6 +61,56 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Pause button */
+.kanban-pause-btn {
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.kanban-pause-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.kanban-pause-btn--active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb, 137, 180, 250), 0.1);
+}
+
+/* Paused banner */
+.kanban-paused-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Paused columns overlay */
+.kanban-columns--paused {
+  opacity: 0.45;
+  filter: grayscale(60%);
+  pointer-events: auto;
+}
+
 /* Settings button */
 .kanban-settings-btn {
   height: 30px;
@@ -156,6 +206,23 @@
 .kanban-settings-hint {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.kanban-settings-number-input {
+  width: 52px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.kanban-settings-number-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* CTO Mode - Create modal variant */

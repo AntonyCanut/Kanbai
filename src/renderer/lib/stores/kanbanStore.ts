@@ -24,8 +24,11 @@ const relaunchedTaskIds = new Set<string>()
 // Track tasks currently being reactivated to prevent duplicate updates
 const reactivatingTaskIds = new Set<string>()
 
+// Track tasks currently being launched to prevent duplicate sendToAi calls
+const launchingTaskIds = new Set<string>()
+
 export function pickNextTask(tasks: KanbanTask[]): KanbanTask | null {
-  const todo = tasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+  const todo = tasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying && !launchingTaskIds.has(t.id))
   if (!todo.length) return null
   todo.sort((a, b) => {
     // CTO tickets always go last — they should never block regular tickets
@@ -38,6 +41,23 @@ export function pickNextTask(tasks: KanbanTask[]): KanbanTask | null {
     return a.createdAt - b.createdAt
   })
   return todo[0]!
+}
+
+/**
+ * Returns the number of available slots for launching new tasks.
+ * 0 means no room (or paused). >0 means that many tasks can be launched.
+ */
+async function availableSlots(tasks: KanbanTask[], workspaceId: string): Promise<number> {
+  let maxConcurrent = 1
+  try {
+    const kanbanConfig = await window.kanbai.kanban.getConfig(workspaceId)
+    if (kanbanConfig?.paused) return 0
+    if (kanbanConfig?.useWorktrees && kanbanConfig.maxConcurrentWorktrees > 1) {
+      maxConcurrent = kanbanConfig.maxConcurrentWorktrees
+    }
+  } catch { /* default to 1 */ }
+  const workingCount = tasks.filter((t) => t.status === 'WORKING').length + launchingTaskIds.size
+  return Math.max(0, maxConcurrent - workingCount)
 }
 
 function isChildOfCto(task: KanbanTask, tasks: KanbanTask[]): boolean {
@@ -174,47 +194,77 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       }
       set({ tasks })
 
-      // Startup-only cleanup: close stale terminals linked to DONE tickets.
+      // Startup-only cleanup: close stale terminals linked to DONE tickets (respects config).
       if (!get().startupDoneCleanupPerformed) {
         set({ startupDoneCleanupPerformed: true })
         const { kanbanTabIds: staleTabIds } = get()
         const closedTabIds: string[] = []
-        for (const [taskId, tabId] of Object.entries(staleTabIds)) {
-          const task = tasks.find((t) => t.id === taskId)
-          if (task && task.status === 'DONE') {
-            closedTabIds.push(tabId)
+        window.kanbai.kanban.getConfig?.(workspaceId)?.then((kanbanConfig) => {
+          for (const [taskId, tabId] of Object.entries(staleTabIds)) {
+            const task = tasks.find((t) => t.id === taskId)
+            if (task && task.status === 'DONE') {
+              const isCto = task.isCtoTicket || isChildOfCto(task, tasks)
+              const shouldClose = isCto
+                ? kanbanConfig?.autoCloseCtoTerminals
+                : kanbanConfig?.autoCloseCompletedTerminals
+              if (shouldClose) {
+                closedTabIds.push(tabId)
+              }
+            }
           }
-        }
-        if (closedTabIds.length > 0) {
-          const termStore = useTerminalTabStore.getState()
-          for (const tabId of closedTabIds) {
-            termStore.closeTab(tabId)
+          if (closedTabIds.length > 0) {
+            const termStore = useTerminalTabStore.getState()
+            for (const tabId of closedTabIds) {
+              termStore.closeTab(tabId)
+            }
           }
-        }
+        }).catch(() => { /* best-effort */ })
       }
 
-      // One-at-a-time scheduling: resume a WORKING without terminal, or pick next TODO
+      // Scheduling: resume WORKING without terminal, or pick next TODO (respecting concurrency limit)
       const capturedWorkspaceId = workspaceId
-      setTimeout(() => {
+      setTimeout(async () => {
         // Guard against stale callbacks after workspace switch
         if (get().currentWorkspaceId !== capturedWorkspaceId) return
 
         const { kanbanTabIds } = get()
 
-        // 1. Resume a WORKING task that lost its terminal (only one)
-        const workingWithoutTerminal = tasks.find(
+        // Determine max concurrent tasks (>1 only when worktrees enabled) and pause state
+        let maxConcurrent = 1
+        let isPaused = false
+        try {
+          const kanbanConfig = await window.kanbai.kanban.getConfig(capturedWorkspaceId)
+          if (kanbanConfig?.paused) isPaused = true
+          if (kanbanConfig?.useWorktrees && kanbanConfig.maxConcurrentWorktrees > 1) {
+            maxConcurrent = kanbanConfig.maxConcurrentWorktrees
+          }
+        } catch { /* default to 1 */ }
+
+        if (isPaused) return
+
+        // 1. Resume WORKING tasks that lost their terminal
+        const workingWithoutTerminal = tasks.filter(
           (t) => t.status === 'WORKING' && !kanbanTabIds[t.id],
         )
-        if (workingWithoutTerminal) {
-          get().sendToAi(workingWithoutTerminal, undefined, { activate: false })
-          return
+        for (const task of workingWithoutTerminal) {
+          const workingCount = tasks.filter((t) => t.status === 'WORKING' && (kanbanTabIds[t.id] || t.id === task.id)).length
+          if (workingCount <= maxConcurrent) {
+            get().sendToAi(task, undefined, { activate: false })
+          }
         }
+        if (workingWithoutTerminal.length > 0) return
 
-        // 2. If no WORKING task at all, pick the next TODO by priority
-        const hasWorking = tasks.some((t) => t.status === 'WORKING')
-        if (!hasWorking) {
-          const next = pickNextTask(tasks)
-          if (next) get().sendToAi(next, undefined, { activate: false })
+        // 2. Fill available slots with next TODOs
+        const workingCount = tasks.filter((t) => t.status === 'WORKING').length
+        const freeSlots = maxConcurrent - workingCount
+        if (freeSlots > 0) {
+          const remaining = tasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+          for (let i = 0; i < freeSlots; i++) {
+            const next = pickNextTask(remaining)
+            if (!next) break
+            remaining.splice(remaining.indexOf(next), 1)
+            get().sendToAi(next, undefined, { activate: false })
+          }
         }
       }, 500)
     } finally {
@@ -283,6 +333,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
 
       // Detect status transitions for all tasks
       const tasksToLaunch: KanbanTask[] = []
+      const tabsToAutoClose: Array<{ tabId: string; isCto: boolean }> = []
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id)
         if (!oldTask) continue
@@ -319,6 +370,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#a6e3a1')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id) // allow future re-launch
+          tabsToAutoClose.push({ tabId, isCto: isCtoMode })
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -369,26 +421,57 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         get().sendToAi(task)
       }
 
-      // After a task finishes (DONE/FAILED), pick the next one with a delay
+      // After a task finishes (DONE/FAILED), pick the next one if under concurrency limit
       if (taskFinished) {
-        const hasWorking = newTasks.some((t) => t.status === 'WORKING')
-        if (!hasWorking) {
-          setTimeout(() => {
-            const currentTasks = get().tasks
-            const next = pickNextTask(currentTasks)
-            if (next) get().sendToAi(next, undefined, { activate: false })
-          }, 1000)
-        }
+        const wsId = get().currentWorkspaceId
+        const capturedTabsToClose = [...tabsToAutoClose]
+        setTimeout(async () => {
+          let maxConcurrent = 1
+          if (wsId) {
+            try {
+              const kanbanConfig = await window.kanbai.kanban.getConfig(wsId)
+              if (kanbanConfig?.paused) return
+              if (kanbanConfig?.useWorktrees && kanbanConfig.maxConcurrentWorktrees > 1) {
+                maxConcurrent = kanbanConfig.maxConcurrentWorktrees
+              }
+
+              // Auto-close terminals for completed tickets based on config
+              const termStore = useTerminalTabStore.getState()
+              for (const { tabId, isCto } of capturedTabsToClose) {
+                const shouldClose = isCto
+                  ? kanbanConfig?.autoCloseCtoTerminals
+                  : kanbanConfig?.autoCloseCompletedTerminals
+                if (shouldClose) {
+                  termStore.closeTab(tabId)
+                }
+              }
+            } catch { /* default to 1 */ }
+          }
+          const currentTasks = get().tasks
+          const workingCount = currentTasks.filter((t) => t.status === 'WORKING').length
+          const freeSlots = maxConcurrent - workingCount
+          if (freeSlots > 0) {
+            const remaining = currentTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+            for (let i = 0; i < freeSlots; i++) {
+              const next = pickNextTask(remaining)
+              if (!next) break
+              remaining.splice(remaining.indexOf(next), 1)
+              get().sendToAi(next, undefined, { activate: false })
+            }
+          }
+        }, 1000)
       }
     } catch { /* ignore sync errors */ }
   },
 
   createTask: async (workspaceId, title, description, priority, type?, targetProjectId?, isCtoTicket?, aiProvider?) => {
-    // Check if prequalification is enabled (per-workspace config)
+    // Check per-workspace config (prequalification + pause state)
     let prequalifyEnabled = false
+    let workspacePaused = false
     try {
       const kanbanConfig = await window.kanbai.kanban.getConfig(workspaceId)
       prequalifyEnabled = kanbanConfig?.autoPrequalifyTickets === true
+      workspacePaused = kanbanConfig?.paused === true
     } catch { /* default to false */ }
 
     const task: KanbanTask = await window.kanbai.kanban.create({
@@ -446,10 +529,15 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
             }
             set({ tasks: newTasks })
 
-            const hasWorking = newTasks.some((t) => t.status === 'WORKING')
-            if (!hasWorking) {
-              const next = pickNextTask(newTasks)
-              if (next) get().sendToAi(next, undefined, { activate: false })
+            if (!workspacePaused) {
+              const slots = await availableSlots(newTasks, workspaceId)
+              const remaining = newTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+              for (let i = 0; i < slots; i++) {
+                const next = pickNextTask(remaining)
+                if (!next) break
+                remaining.splice(remaining.indexOf(next), 1)
+                get().sendToAi(next, undefined, { activate: false })
+              }
             }
             return
           }
@@ -462,11 +550,17 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, ...updates, isPrequalifying: false } : t)),
         }))
 
-        // After prequalification finishes, try to auto-send if no WORKING task
-        const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
-        if (!hasWorking) {
-          const next = pickNextTask(get().tasks)
-          if (next) get().sendToAi(next, undefined, { activate: false })
+        // After prequalification finishes, try to auto-send if under concurrency limit
+        if (!workspacePaused) {
+          const currentTasks = get().tasks
+          const slots = await availableSlots(currentTasks, workspaceId)
+          const remaining = currentTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+          for (let i = 0; i < slots; i++) {
+            const next = pickNextTask(remaining)
+            if (!next) break
+            remaining.splice(remaining.indexOf(next), 1)
+            get().sendToAi(next, undefined, { activate: false })
+          }
         }
       } catch {
         // On failure, clear prequalifying flag so the task becomes sendable
@@ -474,19 +568,31 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, isPrequalifying: false } : t)),
         }))
         // Still try to auto-send on failure
-        const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
-        if (!hasWorking) {
-          const next = pickNextTask(get().tasks)
-          if (next) get().sendToAi(next, undefined, { activate: false })
+        if (!workspacePaused) {
+          const currentTasks = get().tasks
+          const slots = await availableSlots(currentTasks, workspaceId)
+          const remaining = currentTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+          for (let i = 0; i < slots; i++) {
+            const next = pickNextTask(remaining)
+            if (!next) break
+            remaining.splice(remaining.indexOf(next), 1)
+            get().sendToAi(next, undefined, { activate: false })
+          }
         }
       }
     })()
     } else {
       // No prequalification — auto-send immediately
-      const hasWorking = get().tasks.some((t) => t.status === 'WORKING')
-      if (!hasWorking) {
-        const next = pickNextTask(get().tasks)
-        if (next) get().sendToAi(next, undefined, { activate: false })
+      if (!workspacePaused) {
+        const currentTasks = get().tasks
+        const slots = await availableSlots(currentTasks, workspaceId)
+        const remaining = currentTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+        for (let i = 0; i < slots; i++) {
+          const next = pickNextTask(remaining)
+          if (!next) break
+          remaining.splice(remaining.indexOf(next), 1)
+          get().sendToAi(next, undefined, { activate: false })
+        }
       }
     }
   },
@@ -543,8 +649,10 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
   sendToAi: async (task: KanbanTask, explicitWorkspaceId?: string, options?: { activate?: boolean }) => {
     const shouldActivate = options?.activate ?? true
     if (task.disabled) return
+    if (launchingTaskIds.has(task.id)) return
     const workspaceId = explicitWorkspaceId ?? get().currentWorkspaceId
     if (!workspaceId) return
+    launchingTaskIds.add(task.id)
 
     // If a tab already exists for this task, activate it instead of recreating
     const { kanbanTabIds } = get()
@@ -554,6 +662,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       const tab = termStore.tabs.find((t) => t.id === existingTabId)
       if (tab) {
         if (shouldActivate) termStore.setActiveTab(existingTabId)
+        launchingTaskIds.delete(task.id)
         return
       }
       // Tab was closed — remove stale mapping and proceed to create a new one
@@ -600,7 +709,45 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         cwd = workspaceProjects[0]?.path ?? null
       }
     }
-    if (!cwd) return
+    if (!cwd) { launchingTaskIds.delete(task.id); return }
+
+    // Worktree support: create a git worktree for this task if enabled
+    if (!task.isCtoTicket && !isChildOfCto(task, get().tasks) && !task.worktreePath) {
+      try {
+        const kanbanConfig = await window.kanbai.kanban.getConfig(workspaceId)
+        if (kanbanConfig?.useWorktrees) {
+          // Determine the git project root — worktrees need a git repo
+          const projectPath = task.targetProjectId
+            ? projects.find((p) => p.id === task.targetProjectId)?.path
+            : workspaceProjects.find((p) => p.hasGit)?.path
+          if (projectPath) {
+            const ticketBranch = `kanban/${formatTicketLabel(task).toLowerCase()}`
+            const worktreeDir = `${projectPath}/.kanbai-worktrees/${task.id}`
+            const result = await window.kanbai.git.worktreeAdd(projectPath, worktreeDir, ticketBranch)
+            if (result?.success) {
+              cwd = worktreeDir
+              // Persist worktree info on the task
+              await window.kanbai.kanban.update({
+                id: task.id,
+                workspaceId,
+                worktreePath: worktreeDir,
+                worktreeBranch: ticketBranch,
+              })
+              set((state) => ({
+                tasks: state.tasks.map((t) =>
+                  t.id === task.id ? { ...t, worktreePath: worktreeDir, worktreeBranch: ticketBranch } : t,
+                ),
+              }))
+            }
+          }
+        }
+      } catch {
+        // Worktree creation failed — fall through to use original cwd
+      }
+    } else if (task.worktreePath) {
+      // Reuse existing worktree path
+      cwd = task.worktreePath
+    }
 
     // Get kanban file path via IPC
     let kanbanFilePath: string
@@ -739,6 +886,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Failed to write prompt file for task:', task.id, err)
+      launchingTaskIds.delete(task.id)
       return
     }
 
@@ -781,7 +929,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     }
 
     // Abort if terminal could not be created (e.g. workspace limit reached)
-    if (!tabId) return
+    if (!tabId) { launchingTaskIds.delete(task.id); return }
 
     // Update local state to WORKING immediately (optimistic)
     set((state) => ({
@@ -796,6 +944,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         workspaceId,
       })
     } catch { /* file update is best-effort */ }
+    launchingTaskIds.delete(task.id)
 
     // Store prompt cwd for cleanup when the task finishes (DONE/FAILED).
     // We do NOT clean up on a timer — Claude Code can take arbitrarily long
@@ -847,6 +996,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       const { kanbanTabIds, kanbanPromptCwds } = get()
 
       let taskFinished = false
+      const tabsToAutoClose: Array<{ tabId: string; isCto: boolean }> = []
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id)
         if (!oldTask) continue
@@ -876,6 +1026,7 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#a6e3a1')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id)
+          tabsToAutoClose.push({ tabId, isCto: isCtoMode })
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
@@ -921,16 +1072,36 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         backgroundTasks: { ...state.backgroundTasks, [wsId]: newTasks },
       }))
 
-      // Pick next TODO after a task finishes
+      // Pick next TODO after a task finishes (skip if workspace is paused or at concurrency limit)
       if (taskFinished) {
-        const hasWorking = newTasks.some((t) => t.status === 'WORKING')
-        if (!hasWorking) {
-          setTimeout(() => {
-            const bgTasks = get().backgroundTasks[wsId] ?? []
-            const next = pickNextTask(bgTasks)
-            if (next) get().sendToAi(next, wsId, { activate: false })
-          }, 1000)
-        }
+        const capturedTabsToClose = [...tabsToAutoClose]
+        setTimeout(async () => {
+          // Auto-close terminals for completed tickets based on config
+          if (capturedTabsToClose.length > 0) {
+            try {
+              const kanbanConfig = await window.kanbai.kanban.getConfig(wsId)
+              const termStore = useTerminalTabStore.getState()
+              for (const { tabId, isCto } of capturedTabsToClose) {
+                const shouldClose = isCto
+                  ? kanbanConfig?.autoCloseCtoTerminals
+                  : kanbanConfig?.autoCloseCompletedTerminals
+                if (shouldClose) {
+                  termStore.closeTab(tabId)
+                }
+              }
+            } catch { /* best-effort */ }
+          }
+
+          const bgTasks = get().backgroundTasks[wsId] ?? []
+          const slots = await availableSlots(bgTasks, wsId)
+          const remaining = bgTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+          for (let i = 0; i < slots; i++) {
+            const next = pickNextTask(remaining)
+            if (!next) break
+            remaining.splice(remaining.indexOf(next), 1)
+            get().sendToAi(next, wsId, { activate: false })
+          }
+        }, 1000)
       }
     } catch { /* ignore sync errors */ }
   },
@@ -1114,11 +1285,14 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     }
     set({ tasks: newTasks })
 
-    // Auto-send if no WORKING task
-    const hasWorking = newTasks.some((t) => t.status === 'WORKING')
-    if (!hasWorking) {
-      const next = pickNextTask(newTasks)
-      if (next) get().sendToAi(next, undefined, { activate: false })
+    // Auto-send if under concurrency limit (skip if paused)
+    const slots = await availableSlots(newTasks, currentWorkspaceId)
+    const remaining = newTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+    for (let i = 0; i < slots; i++) {
+      const next = pickNextTask(remaining)
+      if (!next) break
+      remaining.splice(remaining.indexOf(next), 1)
+      get().sendToAi(next, undefined, { activate: false })
     }
   },
 

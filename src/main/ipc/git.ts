@@ -1,6 +1,8 @@
 import { IpcMain } from 'electron'
 import { execFileSync } from 'child_process'
-import { IPC_CHANNELS, GitLogEntry, GitStatus, GitTag, GitBlameLine, GitRemote } from '../../shared/types'
+import * as fs from 'fs'
+import * as path from 'path'
+import { IPC_CHANNELS, GitLogEntry, GitStatus, GitTag, GitBlameLine, GitRemote, GitWorktree } from '../../shared/types'
 import { StorageService } from '../services/storage'
 
 // ---------------------------------------------------------------------------
@@ -623,6 +625,92 @@ export function registerGitHandlers(ipcMain: IpcMain): void {
         return { success: true }
       } catch (err) {
         return { success: false, error: String(err) }
+      }
+    },
+  )
+
+  // --- Worktree management ---
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_WORKTREE_ADD,
+    async (
+      _event,
+      { cwd, worktreePath, branch }: { cwd: string; worktreePath: string; branch: string },
+    ) => {
+      try {
+        if (!hasCommits(cwd)) {
+          return { success: false, error: 'Cannot create worktree without initial commit.' }
+        }
+        execGit(['worktree', 'add', worktreePath, '-b', validateRef(branch)], cwd)
+
+        // Ensure .kanbai-worktrees/ is in .gitignore
+        const gitignorePath = path.join(cwd, '.gitignore')
+        const entry = '.kanbai-worktrees/'
+        try {
+          let content = ''
+          if (fs.existsSync(gitignorePath)) {
+            content = fs.readFileSync(gitignorePath, 'utf-8')
+          }
+          const lines = content.split('\n')
+          if (!lines.some((l) => l.trim() === entry)) {
+            const suffix = content.length > 0 && !content.endsWith('\n') ? '\n' : ''
+            fs.writeFileSync(gitignorePath, content + suffix + entry + '\n', 'utf-8')
+          }
+        } catch { /* gitignore update is best-effort */ }
+
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_WORKTREE_REMOVE,
+    async (
+      _event,
+      { cwd, worktreePath, force }: { cwd: string; worktreePath: string; force?: boolean },
+    ) => {
+      try {
+        const args = ['worktree', 'remove']
+        if (force) args.push('--force')
+        args.push(worktreePath)
+        execGit(args, cwd)
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: String(err) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_WORKTREE_LIST,
+    async (_event, { cwd }: { cwd: string }) => {
+      try {
+        const output = execGit(['worktree', 'list', '--porcelain'], cwd)
+        const worktrees: GitWorktree[] = []
+        let current: Partial<GitWorktree> = {}
+
+        for (const line of output.split('\n')) {
+          if (line.startsWith('worktree ')) {
+            if (current.path) worktrees.push(current as GitWorktree)
+            current = { path: line.slice(9), branch: '', head: '', isBare: false }
+          } else if (line.startsWith('HEAD ')) {
+            current.head = line.slice(5)
+          } else if (line.startsWith('branch ')) {
+            current.branch = line.slice(7).replace('refs/heads/', '')
+          } else if (line === 'bare') {
+            current.isBare = true
+          } else if (line === '' && current.path) {
+            worktrees.push(current as GitWorktree)
+            current = {}
+          }
+        }
+        if (current.path) worktrees.push(current as GitWorktree)
+
+        return worktrees
+      } catch {
+        return []
       }
     },
   )

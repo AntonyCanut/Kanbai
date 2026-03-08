@@ -284,7 +284,7 @@ export function KanbanBoard() {
     }
   }, [activeWorkspaceId, loadTasks])
 
-  const updateKanbanConfig = useCallback(async (key: keyof KanbanConfig, value: boolean) => {
+  const updateKanbanConfig = useCallback(async (key: keyof KanbanConfig, value: boolean | number) => {
     if (!activeWorkspaceId || !kanbanConfig) return
     const updated = { ...kanbanConfig, [key]: value }
     setKanbanConfig(updated)
@@ -666,6 +666,13 @@ export function KanbanBoard() {
             {t('kanban.newTask')}
           </button>
           <button
+            className={`kanban-pause-btn${kanbanConfig?.paused ? ' kanban-pause-btn--active' : ''}`}
+            onClick={() => updateKanbanConfig('paused', !kanbanConfig?.paused)}
+            title={kanbanConfig?.paused ? t('kanban.resume') : t('kanban.pause')}
+          >
+            {kanbanConfig?.paused ? '▶' : '⏸'}
+          </button>
+          <button
             className={`kanban-settings-btn${showSettings ? ' kanban-settings-btn--active' : ''}`}
             onClick={() => setShowSettings(!showSettings)}
             title={t('kanban.settings')}
@@ -688,6 +695,7 @@ export function KanbanBoard() {
             { key: 'autoCreateAiMemoryRefactorTickets' as const, label: t('kanban.autoCreateAiMemoryRefactorTickets'), hint: t('kanban.autoCreateAiMemoryRefactorTicketsHint') },
             { key: 'autoPrequalifyTickets' as const, label: t('kanban.autoPrequalifyTickets'), hint: t('kanban.autoPrequalifyTicketsHint') },
             { key: 'autoPrioritizeBugs' as const, label: t('kanban.autoPrioritizeBugs'), hint: t('kanban.autoPrioritizeBugsHint') },
+            { key: 'useWorktrees' as const, label: t('kanban.useWorktrees'), hint: t('kanban.useWorktreesHint') },
           ]).map(({ key, label, hint }) => (
             <div key={key} className="kanban-settings-row">
               <div className="kanban-settings-row-info">
@@ -702,6 +710,25 @@ export function KanbanBoard() {
               </button>
             </div>
           ))}
+          {kanbanConfig.useWorktrees && (
+            <div className="kanban-settings-row">
+              <div className="kanban-settings-row-info">
+                <span className="kanban-settings-label">{t('kanban.maxConcurrentWorktrees')}</span>
+                <span className="kanban-settings-hint">{t('kanban.maxConcurrentWorktreesHint')}</span>
+              </div>
+              <input
+                type="number"
+                className="kanban-settings-number-input"
+                min={1}
+                max={10}
+                value={kanbanConfig.maxConcurrentWorktrees}
+                onChange={(e) => {
+                  const val = Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1))
+                  updateKanbanConfig('maxConcurrentWorktrees', val)
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -1088,8 +1115,13 @@ export function KanbanBoard() {
         )
       })()}
 
+      {kanbanConfig?.paused && (
+        <div className="kanban-paused-banner">
+          {t('kanban.pausedBanner')}
+        </div>
+      )}
       <div className="kanban-main">
-        <div className="kanban-columns">
+        <div className={`kanban-columns${kanbanConfig?.paused ? ' kanban-columns--paused' : ''}`}>
           {ACTIVE_COLUMNS.map((col) => (
             <div
               key={col.status}

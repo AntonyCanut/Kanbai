@@ -169,6 +169,8 @@ export interface KanbanTask {
   aiProvider?: import('./ai-provider').AiProviderId
   isPrequalifying?: boolean
   splitSuggestions?: KanbanSplitSuggestion[]
+  worktreePath?: string
+  worktreeBranch?: string
   createdAt: number
   updatedAt: number
 }
@@ -181,6 +183,9 @@ export interface KanbanConfig {
   autoCreateAiMemoryRefactorTickets: boolean
   autoPrequalifyTickets: boolean
   autoPrioritizeBugs: boolean
+  useWorktrees: boolean
+  maxConcurrentWorktrees: number
+  paused: boolean
 }
 
 export interface UpdateInfo {
@@ -313,6 +318,13 @@ export interface GitRemote {
   name: string
   fetchUrl: string
   pushUrl: string
+}
+
+export interface GitWorktree {
+  path: string
+  branch: string
+  head: string
+  isBare: boolean
 }
 
 export interface GitProfile {
@@ -976,6 +988,9 @@ export const IPC_CHANNELS = {
   GIT_ADD_REMOTE: 'git:addRemote',
   GIT_REMOVE_REMOTE: 'git:removeRemote',
   GIT_RESET_SOFT: 'git:resetSoft',
+  GIT_WORKTREE_ADD: 'git:worktreeAdd',
+  GIT_WORKTREE_REMOVE: 'git:worktreeRemove',
+  GIT_WORKTREE_LIST: 'git:worktreeList',
 
   // Workspace storage (.workspaces dir)
   WORKSPACE_INIT_DIR: 'workspace:initDir',

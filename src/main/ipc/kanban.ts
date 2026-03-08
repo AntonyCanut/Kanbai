@@ -19,6 +19,9 @@ const DEFAULT_KANBAN_CONFIG: KanbanConfig = {
   autoCreateAiMemoryRefactorTickets: true,
   autoPrequalifyTickets: false,
   autoPrioritizeBugs: true,
+  useWorktrees: false,
+  maxConcurrentWorktrees: 1,
+  paused: false,
 }
 
 function getKanbanConfigPath(workspaceId: string): string {
@@ -48,6 +51,9 @@ function readKanbanConfig(workspaceId: string): KanbanConfig {
           autoCreateAiMemoryRefactorTickets: s.autoCreateAiMemoryRefactorTickets ?? DEFAULT_KANBAN_CONFIG.autoCreateAiMemoryRefactorTickets,
           autoPrequalifyTickets: s.kanbanSettings?.autoPrequalifyTickets ?? DEFAULT_KANBAN_CONFIG.autoPrequalifyTickets,
           autoPrioritizeBugs: s.kanbanSettings?.autoPrioritizeBugs ?? DEFAULT_KANBAN_CONFIG.autoPrioritizeBugs,
+          useWorktrees: DEFAULT_KANBAN_CONFIG.useWorktrees,
+          maxConcurrentWorktrees: DEFAULT_KANBAN_CONFIG.maxConcurrentWorktrees,
+          paused: DEFAULT_KANBAN_CONFIG.paused,
         }
       }
     }

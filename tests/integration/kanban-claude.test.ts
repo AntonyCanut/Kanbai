@@ -12,6 +12,7 @@ const mockKanbanSelectFiles = vi.fn()
 const mockKanbanAttachFile = vi.fn()
 const mockKanbanRemoveAttachment = vi.fn()
 const mockKanbanLinkConversation = vi.fn()
+const mockKanbanGetConfig = vi.fn()
 const mockTerminalWrite = vi.fn()
 const mockWorkspaceEnvSetup = vi.fn()
 
@@ -32,6 +33,7 @@ vi.stubGlobal('window', {
       attachFile: mockKanbanAttachFile,
       removeAttachment: mockKanbanRemoveAttachment,
       linkConversation: mockKanbanLinkConversation,
+      getConfig: mockKanbanGetConfig,
     },
     workspaceEnv: {
       setup: mockWorkspaceEnvSetup,
@@ -77,6 +79,10 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
     mockWorkspaceEnvSetup.mockResolvedValue({ success: true, envPath: '/tmp/workspace-env' })
     mockKanbanGetPath.mockResolvedValue('/Users/test/.kanbai/kanban/ws-1.json')
     mockKanbanCleanupPrompt.mockResolvedValue(undefined)
+    mockKanbanGetConfig.mockResolvedValue({
+      autoCloseCompletedTerminals: true,
+      autoCloseCtoTerminals: true,
+    })
 
     useKanbanStore.setState({
       tasks: [],
@@ -502,8 +508,8 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       ])
 
       await useKanbanStore.getState().loadTasks('ws-1')
-
-      expect(mockCloseTab).toHaveBeenCalledTimes(1)
+      // Startup cleanup is async (fetches kanbanConfig), flush microtasks
+      await vi.waitFor(() => expect(mockCloseTab).toHaveBeenCalledTimes(1))
       expect(mockCloseTab).toHaveBeenCalledWith('tab-done')
 
       mockCloseTab.mockClear()

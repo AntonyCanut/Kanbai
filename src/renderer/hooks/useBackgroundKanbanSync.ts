@@ -72,9 +72,13 @@ export function useBackgroundKanbanSync(): void {
       // --- Auto-resume: check ALL boards for idle boards with pending tasks ---
       const store = useKanbanStore.getState()
 
-      // Check background workspaces
+      // Check background workspaces (skip paused ones)
       for (const [wsId, tasks] of Object.entries(store.backgroundTasks)) {
         if (wsId === activeWorkspaceId) continue
+        try {
+          const bgConfig = await window.kanbai.kanban.getConfig(wsId)
+          if (bgConfig?.paused) continue
+        } catch { /* default to not paused */ }
         const hasWorking = tasks.some((t) => t.status === 'WORKING')
         if (!hasWorking) {
           const next = pickNextTask(tasks)
@@ -84,17 +88,25 @@ export function useBackgroundKanbanSync(): void {
 
       // Check active workspace — sync from file first to catch missed events
       if (activeWorkspaceId) {
-        await useKanbanStore.getState().syncTasksFromFile()
-        const freshStore = useKanbanStore.getState()
-        const { tasks: activeTasks } = freshStore
-        if (activeTasks.length > 0) {
-          // Only launch next TODO if no task is WORKING or PENDING (in-progress states)
-          const hasInProgress = activeTasks.some(
-            (t) => t.status === 'WORKING' || t.status === 'PENDING',
-          )
-          if (!hasInProgress) {
-            const next = pickNextTask(activeTasks)
-            if (next) freshStore.sendToAi(next)
+        let activeWsPaused = false
+        try {
+          const activeConfig = await window.kanbai.kanban.getConfig(activeWorkspaceId)
+          if (activeConfig?.paused) activeWsPaused = true
+        } catch { /* default to not paused */ }
+
+        if (!activeWsPaused) {
+          await useKanbanStore.getState().syncTasksFromFile()
+          const freshStore = useKanbanStore.getState()
+          const { tasks: activeTasks } = freshStore
+          if (activeTasks.length > 0) {
+            // Only launch next TODO if no task is WORKING or PENDING (in-progress states)
+            const hasInProgress = activeTasks.some(
+              (t) => t.status === 'WORKING' || t.status === 'PENDING',
+            )
+            if (!hasInProgress) {
+              const next = pickNextTask(activeTasks)
+              if (next) freshStore.sendToAi(next)
+            }
           }
         }
       }
