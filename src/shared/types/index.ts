@@ -992,6 +992,7 @@ export const IPC_CHANNELS = {
   GIT_WORKTREE_ADD: 'git:worktreeAdd',
   GIT_WORKTREE_REMOVE: 'git:worktreeRemove',
   GIT_WORKTREE_LIST: 'git:worktreeList',
+  GIT_WORKTREE_FINALIZE: 'git:worktreeFinalize',
 
   // Workspace storage (.workspaces dir)
   WORKSPACE_INIT_DIR: 'workspace:initDir',

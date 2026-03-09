@@ -863,18 +863,21 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
         ``,
         `## Instructions`,
         `1. Realise la tache decrite ci-dessus dans le projet.`,
-        `2. Quand tu as termine avec succes, edite le fichier \`${kanbanFilePath}\`:`,
+        `2. **AVANT de mettre a jour le ticket**, commit TOUS tes changements sur la branche de travail :`,
+        `   - \`git add -A && git commit -m "feat(kanban): ${ticketLabel} - description courte"\``,
+        `   - Ne laisse AUCUN changement non commite dans le worktree.`,
+        `3. Quand tu as termine avec succes, edite le fichier \`${kanbanFilePath}\`:`,
         `   - Trouve le ticket avec l'id \`${task.id}\``,
         `   - Change son champ \`status\` de \`WORKING\` a \`DONE\``,
         `   - Ajoute un champ \`result\` avec un resume court de ce que tu as fait`,
         `   - Mets a jour \`updatedAt\` avec \`Date.now()\``,
-        `3. Si tu as besoin de precisions de l'utilisateur:`,
+        `4. Si tu as besoin de precisions de l'utilisateur:`,
         `   - Change le status a \`PENDING\``,
         `   - Ajoute un champ \`question\` expliquant ce que tu as besoin de savoir`,
-        `4. Si tu ne peux pas realiser la tache, change le status a \`FAILED\` et ajoute un champ \`error\` expliquant pourquoi.`,
+        `5. Si tu ne peux pas realiser la tache, change le status a \`FAILED\` et ajoute un champ \`error\` expliquant pourquoi.`,
         ``,
         `---`,
-        `**RAPPEL FINAL** : Ta DERNIERE action avant de terminer doit TOUJOURS etre la mise a jour du fichier kanban \`${kanbanFilePath}\` pour le ticket \`${task.id}\`. Sans cette mise a jour, ton travail ne sera pas comptabilise.`,
+        `**RAPPEL FINAL** : Ta DERNIERE action avant de terminer doit TOUJOURS etre la mise a jour du fichier kanban \`${kanbanFilePath}\` pour le ticket \`${task.id}\`. Assure-toi d'avoir commite tous tes changements AVANT. Sans cette mise a jour, ton travail ne sera pas comptabilise.`,
       )
 
       prompt = promptParts.filter(Boolean).join('\n')
@@ -1028,6 +1031,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           relaunchedTaskIds.delete(newTask.id)
           tabsToAutoClose.push({ tabId, isCto: isCtoMode })
 
+          // Auto-commit any uncommitted worktree changes (safety net)
+          if (newTask.worktreePath) {
+            const ticketLabel = formatTicketLabel(newTask)
+            window.kanbai.git.worktreeFinalize(newTask.worktreePath, ticketLabel).catch(() => { /* best-effort */ })
+          }
+
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
           if (promptCwd) {
@@ -1047,6 +1056,12 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           termStore.setTabColor(tabId, '#F47067')
           taskFinished = true
           relaunchedTaskIds.delete(newTask.id)
+
+          // Auto-commit any uncommitted worktree changes (safety net)
+          if (newTask.worktreePath) {
+            const ticketLabel = formatTicketLabel(newTask)
+            window.kanbai.git.worktreeFinalize(newTask.worktreePath, ticketLabel).catch(() => { /* best-effort */ })
+          }
 
           // Clean up prompt file now that the task is finished
           const promptCwd = kanbanPromptCwds[newTask.id]
