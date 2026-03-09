@@ -86,15 +86,28 @@ function ensureKanbanHook(projectPath: string): void {
   const hookScript = `#!/bin/bash
 # Kanbai - Kanban task completion hook (auto-generated)
 # Checks the kanban ticket status and writes the appropriate activity status.
+# DONE/FAILED → auto-commit uncommitted worktree changes, then activity signal
 # PENDING + CTO → auto-approve: revert to TODO (unblock CTO cycle)
 # PENDING + regular → activity "waiting" (double bell in Electron)
-# FAILED  → activity "failed"  (quad bell in Electron)
 # WORKING → block Claude from stopping and remind ticket update
-# DONE    → activity "done" (already written by kanbai-activity.sh)
 ACTIVITY_SCRIPT="$HOME/.kanbai/hooks/kanbai-activity.sh"
 
 [ -z "$KANBAI_KANBAN_TASK_ID" ] && exit 0
 [ -z "$KANBAI_KANBAN_FILE" ] && exit 0
+
+# Auto-commit uncommitted worktree changes (runs in the worktree CWD)
+auto_commit_worktree() {
+  # Only proceed if we are inside a git repo
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+  # Check for uncommitted changes (staged or unstaged or untracked)
+  local status
+  status=$(git status --porcelain 2>/dev/null)
+  [ -z "$status" ] && return 0
+  # Stage all and commit
+  local ticket_label="\${KANBAI_KANBAN_TICKET:-unknown}"
+  git add -A 2>/dev/null
+  git commit -m "chore(kanban): auto-commit \${ticket_label} worktree changes" 2>/dev/null
+}
 
 # Read ticket status and isCtoTicket flag
 read -r TICKET_STATUS IS_CTO <<< $(node -e "
@@ -109,6 +122,13 @@ try {
 ")
 
 case "$TICKET_STATUS" in
+  DONE)
+    auto_commit_worktree
+    ;;
+  FAILED)
+    auto_commit_worktree
+    bash "$ACTIVITY_SCRIPT" failed
+    ;;
   PENDING)
     if [ "$IS_CTO" = "true" ]; then
       # CTO auto-approve: set back to TODO to unblock the CTO cycle
@@ -129,9 +149,6 @@ try {
     else
       bash "$ACTIVITY_SCRIPT" waiting
     fi
-    ;;
-  FAILED)
-    bash "$ACTIVITY_SCRIPT" failed
     ;;
   WORKING)
     # Claude forgot to update the ticket — block and remind

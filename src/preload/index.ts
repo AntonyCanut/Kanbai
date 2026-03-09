@@ -198,6 +198,8 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_REMOVE, { cwd, worktreePath, force }),
     worktreeList: (cwd: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_LIST, { cwd }),
+    worktreeFinalize: (worktreePath: string, ticketLabel: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.GIT_WORKTREE_FINALIZE, { worktreePath, ticketLabel }),
   },
 
   // Claude

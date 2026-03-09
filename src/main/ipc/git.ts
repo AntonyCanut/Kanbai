@@ -684,6 +684,31 @@ export function registerGitHandlers(ipcMain: IpcMain): void {
   )
 
   ipcMain.handle(
+    IPC_CHANNELS.GIT_WORKTREE_FINALIZE,
+    async (
+      _event,
+      { worktreePath, ticketLabel }: { worktreePath: string; ticketLabel: string },
+    ) => {
+      try {
+        // Check if there are uncommitted changes in the worktree
+        const status = execGit(['status', '--porcelain'], worktreePath).trim()
+        if (!status) {
+          return { success: true, committed: false, message: 'No uncommitted changes' }
+        }
+
+        // Stage all changes and commit
+        execGit(['add', '-A'], worktreePath)
+        const commitMessage = `chore(kanban): auto-commit ${ticketLabel} worktree changes`
+        execGit(['commit', '-m', commitMessage], worktreePath)
+
+        return { success: true, committed: true, message: `Auto-committed changes for ${ticketLabel}` }
+      } catch (err) {
+        return { success: false, committed: false, error: String(err) }
+      }
+    },
+  )
+
+  ipcMain.handle(
     IPC_CHANNELS.GIT_WORKTREE_LIST,
     async (_event, { cwd }: { cwd: string }) => {
       try {
