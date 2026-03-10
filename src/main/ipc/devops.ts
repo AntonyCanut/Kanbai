@@ -365,9 +365,9 @@ function generateGitHubAppJwt(appId: string, privateKey: string): string {
   const now = Math.floor(Date.now() / 1000)
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
   const payload = Buffer.from(JSON.stringify({
-    iat: now - 60,
-    exp: now + 10 * 60,
-    iss: appId,
+    iat: now - 30,
+    exp: now + 5 * 60,
+    iss: parseInt(appId, 10),
   })).toString('base64url')
 
   const signature = crypto.sign('SHA256', Buffer.from(`${header}.${payload}`), privateKey)
@@ -891,12 +891,11 @@ export function registerDevOpsHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(
     IPC_CHANNELS.DEVOPS_GET_PIPELINE_RUNS,
     async (_event, { connection, pipelineId, count }: { connection: DevOpsConnection; pipelineId: number; count?: number }) => {
-      const top = count || 10
+      const top = count || 20
       if (isGitHub(connection)) {
         return gitHubGetPipelineRuns(connection, pipelineId, top)
       }
       try {
-        const top = count || 20
         const url = `${connection.organizationUrl}/${encodeURIComponent(connection.projectName)}/_apis/build/builds?api-version=7.1&definitions=${pipelineId}&$top=${top}&queryOrder=queueTimeDescending`
         const result = await azureDevOpsRequest<{ value: AzureBuildRun[] }>(connection.auth, url)
 
