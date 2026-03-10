@@ -260,6 +260,62 @@
   white-space: nowrap;
 }
 
+/* Run item with pending approval highlight */
+.devops-run-item--pending {
+  border-left: 3px solid #ff9800;
+  border-radius: 6px;
+}
+
+/* Inline approval actions (visible without expanding) */
+.devops-run-inline-approvals {
+  padding: 8px 12px;
+  background: rgba(255, 152, 0, 0.04);
+  border: 1px solid var(--border-color, #333);
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.devops-inline-approval {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.devops-inline-approval-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.devops-inline-approval-instructions {
+  font-size: 11px;
+  color: var(--text-secondary, #aaa);
+  font-style: italic;
+}
+
+.devops-inline-approval-assignees {
+  font-size: 11px;
+  color: var(--text-tertiary, #777);
+}
+
+.devops-inline-approval-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.devops-approval-comment--inline {
+  width: 160px;
+  flex: none;
+}
+
 /* Expanded run content */
 .devops-run-expanded {
   padding: 12px 14px;
@@ -448,31 +504,7 @@
   background: var(--card-bg-selected, #1a2a3a);
 }
 
-/* Stages Detail */
-.devops-stages-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.devops-stages-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.devops-stages-header h4 {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-primary, #e0e0e0);
-}
-
-.devops-stages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
+/* Stages — expandable within run */
 .devops-stage-item {
   display: flex;
   flex-direction: column;
@@ -481,29 +513,41 @@
 .devops-stage-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--border-color, #333);
-  font-size: 13px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg-primary, #151515);
+  border: 1px solid transparent;
+  font-size: 12px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .devops-stage-row:hover {
-  border-color: var(--accent-color, #4fc3f7);
-  background: var(--card-bg-hover, #252525);
+  background: var(--card-bg-hover, #1e1e1e);
+  border-color: var(--border-color, #333);
 }
 
 .devops-stage-row--expanded {
-  border-color: var(--accent-color, #4fc3f7);
+  border-color: var(--border-color, #333);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+  background: var(--card-bg-hover, #1e1e1e);
+}
+
+.devops-stage-expand-icon {
+  font-size: 8px;
+  color: var(--text-tertiary, #666);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.devops-stage-expand-icon--open {
+  transform: rotate(90deg);
 }
 
 .devops-stage-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary, #e0e0e0);
   flex: 1;
   overflow: hidden;
@@ -511,43 +555,69 @@
   white-space: nowrap;
 }
 
+.devops-stage-badges {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.devops-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.devops-badge--error {
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.12);
+}
+
+.devops-badge--warning {
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.12);
+}
+
 .devops-stage-duration {
   font-size: 11px;
   color: var(--text-tertiary, #777);
   font-family: monospace;
+  flex-shrink: 0;
 }
 
-.devops-stage-expand {
-  font-size: 10px;
-  color: var(--text-tertiary, #666);
-  flex-shrink: 0;
-  width: 16px;
-  text-align: center;
+/* Stage expanded content */
+.devops-stage-expanded {
+  border: 1px solid var(--border-color, #333);
+  border-top: none;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  background: var(--bg-primary, #141414);
+  overflow: hidden;
 }
 
 /* Jobs */
 .devops-jobs-list {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color, #333);
-  border-top: none;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  overflow: hidden;
+}
+
+.devops-job-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-color, #222);
+}
+
+.devops-job-item:last-child {
+  border-bottom: none;
 }
 
 .devops-job-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px 8px 28px;
+  gap: 8px;
+  padding: 7px 12px 7px 24px;
   font-size: 12px;
-  background: var(--card-bg, #1a1a1a);
-  border-bottom: 1px solid var(--border-color, #2a2a2a);
-}
-
-.devops-job-row:last-child {
-  border-bottom: none;
 }
 
 .devops-job-name {
@@ -562,6 +632,7 @@
   font-size: 11px;
   color: var(--text-tertiary, #777);
   font-family: monospace;
+  flex-shrink: 0;
 }
 
 .devops-job-worker {
@@ -574,6 +645,46 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Issues (errors/warnings within jobs) */
+.devops-job-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 12px 8px 24px;
+}
+
+.devops-issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.devops-issue--error {
+  background: rgba(244, 67, 54, 0.08);
+  color: #ef9a9a;
+}
+
+.devops-issue--warning {
+  background: rgba(255, 152, 0, 0.08);
+  color: #ffcc80;
+}
+
+.devops-issue-icon {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.devops-issue-message {
+  word-break: break-word;
+  font-family: monospace;
+  font-size: 11px;
 }
 
 /* Inline buttons */
