@@ -118,7 +118,12 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
     set({ pipelinesLoading: true, pipelinesError: null })
     const result = await window.kanbai.devops.listPipelines(connection)
     if (result.success) {
-      set({ pipelines: result.pipelines, pipelinesLoading: false })
+      const sorted = [...result.pipelines].sort((a, b) => {
+        const timeA = a.latestRun?.startTime ? new Date(a.latestRun.startTime).getTime() : 0
+        const timeB = b.latestRun?.startTime ? new Date(b.latestRun.startTime).getTime() : 0
+        return timeB - timeA
+      })
+      set({ pipelines: sorted, pipelinesLoading: false })
     } else {
       set({ pipelines: [], pipelinesLoading: false, pipelinesError: result.error ?? 'Unknown error' })
     }
