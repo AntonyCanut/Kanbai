@@ -928,6 +928,11 @@ export interface PipelineDefinition {
 
 export type StageStatus = 'succeeded' | 'failed' | 'canceled' | 'running' | 'notStarted' | 'pending' | 'unknown'
 
+export interface TimelineIssue {
+  type: 'error' | 'warning'
+  message: string
+}
+
 export interface PipelineStage {
   id: string
   name: string
@@ -936,6 +941,8 @@ export interface PipelineStage {
   startTime: string | null
   finishTime: string | null
   result: string
+  errorCount: number
+  warningCount: number
   jobs: PipelineJob[]
 }
 
@@ -947,6 +954,9 @@ export interface PipelineJob {
   finishTime: string | null
   result: string
   workerName: string
+  errorCount: number
+  warningCount: number
+  issues: TimelineIssue[]
 }
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'canceled' | 'skipped' | 'undefined'

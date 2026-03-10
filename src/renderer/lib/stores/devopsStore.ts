@@ -48,6 +48,8 @@ interface DevOpsState {
   runApprovals: PipelineApproval[]
   approvalsLoading: boolean
   approving: string | null
+  allRunApprovals: PipelineApproval[]
+  allApprovalsLoading: boolean
 
   loadData: (projectPath: string) => Promise<void>
   saveData: (projectPath: string) => Promise<void>
@@ -67,6 +69,7 @@ interface DevOpsState {
   expandRun: (connection: DevOpsConnection, buildId: number) => Promise<void>
   collapseRun: () => void
   approveRun: (connection: DevOpsConnection, approvalId: string, status: 'approved' | 'rejected', comment?: string) => Promise<{ success: boolean; error?: string }>
+  loadApprovalsForRuns: (connection: DevOpsConnection, buildIds: number[]) => Promise<void>
 }
 
 function generateId(): string {
@@ -120,6 +123,8 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
   runApprovals: [],
   approvalsLoading: false,
   approving: null,
+  allRunApprovals: [],
+  allApprovalsLoading: false,
 
   loadData: async (projectPath) => {
     set({ loading: true })
@@ -211,12 +216,20 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
   },
 
   loadPipelineRuns: async (connection, pipelineId) => {
-    set({ runsLoading: true })
+    set({ runsLoading: true, allApprovalsLoading: true })
     const result = await window.kanbai.devops.getPipelineRuns(connection, pipelineId)
     if (result.success) {
       set({ pipelineRuns: result.runs, runsLoading: false })
+      // Fetch approvals for all displayed runs in parallel
+      const buildIds = result.runs.map((r) => r.id)
+      if (buildIds.length > 0) {
+        const { loadApprovalsForRuns } = get()
+        await loadApprovalsForRuns(connection, buildIds)
+      } else {
+        set({ allRunApprovals: [], allApprovalsLoading: false })
+      }
     } else {
-      set({ pipelineRuns: [], runsLoading: false })
+      set({ pipelineRuns: [], runsLoading: false, allRunApprovals: [], allApprovalsLoading: false })
     }
   },
 
@@ -289,12 +302,27 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
     set({ approving: null })
 
     if (result.success) {
-      const { expandedRunId, expandRun } = get()
+      // Refresh approvals for all runs
+      const { pipelineRuns, loadApprovalsForRuns, expandedRunId, expandRun } = get()
+      const buildIds = pipelineRuns.map((r) => r.id)
+      if (buildIds.length > 0) {
+        await loadApprovalsForRuns(connection, buildIds)
+      }
+      // Also refresh expanded run stages if one is open
       if (expandedRunId) {
         await expandRun(connection, expandedRunId)
       }
     }
     return { success: result.success, error: result.error }
+  },
+
+  loadApprovalsForRuns: async (connection, buildIds) => {
+    set({ allApprovalsLoading: true })
+    const result = await window.kanbai.devops.getApprovals(connection, buildIds)
+    set({
+      allRunApprovals: result.success ? result.approvals : [],
+      allApprovalsLoading: false,
+    })
   },
 }))
 
