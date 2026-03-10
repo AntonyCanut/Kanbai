@@ -13,6 +13,7 @@ import type {
 import '../styles/devops.css'
 
 type DevOpsSubTab = 'pipelines'
+type ModalStep = 'provider' | 'form'
 
 function formatRelativeTime(isoString: string | null): string {
   if (!isoString) return '-'
@@ -40,15 +41,77 @@ function statusClassName(status: PipelineStatus): string {
   return `devops-status devops-status--${status}`
 }
 
-// --- Connection Form ---
+// --- Azure DevOps SVG Icon ---
 
-function ConnectionForm({
+function AzureDevOpsIcon({ size = 40 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 3.762v10.135l-4.574 4.103-6.326-2.2v2.145L2.4 13.143l11.085.831V3.62L17 3.762zM13.113 4.478L8.3 1v2.1L3.113 4.983.9 7.483v5.084l2.1.745V7.1l10.113-2.622z" fill="#0078D7"/>
+    </svg>
+  )
+}
+
+// --- Provider Selection Step ---
+
+function ProviderSelection({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (provider: string) => void
+  onClose: () => void
+}) {
+  const { t } = useI18n()
+
+  return (
+    <div className="devops-modal-overlay" onClick={onClose}>
+      <div className="devops-modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="devops-modal-header">
+          <h3>{t('devops.selectProvider')}</h3>
+          <button className="devops-modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <p className="devops-modal-desc">{t('devops.selectProviderDesc')}</p>
+        <div className="devops-provider-list">
+          <button
+            className="devops-provider-item"
+            onClick={() => onSelect('azure-devops')}
+          >
+            <div className="devops-provider-item-icon">
+              <AzureDevOpsIcon size={32} />
+            </div>
+            <div className="devops-provider-item-text">
+              <span className="devops-provider-item-name">Azure DevOps</span>
+              <span className="devops-provider-item-desc">{t('devops.azureDevOpsDesc')}</span>
+            </div>
+            <svg className="devops-provider-item-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="devops-modal-footer">
+          <button className="devops-modal-btn devops-modal-btn--secondary" onClick={onClose}>
+            {t('devops.cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Connection Form Modal ---
+
+function ConnectionFormModal({
   onSave,
-  onCancel,
+  onClose,
+  onBack,
   initial,
 }: {
   onSave: (data: { name: string; organizationUrl: string; projectName: string; auth: DevOpsAuth }) => void
-  onCancel: () => void
+  onClose: () => void
+  onBack?: () => void
   initial?: DevOpsConnection
 }) {
   const { t } = useI18n()
@@ -101,64 +164,146 @@ function ConnectionForm({
     (authMethod === 'pat' ? pat.trim() : (clientId.trim() && clientSecret.trim() && tenantId.trim()))
 
   return (
-    <div className="devops-connection-form">
-      <h3>{initial ? t('devops.editConnection') : t('devops.addConnection')}</h3>
-
-      <label>{t('devops.connectionName')}</label>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Azure DevOps" />
-
-      <label>{t('devops.organizationUrl')}</label>
-      <input value={organizationUrl} onChange={(e) => setOrganizationUrl(e.target.value)} placeholder="https://dev.azure.com/myorg" />
-
-      <label>{t('devops.projectName')}</label>
-      <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="MyProject" />
-
-      <label>{t('devops.authMethod')}</label>
-      <div className="devops-auth-toggle">
-        <button
-          className={`devops-auth-btn${authMethod === 'pat' ? ' devops-auth-btn--active' : ''}`}
-          onClick={() => setAuthMethod('pat')}
-        >
-          PAT
-        </button>
-        <button
-          className={`devops-auth-btn${authMethod === 'oauth2' ? ' devops-auth-btn--active' : ''}`}
-          onClick={() => setAuthMethod('oauth2')}
-        >
-          OAuth2
-        </button>
-      </div>
-
-      {authMethod === 'pat' ? (
-        <>
-          <label>Personal Access Token</label>
-          <input type="password" value={pat} onChange={(e) => setPat(e.target.value)} placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" />
-        </>
-      ) : (
-        <>
-          <label>Tenant ID</label>
-          <input value={tenantId} onChange={(e) => setTenantId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-          <label>Client ID</label>
-          <input value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-          <label>Client Secret</label>
-          <input type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} placeholder="..." />
-        </>
-      )}
-
-      {testResult && (
-        <div className={`devops-test-result devops-test-result--${testResult.success ? 'success' : 'error'}`}>
-          {testResult.success ? t('devops.connectionSuccess') : `${t('devops.connectionFailed')}: ${testResult.error}`}
+    <div className="devops-modal-overlay" onClick={onClose}>
+      <div className="devops-modal-container devops-modal-container--form" onClick={(e) => e.stopPropagation()}>
+        <div className="devops-modal-header">
+          <div className="devops-modal-header-left">
+            {onBack && (
+              <button className="devops-modal-back" onClick={onBack} title={t('devops.back')}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+            <AzureDevOpsIcon size={22} />
+            <h3>{initial ? t('devops.editConnection') : t('devops.addConnection')}</h3>
+          </div>
+          <button className="devops-modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
-      )}
+        <div className="devops-modal-body">
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.connectionName')}</label>
+            <input
+              className="devops-field-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Azure DevOps"
+            />
+          </div>
 
-      <div className="devops-form-actions">
-        <button className="devops-btn devops-btn--secondary" onClick={onCancel}>{t('devops.cancel')}</button>
-        <button className="devops-btn devops-btn--secondary" onClick={handleTest} disabled={!isValid || testing}>
-          {testing ? t('devops.testing') : t('devops.testConnection')}
-        </button>
-        <button className="devops-btn devops-btn--primary" onClick={handleSubmit} disabled={!isValid}>
-          {t('devops.save')}
-        </button>
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.organizationUrl')}</label>
+            <input
+              className="devops-field-input"
+              value={organizationUrl}
+              onChange={(e) => setOrganizationUrl(e.target.value)}
+              placeholder="https://dev.azure.com/myorg"
+            />
+          </div>
+
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.projectName')}</label>
+            <input
+              className="devops-field-input"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="MyProject"
+            />
+          </div>
+
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.authMethod')}</label>
+            <div className="devops-auth-toggle">
+              <button
+                className={`devops-auth-btn${authMethod === 'pat' ? ' devops-auth-btn--active' : ''}`}
+                onClick={() => setAuthMethod('pat')}
+              >
+                PAT
+              </button>
+              <button
+                className={`devops-auth-btn${authMethod === 'oauth2' ? ' devops-auth-btn--active' : ''}`}
+                onClick={() => setAuthMethod('oauth2')}
+              >
+                OAuth2
+              </button>
+            </div>
+          </div>
+
+          {authMethod === 'pat' ? (
+            <div className="devops-field">
+              <label className="devops-field-label">Personal Access Token</label>
+              <input
+                className="devops-field-input"
+                type="password"
+                value={pat}
+                onChange={(e) => setPat(e.target.value)}
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="devops-field">
+                <label className="devops-field-label">Tenant ID</label>
+                <input
+                  className="devops-field-input"
+                  value={tenantId}
+                  onChange={(e) => setTenantId(e.target.value)}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                />
+              </div>
+              <div className="devops-field">
+                <label className="devops-field-label">Client ID</label>
+                <input
+                  className="devops-field-input"
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                />
+              </div>
+              <div className="devops-field">
+                <label className="devops-field-label">Client Secret</label>
+                <input
+                  className="devops-field-input"
+                  type="password"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  placeholder="..."
+                />
+              </div>
+            </>
+          )}
+
+          {testResult && (
+            <div className={`devops-test-result devops-test-result--${testResult.success ? 'success' : 'error'}`}>
+              {testResult.success ? t('devops.connectionSuccess') : `${t('devops.connectionFailed')}: ${testResult.error}`}
+            </div>
+          )}
+        </div>
+        <div className="devops-modal-footer">
+          <button
+            className="devops-modal-btn devops-modal-btn--test"
+            onClick={handleTest}
+            disabled={!isValid || testing}
+          >
+            {testing ? t('devops.testing') : t('devops.testConnection')}
+          </button>
+          <div className="devops-modal-footer-right">
+            <button className="devops-modal-btn devops-modal-btn--secondary" onClick={onClose}>
+              {t('devops.cancel')}
+            </button>
+            <button
+              className="devops-modal-btn devops-modal-btn--primary"
+              onClick={handleSubmit}
+              disabled={!isValid}
+            >
+              {t('devops.save')}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -203,11 +348,11 @@ function PipelineCard({
       )}
       <div className="devops-pipeline-card-actions">
         <button className="devops-btn devops-btn--small" onClick={(e) => { e.stopPropagation(); onRun() }} title="Run pipeline">
-          \u25B6
+          {'\u25B6'}
         </button>
         {pipeline.url && (
           <button className="devops-btn devops-btn--small" onClick={(e) => { e.stopPropagation(); onOpenUrl() }} title="Open in browser">
-            \u2197
+            {'\u2197'}
           </button>
         )}
       </div>
@@ -253,7 +398,7 @@ function PipelineRunsDetail({
                 onClick={() => window.kanbai.shell.openExternal(run.url)}
                 title="Open in browser"
               >
-                \u2197
+                {'\u2197'}
               </button>
             )}
           </div>
@@ -271,7 +416,7 @@ export function DevOpsPanel() {
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId)
   const [workspacePath, setWorkspacePath] = useState('')
   const [subTab] = useState<DevOpsSubTab>('pipelines')
-  const [showForm, setShowForm] = useState(false)
+  const [modalStep, setModalStep] = useState<ModalStep | null>(null)
   const [editingConnection, setEditingConnection] = useState<DevOpsConnection | null>(null)
 
   const {
@@ -334,6 +479,27 @@ export function DevOpsPanel() {
     loadPipelineRuns(activeConnection, selectedPipelineId)
   }, [activeConnection, selectedPipelineId, loadPipelineRuns])
 
+  const closeModal = useCallback(() => {
+    setModalStep(null)
+    setEditingConnection(null)
+  }, [])
+
+  const openNewConnection = useCallback(() => {
+    setEditingConnection(null)
+    setModalStep('provider')
+  }, [])
+
+  const openEditConnection = useCallback(() => {
+    if (activeConnection) {
+      setEditingConnection(activeConnection)
+      setModalStep('form')
+    }
+  }, [activeConnection])
+
+  const handleProviderSelect = useCallback((_provider: string) => {
+    setModalStep('form')
+  }, [])
+
   const handleSaveConnection = useCallback(
     async (formData: { name: string; organizationUrl: string; projectName: string; auth: DevOpsAuth }) => {
       if (editingConnection) {
@@ -341,10 +507,9 @@ export function DevOpsPanel() {
       } else {
         await addConnection(workspacePath, formData)
       }
-      setShowForm(false)
-      setEditingConnection(null)
+      closeModal()
     },
-    [workspacePath, editingConnection, addConnection, updateConnection],
+    [workspacePath, editingConnection, addConnection, updateConnection, closeModal],
   )
 
   const handleDeleteConnection = useCallback(
@@ -397,36 +562,32 @@ export function DevOpsPanel() {
     )
   }
 
-  // Show form
-  if (showForm) {
-    return (
-      <div className="devops-panel">
-        <ConnectionForm
-          initial={editingConnection ?? undefined}
-          onSave={handleSaveConnection}
-          onCancel={() => { setShowForm(false); setEditingConnection(null) }}
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="devops-panel">
+      {/* Modal */}
+      {modalStep === 'provider' && (
+        <ProviderSelection
+          onSelect={handleProviderSelect}
+          onClose={closeModal}
+        />
+      )}
+      {modalStep === 'form' && (
+        <ConnectionFormModal
+          initial={editingConnection ?? undefined}
+          onSave={handleSaveConnection}
+          onClose={closeModal}
+          onBack={editingConnection ? undefined : () => setModalStep('provider')}
+        />
+      )}
+
       {/* Header */}
       <div className="devops-header">
-        <h2>{t('devops.title')}</h2>
+        <h2>{t('devops.pipelines')}</h2>
         <div className="devops-header-actions">
-          <button className="devops-btn devops-btn--primary" onClick={() => { setEditingConnection(null); setShowForm(true) }}>
+          <button className="devops-btn devops-btn--primary" onClick={openNewConnection}>
             + {t('devops.addConnection')}
           </button>
         </div>
-      </div>
-
-      {/* Sub-tabs */}
-      <div className="devops-subtabs">
-        <button className={`devops-subtab${subTab === 'pipelines' ? ' devops-subtab--active' : ''}`}>
-          {t('devops.pipelines')}
-        </button>
       </div>
 
       {/* Connection selector */}
@@ -441,22 +602,27 @@ export function DevOpsPanel() {
               <option key={c.id} value={c.id}>{c.name} ({c.projectName})</option>
             ))}
           </select>
-          <button className="devops-btn devops-btn--small" onClick={() => { if (activeConnection) { setEditingConnection(activeConnection); setShowForm(true) } }} title={t('devops.editConnection')}>
-            \u270E
+          <button className="devops-btn devops-btn--small" onClick={openEditConnection} title={t('devops.editConnection')}>
+            {'\u270E'}
           </button>
           <button className="devops-btn devops-btn--small" onClick={() => { if (activeConnectionId) handleDeleteConnection(activeConnectionId) }} title={t('devops.deleteConnection')}>
-            \u2716
+            {'\u2716'}
           </button>
           <button className="devops-btn devops-btn--small" onClick={handleRefresh} title={t('devops.refresh')}>
-            \u21BB
+            {'\u21BB'}
           </button>
         </div>
       )}
 
-      {/* No connections */}
+      {/* No connections — empty state */}
       {(!data || data.connections.length === 0) && (
-        <div className="devops-empty">
+        <div className="devops-empty-state">
+          <AzureDevOpsIcon size={56} />
+          <h3>{t('devops.noConnectionsTitle')}</h3>
           <p>{t('devops.noConnections')}</p>
+          <button className="devops-btn devops-btn--primary" onClick={openNewConnection}>
+            + {t('devops.addConnection')}
+          </button>
         </div>
       )}
 
