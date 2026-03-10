@@ -1824,6 +1824,11 @@ export const fr = {
   'devops.viewLogs': 'Voir les logs',
   'devops.loadingLogs': 'Chargement des logs...',
   'devops.retry': 'Réessayer',
+  'devops.copyError': 'Copier l\'erreur',
+  'devops.createTicket': 'Créer un ticket',
+  'devops.copyAllErrors': 'Copier toutes les erreurs',
+  'devops.createTicketFromErrors': 'Créer un ticket depuis les erreurs',
+  'devops.ticketCreated': 'Ticket créé',
 
   // Namespace
   'namespace.create': 'Nouveau namespace',

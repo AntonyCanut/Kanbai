@@ -10,6 +10,7 @@ import {
   PipelineRun,
   PipelineStage,
   PipelineJob,
+  PipelineTask,
   PipelineStatus,
   PipelineApproval,
   ApprovalStatus,
@@ -258,6 +259,27 @@ function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
           const errorCount = jobIssues.filter((i) => i.type === 'error').length
           const warningCount = jobIssues.filter((i) => i.type === 'warning').length
 
+          // Build task list for this job
+          const jobTasks: PipelineTask[] = records
+            .filter((r) => r.parentId === job.id && r.type === 'Task')
+            .sort((a, b) => a.order - b.order)
+            .map((task): PipelineTask => {
+              const taskIssues = mapIssues(task.issues)
+              return {
+                id: task.id,
+                name: task.name,
+                status: mapTimelineStatus(task.state, task.result),
+                startTime: task.startTime ?? null,
+                finishTime: task.finishTime ?? null,
+                result: task.result || '',
+                order: task.order,
+                errorCount: taskIssues.filter((i) => i.type === 'error').length,
+                warningCount: taskIssues.filter((i) => i.type === 'warning').length,
+                issues: taskIssues,
+                logId: task.log?.id ?? null,
+              }
+            })
+
           return {
             id: job.id,
             name: job.name,
@@ -270,6 +292,7 @@ function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
             warningCount,
             issues: jobIssues,
             logId: findJobLogId(job.id, job.log, records),
+            tasks: jobTasks,
           }
         })
 

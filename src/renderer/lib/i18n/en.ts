@@ -1824,6 +1824,11 @@ export const en = {
   'devops.viewLogs': 'View logs',
   'devops.loadingLogs': 'Loading logs...',
   'devops.retry': 'Retry',
+  'devops.copyError': 'Copy error',
+  'devops.createTicket': 'Create ticket',
+  'devops.copyAllErrors': 'Copy all errors',
+  'devops.createTicketFromErrors': 'Create ticket from errors',
+  'devops.ticketCreated': 'Ticket created',
 
   // Namespace
   'namespace.create': 'New namespace',
