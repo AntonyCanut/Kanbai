@@ -4,6 +4,7 @@ import type {
   DevOpsConnection,
   PipelineDefinition,
   PipelineRun,
+  PipelineStatus,
 } from '../../../shared/types'
 
 interface DevOpsState {
@@ -153,3 +154,37 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
     return { success: result.success, error: result.error }
   },
 }))
+
+/**
+ * Returns the global pipeline status based on the most recent pipeline run.
+ * Finds the pipeline whose latestRun has the most recent finishTime (or startTime),
+ * and returns its status along with the pipeline name.
+ */
+export function selectGlobalPipelineStatus(state: DevOpsState): {
+  status: PipelineStatus
+  pipelineName: string
+} | null {
+  const { pipelines } = state
+  if (pipelines.length === 0) return null
+
+  let mostRecent: PipelineDefinition | null = null
+  let mostRecentTime = 0
+
+  for (const pipeline of pipelines) {
+    if (!pipeline.latestRun) continue
+    const timeStr = pipeline.latestRun.finishTime ?? pipeline.latestRun.startTime
+    if (!timeStr) continue
+    const time = new Date(timeStr).getTime()
+    if (time > mostRecentTime) {
+      mostRecentTime = time
+      mostRecent = pipeline
+    }
+  }
+
+  if (!mostRecent || !mostRecent.latestRun) return null
+
+  return {
+    status: mostRecent.latestRun.status,
+    pipelineName: mostRecent.name,
+  }
+}

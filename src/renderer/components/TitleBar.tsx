@@ -3,6 +3,7 @@ import { NotificationCenter } from './NotificationCenter'
 import { UpdateCenter } from './UpdateCenter'
 import { useWorkspaceStore } from '../lib/stores/workspaceStore'
 import { useViewStore, type ViewMode } from '../lib/stores/viewStore'
+import { useDevOpsStore, selectGlobalPipelineStatus } from '../lib/stores/devopsStore'
 import { useI18n } from '../lib/i18n'
 
 interface TitleBarProps {
@@ -12,6 +13,7 @@ interface TitleBarProps {
 interface DropdownConfig {
   label: string
   items: Array<{ mode: ViewMode; labelKey: string }>
+  statusDotClass?: string
 }
 
 const SERVICES_DROPDOWN: DropdownConfig = {
@@ -112,6 +114,7 @@ function TabDropdown({
         onMouseEnter={handleBtnEnter}
         onMouseLeave={handleBtnLeave}
       >
+        {config.statusDotClass && <span className={`titlebar-status-dot ${config.statusDotClass}`} />}
         {config.label}
         <svg className="dropdown-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -138,11 +141,18 @@ function TabDropdown({
   )
 }
 
+function useDevOpsStatusDotClass(): string | undefined {
+  const globalStatus = useDevOpsStore(selectGlobalPipelineStatus)
+  if (!globalStatus) return undefined
+  return `titlebar-status-dot--${globalStatus.status}`
+}
+
 export function TitleBar(_props: TitleBarProps) {
   const { t } = useI18n()
   const { activeWorkspaceId, workspaces } = useWorkspaceStore()
   const { viewMode, setViewMode } = useViewStore()
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId)
+  const devOpsStatusDotClass = useDevOpsStatusDotClass()
 
   // Search input state
   const [searchFocused, setSearchFocused] = useState(false)
@@ -190,7 +200,7 @@ export function TitleBar(_props: TitleBarProps) {
         </button>
 
         <TabDropdown config={SERVICES_DROPDOWN} viewMode={viewMode} setViewMode={setViewMode} t={t} />
-        <TabDropdown config={DEVOPS_DROPDOWN} viewMode={viewMode} setViewMode={setViewMode} t={t} />
+        <TabDropdown config={{ ...DEVOPS_DROPDOWN, statusDotClass: devOpsStatusDotClass }} viewMode={viewMode} setViewMode={setViewMode} t={t} />
         <TabDropdown config={PROJECTS_DROPDOWN} viewMode={viewMode} setViewMode={setViewMode} t={t} />
 
         <button
