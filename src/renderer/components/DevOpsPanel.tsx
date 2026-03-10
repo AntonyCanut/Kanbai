@@ -63,35 +63,36 @@ function ProviderSelection({
   const { t } = useI18n()
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog devops-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          {t('devops.selectProvider')}
+    <div className="devops-modal-overlay" onClick={onClose}>
+      <div className="devops-modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="devops-modal-header">
+          <h3>{t('devops.selectProvider')}</h3>
+          <button className="devops-modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
-        <div className="modal-body">
-          <p className="devops-modal-subtitle">{t('devops.selectProviderDesc')}</p>
-          <div className="devops-provider-grid">
-            <button
-              className="devops-provider-card"
-              onClick={() => onSelect('azure-devops')}
-            >
-              <AzureDevOpsIcon size={48} />
-              <span className="devops-provider-name">Azure DevOps</span>
-              <span className="devops-provider-desc">{t('devops.azureDevOpsDesc')}</span>
-            </button>
-            <div className="devops-provider-card devops-provider-card--disabled">
-              <div className="devops-provider-icon-placeholder">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-11v6h2v-6h-2zm0-4v2h2V7h-2z" fill="currentColor" opacity="0.3"/>
-                </svg>
-              </div>
-              <span className="devops-provider-name">{t('devops.moreProviders')}</span>
-              <span className="devops-provider-desc">{t('devops.comingSoon')}</span>
+        <p className="devops-modal-desc">{t('devops.selectProviderDesc')}</p>
+        <div className="devops-provider-list">
+          <button
+            className="devops-provider-item"
+            onClick={() => onSelect('azure-devops')}
+          >
+            <div className="devops-provider-item-icon">
+              <AzureDevOpsIcon size={32} />
             </div>
-          </div>
+            <div className="devops-provider-item-text">
+              <span className="devops-provider-item-name">Azure DevOps</span>
+              <span className="devops-provider-item-desc">{t('devops.azureDevOpsDesc')}</span>
+            </div>
+            <svg className="devops-provider-item-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
         </div>
-        <div className="modal-footer">
-          <button className="modal-btn modal-btn--secondary" onClick={onClose}>
+        <div className="devops-modal-footer">
+          <button className="devops-modal-btn devops-modal-btn--secondary" onClick={onClose}>
             {t('devops.cancel')}
           </button>
         </div>
@@ -163,10 +164,10 @@ function ConnectionFormModal({
     (authMethod === 'pat' ? pat.trim() : (clientId.trim() && clientSecret.trim() && tenantId.trim()))
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog devops-modal devops-modal--form" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="devops-modal-header-row">
+    <div className="devops-modal-overlay" onClick={onClose}>
+      <div className="devops-modal-container devops-modal-container--form" onClick={(e) => e.stopPropagation()}>
+        <div className="devops-modal-header">
+          <div className="devops-modal-header-left">
             {onBack && (
               <button className="devops-modal-back" onClick={onBack} title={t('devops.back')}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -174,45 +175,48 @@ function ConnectionFormModal({
                 </svg>
               </button>
             )}
-            <div className="devops-modal-header-title">
-              <AzureDevOpsIcon size={24} />
-              <span>{initial ? t('devops.editConnection') : t('devops.addConnection')}</span>
-            </div>
+            <AzureDevOpsIcon size={22} />
+            <h3>{initial ? t('devops.editConnection') : t('devops.addConnection')}</h3>
           </div>
+          <button className="devops-modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
-        <div className="modal-body devops-modal-body">
-          <div className="devops-form-group">
-            <label className="devops-form-label">{t('devops.connectionName')}</label>
+        <div className="devops-modal-body">
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.connectionName')}</label>
             <input
-              className="devops-form-input"
+              className="devops-field-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Azure DevOps"
             />
           </div>
 
-          <div className="devops-form-group">
-            <label className="devops-form-label">{t('devops.organizationUrl')}</label>
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.organizationUrl')}</label>
             <input
-              className="devops-form-input"
+              className="devops-field-input"
               value={organizationUrl}
               onChange={(e) => setOrganizationUrl(e.target.value)}
               placeholder="https://dev.azure.com/myorg"
             />
           </div>
 
-          <div className="devops-form-group">
-            <label className="devops-form-label">{t('devops.projectName')}</label>
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.projectName')}</label>
             <input
-              className="devops-form-input"
+              className="devops-field-input"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="MyProject"
             />
           </div>
 
-          <div className="devops-form-group">
-            <label className="devops-form-label">{t('devops.authMethod')}</label>
+          <div className="devops-field">
+            <label className="devops-field-label">{t('devops.authMethod')}</label>
             <div className="devops-auth-toggle">
               <button
                 className={`devops-auth-btn${authMethod === 'pat' ? ' devops-auth-btn--active' : ''}`}
@@ -230,10 +234,10 @@ function ConnectionFormModal({
           </div>
 
           {authMethod === 'pat' ? (
-            <div className="devops-form-group">
-              <label className="devops-form-label">Personal Access Token</label>
+            <div className="devops-field">
+              <label className="devops-field-label">Personal Access Token</label>
               <input
-                className="devops-form-input"
+                className="devops-field-input"
                 type="password"
                 value={pat}
                 onChange={(e) => setPat(e.target.value)}
@@ -242,28 +246,28 @@ function ConnectionFormModal({
             </div>
           ) : (
             <>
-              <div className="devops-form-group">
-                <label className="devops-form-label">Tenant ID</label>
+              <div className="devops-field">
+                <label className="devops-field-label">Tenant ID</label>
                 <input
-                  className="devops-form-input"
+                  className="devops-field-input"
                   value={tenantId}
                   onChange={(e) => setTenantId(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 />
               </div>
-              <div className="devops-form-group">
-                <label className="devops-form-label">Client ID</label>
+              <div className="devops-field">
+                <label className="devops-field-label">Client ID</label>
                 <input
-                  className="devops-form-input"
+                  className="devops-field-input"
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 />
               </div>
-              <div className="devops-form-group">
-                <label className="devops-form-label">Client Secret</label>
+              <div className="devops-field">
+                <label className="devops-field-label">Client Secret</label>
                 <input
-                  className="devops-form-input"
+                  className="devops-field-input"
                   type="password"
                   value={clientSecret}
                   onChange={(e) => setClientSecret(e.target.value)}
@@ -279,24 +283,26 @@ function ConnectionFormModal({
             </div>
           )}
         </div>
-        <div className="modal-footer">
-          <button className="modal-btn modal-btn--secondary" onClick={onClose}>
-            {t('devops.cancel')}
-          </button>
+        <div className="devops-modal-footer">
           <button
-            className="modal-btn modal-btn--secondary"
+            className="devops-modal-btn devops-modal-btn--test"
             onClick={handleTest}
             disabled={!isValid || testing}
           >
             {testing ? t('devops.testing') : t('devops.testConnection')}
           </button>
-          <button
-            className="modal-btn modal-btn--primary"
-            onClick={handleSubmit}
-            disabled={!isValid}
-          >
-            {t('devops.save')}
-          </button>
+          <div className="devops-modal-footer-right">
+            <button className="devops-modal-btn devops-modal-btn--secondary" onClick={onClose}>
+              {t('devops.cancel')}
+            </button>
+            <button
+              className="devops-modal-btn devops-modal-btn--primary"
+              onClick={handleSubmit}
+              disabled={!isValid}
+            >
+              {t('devops.save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>
