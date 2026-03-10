@@ -438,6 +438,8 @@ export function DevOpsPanel() {
     selectPipeline,
     loadPipelineRuns,
     runPipeline,
+    startMonitoring,
+    stopMonitoring,
   } = useDevOpsStore()
 
   const activeConnection = useMemo(
@@ -467,11 +469,13 @@ export function DevOpsPanel() {
     loadData(workspacePath)
   }, [workspacePath, loadData])
 
-  // Load pipelines when active connection changes
+  // Load pipelines and start monitoring when active connection changes
   useEffect(() => {
     if (!activeConnection) return
     loadPipelines(activeConnection)
-  }, [activeConnection, loadPipelines])
+    startMonitoring(activeConnection)
+    return () => { stopMonitoring() }
+  }, [activeConnection, loadPipelines, startMonitoring, stopMonitoring])
 
   // Load pipeline runs when selected pipeline changes
   useEffect(() => {
