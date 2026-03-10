@@ -612,6 +612,13 @@
   background: rgba(255, 152, 0, 0.12);
 }
 
+.devops-stage-datetime {
+  font-size: 11px;
+  color: var(--text-secondary, #aaa);
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
 .devops-stage-duration {
   font-size: 11px;
   color: var(--text-tertiary, #777);

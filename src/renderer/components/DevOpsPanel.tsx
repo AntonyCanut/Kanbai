@@ -40,6 +40,13 @@ function formatRelativeTime(isoString: string | null): string {
   return `${dateStr} (${relative})`
 }
 
+function formatStageDateTime(isoString: string | null): string {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 function formatDuration(startTime: string | null, finishTime: string | null): string {
   if (!startTime) return '-'
   const start = new Date(startTime).getTime()
@@ -711,6 +718,9 @@ function InlineStageDetail({
                     <span className="devops-badge devops-badge--warning">{stage.warningCount} {stage.warningCount === 1 ? 'warning' : 'warnings'}</span>
                   )}
                 </span>
+              )}
+              {stage.startTime && (
+                <span className="devops-stage-datetime">{formatStageDateTime(stage.startTime)}</span>
               )}
               <span className="devops-stage-duration">{formatDuration(stage.startTime, stage.finishTime)}</span>
             </div>
