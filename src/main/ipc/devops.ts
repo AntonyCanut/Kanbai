@@ -172,6 +172,11 @@ interface AzureBuildRun {
   _links?: { web?: { href?: string } }
 }
 
+interface AzureTimelineIssue {
+  type: string
+  message: string
+}
+
 interface AzureTimelineRecord {
   id: string
   parentId: string | null
@@ -183,6 +188,9 @@ interface AzureTimelineRecord {
   startTime: string | null
   finishTime: string | null
   workerName: string | null
+  errorCount: number | null
+  warningCount: number | null
+  issues: AzureTimelineIssue[] | null
 }
 
 function mapTimelineStatus(state: string, result: string | null): PipelineStatus {
@@ -195,6 +203,26 @@ function mapTimelineStatus(state: string, result: string | null): PipelineStatus
   return 'unknown'
 }
 
+function mapIssues(issues: AzureTimelineIssue[] | null): { type: 'error' | 'warning'; message: string }[] {
+  if (!issues || issues.length === 0) return []
+  return issues.map((issue) => ({
+    type: issue.type === 'error' ? 'error' as const : 'warning' as const,
+    message: issue.message || '',
+  }))
+}
+
+function collectJobIssues(
+  jobId: string,
+  records: AzureTimelineRecord[],
+): { type: 'error' | 'warning'; message: string }[] {
+  const tasks = records.filter((r) => r.parentId === jobId && r.type === 'Task')
+  const issues: { type: 'error' | 'warning'; message: string }[] = []
+  for (const task of tasks) {
+    issues.push(...mapIssues(task.issues))
+  }
+  return issues
+}
+
 function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
   const stages = records.filter((r) => r.type === 'Stage')
   const jobs = records.filter((r) => r.type === 'Job')
@@ -205,15 +233,30 @@ function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
       const stageJobs: PipelineJob[] = jobs
         .filter((j) => j.parentId === stage.id)
         .sort((a, b) => a.order - b.order)
-        .map((job): PipelineJob => ({
-          id: job.id,
-          name: job.name,
-          status: mapTimelineStatus(job.state, job.result),
-          startTime: job.startTime ?? null,
-          finishTime: job.finishTime ?? null,
-          result: job.result || '',
-          workerName: job.workerName || '',
-        }))
+        .map((job): PipelineJob => {
+          const jobIssues = [
+            ...mapIssues(job.issues),
+            ...collectJobIssues(job.id, records),
+          ]
+          const errorCount = jobIssues.filter((i) => i.type === 'error').length
+          const warningCount = jobIssues.filter((i) => i.type === 'warning').length
+
+          return {
+            id: job.id,
+            name: job.name,
+            status: mapTimelineStatus(job.state, job.result),
+            startTime: job.startTime ?? null,
+            finishTime: job.finishTime ?? null,
+            result: job.result || '',
+            workerName: job.workerName || '',
+            errorCount,
+            warningCount,
+            issues: jobIssues,
+          }
+        })
+
+      const stageErrorCount = stageJobs.reduce((sum, j) => sum + j.errorCount, 0)
+      const stageWarningCount = stageJobs.reduce((sum, j) => sum + j.warningCount, 0)
 
       return {
         id: stage.id,
@@ -223,6 +266,8 @@ function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
         startTime: stage.startTime ?? null,
         finishTime: stage.finishTime ?? null,
         result: stage.result || '',
+        errorCount: stageErrorCount,
+        warningCount: stageWarningCount,
         jobs: stageJobs,
       }
     })

@@ -392,71 +392,98 @@ function PipelineCard({
   )
 }
 
-// --- Pipeline Runs Detail ---
+// --- Inline Stage Detail (expandable within run) ---
 
-// --- Run Stages Detail ---
-
-function RunStagesDetail({
+function InlineStageDetail({
   stages,
   loading,
-  runName,
-  onBack,
 }: {
   stages: PipelineStage[]
   loading: boolean
-  runName: string
-  onBack: () => void
 }) {
   const { t } = useI18n()
   const [expandedStageId, setExpandedStageId] = useState<string | null>(null)
 
   if (loading) {
-    return <div className="devops-runs-loading">{t('devops.loadingStages')}</div>
+    return <div className="devops-stages-loading">{t('devops.loadingStages')}</div>
+  }
+
+  if (stages.length === 0) {
+    return <div className="devops-stages-empty">{t('devops.noStages')}</div>
   }
 
   return (
-    <div className="devops-stages-detail">
-      <div className="devops-stages-header">
-        <button className="devops-btn devops-btn--small" onClick={onBack} title={t('devops.backToRuns')}>
-          {'\u2190'}
-        </button>
-        <h4>#{runName} - {t('devops.stages')}</h4>
-      </div>
-      {stages.length === 0 ? (
-        <div className="devops-runs-empty">{t('devops.noStages')}</div>
-      ) : (
-        <div className="devops-stages-list">
-          {stages.map((stage) => (
-            <div key={stage.id} className="devops-stage-item">
-              <div
-                className={`devops-stage-row${expandedStageId === stage.id ? ' devops-stage-row--expanded' : ''}`}
-                onClick={() => setExpandedStageId(expandedStageId === stage.id ? null : stage.id)}
-              >
-                <span className={statusClassName(stage.status)}>{statusIcon(stage.status)}</span>
-                <span className="devops-stage-name">{stage.name}</span>
-                <span className="devops-stage-duration">{formatDuration(stage.startTime, stage.finishTime)}</span>
-                <span className="devops-stage-expand">{expandedStageId === stage.id ? '\u25BC' : '\u25B6'}</span>
-              </div>
-              {expandedStageId === stage.id && stage.jobs.length > 0 && (
-                <div className="devops-jobs-list">
-                  {stage.jobs.map((job) => (
-                    <div key={job.id} className="devops-job-row">
-                      <span className={statusClassName(job.status)}>{statusIcon(job.status)}</span>
-                      <span className="devops-job-name">{job.name}</span>
-                      <span className="devops-job-duration">{formatDuration(job.startTime, job.finishTime)}</span>
-                      {job.workerName && (
-                        <span className="devops-job-worker" title={t('devops.worker')}>
-                          {job.workerName}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+    <div className="devops-stages-list">
+      {stages.map((stage) => {
+        const isExpanded = expandedStageId === stage.id
+        const hasIssues = stage.errorCount > 0 || stage.warningCount > 0
+
+        return (
+          <div key={stage.id} className="devops-stage-item">
+            <div
+              className={`devops-stage-row${isExpanded ? ' devops-stage-row--expanded' : ''}`}
+              onClick={() => setExpandedStageId(isExpanded ? null : stage.id)}
+            >
+              <span className={`devops-stage-expand-icon${isExpanded ? ' devops-stage-expand-icon--open' : ''}`}>{'\u25B6'}</span>
+              <span className={`devops-status devops-status--${stage.status}`}>
+                {stageStatusIcon(stage.status)}
+              </span>
+              <span className="devops-stage-name">{stage.name}</span>
+              {hasIssues && (
+                <span className="devops-stage-badges">
+                  {stage.errorCount > 0 && (
+                    <span className="devops-badge devops-badge--error">{stage.errorCount} {stage.errorCount === 1 ? 'error' : 'errors'}</span>
+                  )}
+                  {stage.warningCount > 0 && (
+                    <span className="devops-badge devops-badge--warning">{stage.warningCount} {stage.warningCount === 1 ? 'warning' : 'warnings'}</span>
+                  )}
+                </span>
               )}
+              <span className="devops-stage-duration">{formatDuration(stage.startTime, stage.finishTime)}</span>
             </div>
-          ))}
-        </div>
-      )}
+            {isExpanded && (
+              <div className="devops-stage-expanded">
+                {stage.jobs.length > 0 && (
+                  <div className="devops-jobs-list">
+                    {stage.jobs.map((job) => (
+                      <div key={job.id} className="devops-job-item">
+                        <div className="devops-job-row">
+                          <span className={`devops-status devops-status--${job.status}`}>
+                            {statusIcon(job.status)}
+                          </span>
+                          <span className="devops-job-name">{job.name}</span>
+                          {job.errorCount > 0 && (
+                            <span className="devops-badge devops-badge--error">{job.errorCount}</span>
+                          )}
+                          {job.warningCount > 0 && (
+                            <span className="devops-badge devops-badge--warning">{job.warningCount}</span>
+                          )}
+                          <span className="devops-job-duration">{formatDuration(job.startTime, job.finishTime)}</span>
+                          {job.workerName && (
+                            <span className="devops-job-worker" title={t('devops.worker')}>
+                              {job.workerName}
+                            </span>
+                          )}
+                        </div>
+                        {job.issues.length > 0 && (
+                          <div className="devops-job-issues">
+                            {job.issues.map((issue, idx) => (
+                              <div key={idx} className={`devops-issue devops-issue--${issue.type}`}>
+                                <span className="devops-issue-icon">{issue.type === 'error' ? '\u274C' : '\u26A0\uFE0F'}</span>
+                                <span className="devops-issue-message">{issue.message}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -562,27 +589,7 @@ function PipelineRunsDetail({
                   {/* Stages */}
                   <div className="devops-stages-section">
                     <h5>{t('devops.stages')}</h5>
-                    {stagesLoading ? (
-                      <div className="devops-stages-loading">{t('devops.loadingStages')}</div>
-                    ) : runStages.length === 0 ? (
-                      <div className="devops-stages-empty">{t('devops.noStages')}</div>
-                    ) : (
-                      <div className="devops-stages-list">
-                        {runStages.map((stage) => (
-                          <div key={stage.id} className="devops-stage-row">
-                            <span className={`devops-status devops-status--${stage.status}`}>
-                              {stageStatusIcon(stage.status)}
-                            </span>
-                            <span className="devops-stage-name">{stage.name}</span>
-                            {stage.startTime && (
-                              <span className="devops-stage-time">
-                                {formatRelativeTime(stage.finishTime ?? stage.startTime)}
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <InlineStageDetail stages={runStages} loading={stagesLoading} />
                   </div>
 
                   {/* Approvals */}
@@ -912,22 +919,13 @@ export function DevOpsPanel() {
           </div>
           <div className="devops-detail-panel">
             {selectedPipeline ? (
-              selectedRun ? (
-                <RunStagesDetail
-                  stages={runStages}
-                  loading={stagesLoading}
-                  runName={selectedRun.name}
-                  onBack={handleBackToRuns}
-                />
-              ) : (
-                <PipelineRunsDetail
-                  runs={pipelineRuns}
-                  loading={runsLoading}
-                  pipelineName={selectedPipeline.name}
-                  selectedRunId={selectedRunId}
-                  activeConnection={activeConnection}
-                />
-              )
+              <PipelineRunsDetail
+                runs={pipelineRuns}
+                loading={runsLoading}
+                pipelineName={selectedPipeline.name}
+                selectedRunId={selectedRunId}
+                activeConnection={activeConnection}
+              />
             ) : (
               <div className="devops-empty">{t('devops.selectPipeline')}</div>
             )}
