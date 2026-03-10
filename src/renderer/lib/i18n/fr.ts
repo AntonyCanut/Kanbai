@@ -1809,6 +1809,7 @@ export const fr = {
   'devops.loadingRuns': 'Chargement des executions...',
   'devops.noRuns': 'Aucune execution trouvee pour ce pipeline.',
   'devops.recentRuns': 'Executions recentes',
+<<<<<<< HEAD
   'devops.stages': 'Stages',
   'devops.jobs': 'Jobs',
   'devops.loadingStages': 'Chargement des stages...',
@@ -1816,6 +1817,16 @@ export const fr = {
   'devops.duration': 'Duree',
   'devops.backToRuns': 'Retour aux executions',
   'devops.worker': 'Agent',
+=======
+  'devops.stages': 'Etapes',
+  'devops.loadingStages': 'Chargement des etapes...',
+  'devops.noStages': 'Aucune etape trouvee.',
+  'devops.approvals': 'Approbations',
+  'devops.pendingApproval': 'En attente',
+  'devops.approve': 'Approuver',
+  'devops.reject': 'Rejeter',
+  'devops.approvalComment': 'Commentaire (optionnel)',
+>>>>>>> kanban/f-87
 
   // Namespace
   'namespace.create': 'Nouveau namespace',

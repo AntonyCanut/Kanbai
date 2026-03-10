@@ -926,6 +926,8 @@ export interface PipelineDefinition {
   latestRun: PipelineRun | null
 }
 
+export type StageStatus = 'succeeded' | 'failed' | 'canceled' | 'running' | 'notStarted' | 'pending' | 'unknown'
+
 export interface PipelineStage {
   id: string
   name: string
@@ -945,6 +947,24 @@ export interface PipelineJob {
   finishTime: string | null
   result: string
   workerName: string
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'canceled' | 'skipped' | 'undefined'
+
+export interface PipelineApproval {
+  id: string
+  buildId: number
+  status: ApprovalStatus
+  createdOn: string
+  instructions: string
+  minRequiredApprovers: number
+  steps: PipelineApprovalStep[]
+}
+
+export interface PipelineApprovalStep {
+  assignedApprover: string
+  status: ApprovalStatus
+  comment: string
 }
 
 export interface DevOpsFile {
@@ -1366,4 +1386,6 @@ export const IPC_CHANNELS = {
   DEVOPS_GET_PIPELINE_RUNS: 'devops:getPipelineRuns',
   DEVOPS_RUN_PIPELINE: 'devops:runPipeline',
   DEVOPS_GET_BUILD_TIMELINE: 'devops:getBuildTimeline',
+  DEVOPS_GET_APPROVALS: 'devops:getApprovals',
+  DEVOPS_APPROVE: 'devops:approve',
 } as const

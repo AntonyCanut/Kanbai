@@ -1810,12 +1810,22 @@ export const en = {
   'devops.noRuns': 'No runs found for this pipeline.',
   'devops.recentRuns': 'Recent Runs',
   'devops.stages': 'Stages',
+<<<<<<< HEAD
   'devops.jobs': 'Jobs',
   'devops.loadingStages': 'Loading stages...',
   'devops.noStages': 'No stages found for this run.',
   'devops.duration': 'Duration',
   'devops.backToRuns': 'Back to runs',
   'devops.worker': 'Agent',
+=======
+  'devops.loadingStages': 'Loading stages...',
+  'devops.noStages': 'No stages found.',
+  'devops.approvals': 'Approvals',
+  'devops.pendingApproval': 'Pending',
+  'devops.approve': 'Approve',
+  'devops.reject': 'Reject',
+  'devops.approvalComment': 'Comment (optional)',
+>>>>>>> kanban/f-87
 
   // Namespace
   'namespace.create': 'New namespace',
