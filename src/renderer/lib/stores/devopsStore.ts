@@ -4,7 +4,29 @@ import type {
   DevOpsConnection,
   PipelineDefinition,
   PipelineRun,
+  PipelineStatus,
 } from '../../../shared/types'
+import { pushNotification } from './notificationStore'
+
+const MONITOR_INTERVAL_MS = 30_000
+
+/** Statuses that trigger a notification when a pipeline transitions into them */
+const NOTIFIABLE_STATUSES: ReadonlySet<PipelineStatus> = new Set([
+  'succeeded',
+  'failed',
+  'canceled',
+  'notStarted',
+])
+
+function notificationTypeForStatus(status: PipelineStatus): 'success' | 'error' | 'warning' | 'info' {
+  switch (status) {
+    case 'succeeded': return 'success'
+    case 'failed': return 'error'
+    case 'canceled': return 'warning'
+    case 'notStarted': return 'info'
+    default: return 'info'
+  }
+}
 
 interface DevOpsState {
   data: DevOpsFile | null
@@ -16,6 +38,7 @@ interface DevOpsState {
   selectedPipelineId: number | null
   pipelineRuns: PipelineRun[]
   runsLoading: boolean
+  monitoringActive: boolean
 
   loadData: (projectPath: string) => Promise<void>
   saveData: (projectPath: string) => Promise<void>
@@ -28,10 +51,41 @@ interface DevOpsState {
   selectPipeline: (pipelineId: number | null) => void
   loadPipelineRuns: (connection: DevOpsConnection, pipelineId: number) => Promise<void>
   runPipeline: (connection: DevOpsConnection, pipelineId: number, branch?: string) => Promise<{ success: boolean; error?: string }>
+  startMonitoring: (connection: DevOpsConnection) => void
+  stopMonitoring: () => void
 }
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+}
+
+/** Tracks the last known status per pipeline (by definition id + latest run id) */
+const previousStatuses = new Map<number, { runId: number; status: PipelineStatus }>()
+let monitorTimer: ReturnType<typeof setInterval> | null = null
+
+function detectAndNotifyChanges(pipelines: PipelineDefinition[]): void {
+  for (const pipeline of pipelines) {
+    const run = pipeline.latestRun
+    if (!run) continue
+
+    const prev = previousStatuses.get(pipeline.id)
+    const changed = prev
+      ? (prev.runId !== run.id || prev.status !== run.status)
+      : false
+
+    // Only notify on changes (not on first load)
+    if (changed && NOTIFIABLE_STATUSES.has(run.status)) {
+      const notifType = notificationTypeForStatus(run.status)
+      const title = `Pipeline ${pipeline.name}`
+      const statusLabel = run.status === 'notStarted' ? 'waiting' : run.status
+      const body = `${run.name} — ${statusLabel}`
+
+      pushNotification(notifType, title, body)
+      window.kanbai.notify(title, body)
+    }
+
+    previousStatuses.set(pipeline.id, { runId: run.id, status: run.status })
+  }
 }
 
 export const useDevOpsStore = create<DevOpsState>((set, get) => ({
@@ -44,6 +98,7 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
   selectedPipelineId: null,
   pipelineRuns: [],
   runsLoading: false,
+  monitoringActive: false,
 
   loadData: async (projectPath) => {
     set({ loading: true })
@@ -118,6 +173,7 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
     set({ pipelinesLoading: true, pipelinesError: null })
     const result = await window.kanbai.devops.listPipelines(connection)
     if (result.success) {
+      detectAndNotifyChanges(result.pipelines)
       set({ pipelines: result.pipelines, pipelinesLoading: false })
     } else {
       set({ pipelines: [], pipelinesLoading: false, pipelinesError: result.error ?? 'Unknown error' })
@@ -146,5 +202,24 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
       await loadPipelineRuns(connection, pipelineId)
     }
     return { success: result.success, error: result.error }
+  },
+
+  startMonitoring: (connection) => {
+    const { stopMonitoring, loadPipelines } = get()
+    stopMonitoring()
+
+    monitorTimer = setInterval(() => {
+      loadPipelines(connection)
+    }, MONITOR_INTERVAL_MS)
+
+    set({ monitoringActive: true })
+  },
+
+  stopMonitoring: () => {
+    if (monitorTimer) {
+      clearInterval(monitorTimer)
+      monitorTimer = null
+    }
+    set({ monitoringActive: false })
   },
 }))
