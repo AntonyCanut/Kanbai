@@ -10,7 +10,8 @@ applyTo: "src/main/**,src/preload/**"
 - Handle `window-all-closed` (quit on non-macOS) and `activate` (recreate window on macOS)
 - Show window only after `ready-to-show` to avoid white flash
 - Store BrowserWindow references to prevent garbage collection
-- One IPC handler file per domain in `src/main/ipc/`
+- One IPC handler file per domain in `src/main/ipc/` (29 handlers)
+- Services in `src/main/services/`: storage, healthCheck, notifications, activityHooks, ai-cli, pixel-agents, database/, packages/
 
 ## Preload
 
@@ -21,14 +22,14 @@ applyTo: "src/main/**,src/preload/**"
 
 ## IPC
 
-- Channel naming: `namespace:action` (defined in `IPC_CHANNELS`)
+- Channel naming: `namespace:action` (defined in `IPC_CHANNELS` in `src/shared/types/index.ts`)
 - `invoke/handle` for request-response, `send/on` for fire-and-forget only
 - Validate all inputs in main process handlers (type check, sanitize paths)
 - Errors in `handle` propagate to renderer `invoke` as rejections
 
 ## Security
 
-- `contextIsolation: true`, `nodeIntegration: false`, `webSecurity: true`
+- `contextIsolation: true`, `nodeIntegration: false`, `webSecurity: true`, `sandbox: true`
 - CSP: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'`
 - Block navigation away from app origin via `will-navigate`
 - Validate URLs before `shell.openExternal` (allow only `https:` and `mailto:`)

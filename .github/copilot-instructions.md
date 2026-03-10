@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management.
+Kanbai is an AI-enhanced desktop terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management. Targets macOS (primary) and Windows.
 
 ## Language
 
@@ -11,13 +11,14 @@ Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full 
 
 ## Tech Stack
 
-- Electron 40+ (macOS desktop)
+- Electron 40+ (macOS + Windows)
 - TypeScript 5.9+ (strict mode, no `any`)
 - React 19 (renderer UI)
-- electron-vite / Vite 7 (build tooling)
+- Vite 7 + vite-plugin-electron (build tooling)
 - Zustand 5 (state management, per-domain stores)
 - xterm.js 6 + node-pty (terminal emulator)
 - Monaco Editor (code viewer/editor)
+- ESLint 9 (flat config) + Prettier
 - CSS custom properties (no Tailwind)
 - Vitest 4.x (testing)
 - electron-builder (packaging)
@@ -28,9 +29,9 @@ Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full 
 
 Three-process Electron model:
 
-- **Main** (`src/main/`) — Node.js, IPC handlers in `ipc/` (29 handlers), services in `services/`
+- **Main** (`src/main/`) — Node.js, IPC handlers in `ipc/` (29 handlers), services in `services/` (storage, healthCheck, notifications, activityHooks, ai-cli, pixel-agents, database/, packages/)
 - **Preload** (`src/preload/`) — contextBridge, exposes `window.kanbai` API
-- **Renderer** (`src/renderer/`) — React, flat components in `components/` (~58), Zustand stores in `lib/stores/` (13 stores)
+- **Renderer** (`src/renderer/`) — React, flat components in `components/` (~57), Zustand stores in `lib/stores/` (13 stores)
 - **Shared** (`src/shared/`) — All types in `types/index.ts`, constants in `constants/`
 
 ## Security (Mandatory)
@@ -47,7 +48,7 @@ Three-process Electron model:
 - Request-response: `ipcRenderer.invoke` / `ipcMain.handle`
 - Events only: `ipcRenderer.send` / `ipcMain.on`
 - Preload API: `window.kanbai.{domain}.{method}()`
-- Domains: terminal, workspace, project, claude, kanban, git, filesystem, session, app, database, packages, analysis, ssh, healthcheck, devops, mcp, api, updates, and more
+- Domains: terminal, workspace, project, claude, kanban, git, filesystem, session, app, database, packages, analysis, ssh, healthcheck, devops, mcp, api, updates, appUpdate, workspaceEnv, claudeMemory, claudeDefaults, codexConfig, copilotConfig, geminiConfig, gitConfig, namespace, aiProvider, pixel-agents
 
 ## State Management
 
@@ -70,6 +71,9 @@ Three-process Electron model:
 - API tester
 - MCP server management
 - File explorer with Monaco viewer
+- App updates with update center
+- Pixel agents integration
+- Multi-agent orchestration view
 
 ## Code Conventions
 
@@ -79,6 +83,7 @@ Three-process Electron model:
 - Files: `kebab-case.ts`
 - Small functions (< 30 lines), max 3 nesting levels
 - Conventional Commits in French
+- No Co-Authored-By trailers
 
 ## Key Types (src/shared/types/index.ts)
 

@@ -1,8 +1,8 @@
-# Kanbai - Electron macOS Application
+# Kanbai - Electron Desktop Application
 
 ## Project Overview
 
-Desktop application built with Electron for macOS. TypeScript throughout (main process + renderer).
+Desktop application built with Electron for macOS (primary) and Windows. TypeScript throughout (main process + renderer).
 
 ## Language
 
@@ -330,27 +330,28 @@ Criteria for approval:
 ```
 src/
   main/           # Electron main process
-    ipc/          # IPC handlers
-    services/     # Main process services
-    windows/      # Window management
-  preload/        # Preload scripts (contextBridge)
+    ipc/          # IPC handlers (1 file per domain, 29 handlers)
+    services/     # Business logic services (storage, healthCheck, notifications, activityHooks, ai-cli, pixel-agents, database/, packages/)
+    assets/       # Static assets (rule-templates)
+  preload/        # Preload scripts (contextBridge, exposes window.kanbai)
   renderer/       # Renderer process (React)
-    components/   # Reusable UI components
-    features/     # Feature-based modules
-    hooks/        # Custom React hooks
-    lib/          # Utilities
-  shared/         # Types and interfaces shared between processes
+    components/   # All UI components (flat architecture, ~57 components)
+    lib/stores/   # Zustand stores (per domain, 13 stores)
+    styles/       # CSS custom properties
+  shared/         # Types and constants shared between processes
+    types/        # ALL interfaces + IPC_CHANNELS
+    constants/    # Shared constants
 tests/
-  unit/
-  integration/
-  e2e/
+  unit/           # Unit tests (services, stores, utils)
+  integration/    # IPC round-trip tests
 ```
 
 ### Code Conventions
 - TypeScript strict mode everywhere
 - No `any` unless documented justification
-- ESLint + Prettier for formatting
+- ESLint 9 (flat config) + Prettier for formatting
 - Conventional Commits for git messages (in French)
+- Build: Vite 7 + vite-plugin-electron (NOT electron-vite)
 
 <!-- KANBAI_WORKFLOW -->
 

@@ -3,24 +3,25 @@ description: "Electron 40+ project conventions and architecture"
 alwaysApply: true
 ---
 
-# Kanbai — Electron macOS Application
+# Kanbai — Electron Desktop Application
 
-Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management.
+Kanbai is an AI-enhanced desktop terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management. Targets macOS (primary) and Windows.
 
 ## Stack
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Electron | 40+ | Desktop framework, macOS native access |
+| Electron | 40+ | Desktop framework (macOS + Windows) |
 | TypeScript | 5.9+ | Strict mode everywhere |
 | React | 19 | Renderer UI |
-| electron-vite / Vite | 7 | Build tooling (main + preload + renderer) |
+| Vite | 7 | Build tooling via vite-plugin-electron (main + preload + renderer) |
 | Zustand | 5 | State management (per-domain stores) |
 | xterm.js | 6 | Terminal emulator with WebGL rendering |
 | node-pty | 1.x | Pseudo-terminal backend |
 | Monaco Editor | 0.55+ | Code editor/viewer |
+| ESLint | 9 | Linting (flat config) |
 | Vitest | 4.x | Unit and integration tests |
-| electron-builder | 26+ | macOS packaging (.dmg, .app) |
+| electron-builder | 26+ | Packaging (.dmg/.app for macOS, .nsis/.zip for Windows) |
 | better-sqlite3 | 12+ | SQLite database driver |
 | pg / mysql2 / mssql / mongodb | latest | Multi-database support |
 | @modelcontextprotocol/sdk | 1.x | MCP server integration |
@@ -30,13 +31,21 @@ Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full 
 ```
 src/
   main/              # Main process (Node.js) — app lifecycle, IPC handlers, services
+    index.ts         # App entry point, BrowserWindow creation
     ipc/             # IPC handlers (1 file per domain, 29 handlers)
-    services/        # StorageService, healthCheckScheduler, notificationService, etc.
+    services/        # Business logic services
+      storage.ts     # StorageService singleton (~/.kanbai/data.json)
+      healthCheckScheduler.ts
+      notificationService.ts
+      activityHooks.ts   # AI provider activity hooks (Kanbai integration)
+      ai-cli.ts          # AI CLI detection and management
+      pixel-agents-service.ts  # Pixel agents integration
       database/      # Database connection and query services
       packages/      # Package analysis services
+    assets/          # Static assets (rule-templates)
   preload/           # Preload scripts — contextBridge, exposes window.kanbai
   renderer/          # Renderer process (React + Zustand)
-    components/      # All UI components (flat architecture, ~58 components)
+    components/      # All UI components (flat architecture, ~57 components)
     lib/stores/      # Zustand stores (per domain, 13 stores)
     styles/          # CSS custom properties
   shared/            # Shared types and constants (both processes)
@@ -95,7 +104,7 @@ terminalTabStore, workspaceStore, claudeStore, kanbanStore, viewStore, updateSto
 | Workspace/Project | workspace.ts, project.ts | workspaceStore | Sidebar, WorkspaceItem, ProjectItem |
 | Claude Integration | claude.ts, claudeDefaults.ts, claudeMemory.ts | claudeStore | ClaudeSessionPanel, ClaudeInfoPanel, AutoClauder |
 | Kanban Board | kanban.ts | kanbanStore | KanbanBoard |
-| Git | git.ts, gitConfig.ts | — | GitPanel |
+| Git | git.ts, gitConfig.ts | — | GitPanel, FileDiffViewer |
 | Database Explorer | database.ts | databaseStore, databaseTabStore | DatabaseExplorer, DatabaseSidebar, DatabaseQueryArea |
 | Health Check | healthcheck.ts | healthCheckStore | HealthCheckPanel |
 | DevOps | devops.ts | devopsStore | DevOpsPanel |
@@ -107,6 +116,9 @@ terminalTabStore, workspaceStore, claudeStore, kanbanStore, viewStore, updateSto
 | File Explorer | filesystem.ts | — | FileExplorer, FileViewer |
 | App Updates | appUpdate.ts | appUpdateStore | AppUpdateModal, UpdateCenter |
 | Pixel Agents | pixel-agents.ts | — | PixelAgentsPane |
+| Multi-Agent | — | — | MultiAgentView |
+| AI Configs | codexConfig.ts, copilotConfig.ts, geminiConfig.ts, aiProvider.ts | — | SettingsPanel |
+| SSH | ssh.ts | — | — |
 
 ## Data Persistence
 
@@ -137,12 +149,18 @@ All in `src/shared/types/index.ts`:
 ## Commands
 
 ```bash
-npm run dev         # Dev with hot-reload (electron-vite)
-npm run build       # Production build
-npm run package     # Package app (electron-builder)
-npm run test        # Unit tests (Vitest)
-npm run lint        # ESLint
-npm run typecheck   # TypeScript check
+npm run dev          # Dev with hot-reload (vite + vite-plugin-electron)
+npm run build        # Production build
+npm run build:app    # Build + package for macOS
+npm run build:local  # Build + package locally (no publish)
+npm run test         # Unit tests (Vitest)
+npm run test:watch   # Tests in watch mode
+npm run test:coverage # Tests with coverage
+npm run lint         # ESLint (flat config)
+npm run lint:fix     # ESLint auto-fix
+npm run typecheck    # TypeScript check
+npm run format       # Prettier
+npm run build:mcp    # Build MCP server
 ```
 
 ## Testing

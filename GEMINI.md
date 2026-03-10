@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management.
+Kanbai is an AI-enhanced desktop terminal built with Electron. It combines a full terminal emulator (xterm.js + node-pty), workspace/project management, native Claude Code integration, a Kanban board with AI agent assignment, database exploration, health monitoring, DevOps tools, code analysis, and package management. Targets macOS (primary) and Windows.
 
 ## Language
 
@@ -11,16 +11,17 @@ Kanbai is an AI-enhanced macOS terminal built with Electron. It combines a full 
 
 ## Tech Stack
 
-- **Electron 40+** — Desktop framework with macOS native access
+- **Electron 40+** — Desktop framework (macOS + Windows)
 - **TypeScript 5.9+** — Strict mode everywhere, no `any`
 - **React 19** — Renderer UI
-- **electron-vite / Vite 7** — Build tooling (main + preload + renderer)
+- **Vite 7** — Build tooling via vite-plugin-electron (main + preload + renderer)
 - **Zustand 5** — State management (lightweight, per-domain stores)
 - **xterm.js 6** — Terminal emulator with WebGL rendering
 - **node-pty** — Pseudo-terminal backend
 - **Monaco Editor** — Code editor/viewer
+- **ESLint 9** — Linting (flat config)
 - **Vitest 4.x** — Unit and integration tests
-- **electron-builder** — macOS packaging (.dmg, .app)
+- **electron-builder** — Packaging (.dmg/.app for macOS, .nsis/.zip for Windows)
 - **better-sqlite3 / pg / mysql2 / mssql / mongodb** — Multi-database support
 - **@modelcontextprotocol/sdk** — MCP server integration
 
@@ -31,7 +32,7 @@ Three-process Electron model:
 1. **Main Process** (`src/main/`) — Node.js, full OS access
    - `index.ts` — App lifecycle, BrowserWindow creation
    - `ipc/` — IPC handlers (1 file per domain, 29 handlers)
-   - `services/` — StorageService, healthCheckScheduler, notificationService, database/, packages/
+   - `services/` — storage.ts (StorageService singleton), healthCheckScheduler, notificationService, activityHooks, ai-cli, pixel-agents-service, database/, packages/
 
 2. **Preload** (`src/preload/`) — Bridge between processes
    - Exposes `window.kanbai` API via `contextBridge`
@@ -39,7 +40,7 @@ Three-process Electron model:
 
 3. **Renderer** (`src/renderer/`) — Chromium, sandboxed
    - React app with Zustand state management
-   - Flat component architecture in `components/` (~58 components)
+   - Flat component architecture in `components/` (~57 components)
    - Stores in `lib/stores/` (13 stores)
    - CSS custom properties in `styles/`
 
@@ -95,12 +96,14 @@ terminalTabStore, workspaceStore, claudeStore, kanbanStore, viewStore, updateSto
 - **MCP** — Model Context Protocol server management
 - **File Explorer** — File browsing and viewing with Monaco
 - **App Updates** — Auto-update with update center
+- **Pixel Agents** — AI pixel agent integration
+- **Multi-Agent View** — Multi-agent orchestration UI
 
 ## Code Conventions
 
 - TypeScript strict mode everywhere
 - No `any` without documented justification
-- ESLint + Prettier for formatting
+- ESLint 9 (flat config) + Prettier for formatting
 - Conventional Commits in French: `type(scope): description`
 - No Co-Authored-By trailers
 - Files: `kebab-case.ts`
@@ -122,12 +125,18 @@ All in `src/shared/types/index.ts`:
 ## Commands
 
 ```bash
-npm run dev         # Dev with hot-reload (electron-vite)
-npm run build       # Production build
-npm run test        # Unit tests (Vitest)
-npm run lint        # ESLint
-npm run typecheck   # TypeScript check
-npm run package     # Package app (electron-builder)
+npm run dev          # Dev with hot-reload (vite + vite-plugin-electron)
+npm run build        # Production build
+npm run build:app    # Build + package for macOS
+npm run build:local  # Build + package locally (no publish)
+npm run test         # Unit tests (Vitest)
+npm run test:watch   # Tests in watch mode
+npm run test:coverage # Tests with coverage
+npm run lint         # ESLint (flat config)
+npm run lint:fix     # ESLint auto-fix
+npm run typecheck    # TypeScript check
+npm run format       # Prettier
+npm run build:mcp    # Build MCP server
 ```
 
 ## Testing
