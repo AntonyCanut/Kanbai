@@ -1420,44 +1420,6 @@ export function DevOpsPanel() {
         />
       )}
 
-      {/* Header */}
-      <div className="devops-header">
-        <h2>{t('devops.pipelines')}</h2>
-        <div className="devops-header-actions">
-          <button className="devops-btn devops-btn--primary" onClick={openNewConnection}>
-            + {t('devops.addConnection')}
-          </button>
-        </div>
-      </div>
-
-      {/* Connection selector */}
-      {data && data.connections.length > 0 && (
-        <div className="devops-connection-bar">
-          <select
-            className="devops-connection-select"
-            value={activeConnectionId ?? ''}
-            onChange={(e) => setActiveConnection(e.target.value || null)}
-          >
-            {data.connections.map((c) => {
-              const providerLabel = c.provider === 'github' ? 'GitHub' : 'Azure'
-              const projectLabel = c.provider === 'github' ? `${c.organizationUrl}/${c.projectName}` : c.projectName
-              return (
-                <option key={c.id} value={c.id}>[{providerLabel}] {c.name} ({projectLabel})</option>
-              )
-            })}
-          </select>
-          <button className="devops-btn devops-btn--small" onClick={openEditConnection} title={t('devops.editConnection')}>
-            {'\u270E'}
-          </button>
-          <button className="devops-btn devops-btn--small" onClick={() => { if (activeConnectionId) handleDeleteConnection(activeConnectionId) }} title={t('devops.deleteConnection')}>
-            {'\u2716'}
-          </button>
-          <button className="devops-btn devops-btn--small" onClick={handleRefresh} title={t('devops.refresh')}>
-            {'\u21BB'}
-          </button>
-        </div>
-      )}
-
       {/* No connections — empty state */}
       {(!data || data.connections.length === 0) && (
         <div className="devops-empty-state">
@@ -1473,43 +1435,116 @@ export function DevOpsPanel() {
         </div>
       )}
 
-      {/* Pipelines content */}
-      {activeConnection && subTab === 'pipelines' && (
-        <div className="devops-content">
-          <div className="devops-pipelines-list">
-            {pipelinesLoading && <div className="devops-loading">{t('devops.loadingPipelines')}</div>}
-            {pipelinesError && <div className="devops-error">{pipelinesError}</div>}
-            {!pipelinesLoading && !pipelinesError && pipelines.length === 0 && (
-              <div className="devops-empty">{t('devops.noPipelines')}</div>
-            )}
-            {pipelines.map((pipeline, index) => (
-              <PipelineCard
-                key={pipeline.id}
-                pipeline={pipeline}
-                index={index}
-                isSelected={selectedPipelineId === pipeline.id}
-                onSelect={() => selectPipeline(pipeline.id)}
-                onRun={() => handleRunPipeline(pipeline.id)}
-                onOpenUrl={() => handleOpenPipelineUrl(pipeline.url)}
-                onDragStart={handlePipelineDragStart}
-                onDragOver={handlePipelineDragOver}
-                onDrop={handlePipelineDrop}
-                onDragEnd={handlePipelineDragEnd}
-                isDragOver={dropTarget === index}
-              />
-            ))}
-          </div>
-          <div className="devops-detail-panel">
-            {selectedPipeline ? (
-              <PipelineRunsDetail
-                runs={pipelineRuns}
-                loading={runsLoading}
-                pipelineName={selectedPipeline.name}
-                activeConnection={activeConnection}
-                onCreateTicket={handleCreateTicket}
-              />
-            ) : (
-              <div className="devops-empty">{t('devops.selectPipeline')}</div>
+      {/* Main layout with optional connections sidebar */}
+      {data && data.connections.length > 0 && (
+        <div className="devops-main-layout">
+          {/* Connections sidebar — only shown when multiple connections */}
+          {data.connections.length > 1 && (
+            <div className="devops-connections-sidebar">
+              <div className="devops-connections-sidebar-header">
+                <span className="devops-connections-sidebar-title">{t('devops.connections')}</span>
+                <button className="devops-btn devops-btn--icon" onClick={openNewConnection} title={t('devops.addConnection')}>
+                  +
+                </button>
+              </div>
+              <div className="devops-connections-sidebar-list">
+                {data.connections.map((c) => {
+                  const isActive = activeConnectionId === c.id
+                  const providerIcon = c.provider === 'github' ? <GitHubIcon size={16} /> : <AzureDevOpsIcon size={16} />
+                  const projectLabel = c.provider === 'github' ? `${c.organizationUrl}/${c.projectName}` : c.projectName
+                  return (
+                    <div
+                      key={c.id}
+                      className={`devops-connection-item${isActive ? ' devops-connection-item--active' : ''}`}
+                      onClick={() => setActiveConnection(c.id)}
+                    >
+                      <div className="devops-connection-item-icon">{providerIcon}</div>
+                      <div className="devops-connection-item-info">
+                        <span className="devops-connection-item-name">{c.name}</span>
+                        <span className="devops-connection-item-project">{projectLabel}</span>
+                      </div>
+                      {isActive && (
+                        <div className="devops-connection-item-actions">
+                          <button className="devops-btn devops-btn--icon" onClick={(e) => { e.stopPropagation(); openEditConnection() }} title={t('devops.editConnection')}>
+                            {'\u270E'}
+                          </button>
+                          <button className="devops-btn devops-btn--icon" onClick={(e) => { e.stopPropagation(); handleDeleteConnection(c.id) }} title={t('devops.deleteConnection')}>
+                            {'\u2716'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Pipeline content area */}
+          <div className="devops-pipeline-area">
+            {/* Header */}
+            <div className="devops-header">
+              <h2>{t('devops.pipelines')}{activeConnection ? ` — ${activeConnection.name}` : ''}</h2>
+              <div className="devops-header-actions">
+                {data.connections.length === 1 && (
+                  <>
+                    <button className="devops-btn devops-btn--small" onClick={openEditConnection} title={t('devops.editConnection')}>
+                      {'\u270E'}
+                    </button>
+                    <button className="devops-btn devops-btn--small" onClick={() => { if (activeConnectionId) handleDeleteConnection(activeConnectionId) }} title={t('devops.deleteConnection')}>
+                      {'\u2716'}
+                    </button>
+                  </>
+                )}
+                <button className="devops-btn devops-btn--small" onClick={handleRefresh} title={t('devops.refresh')}>
+                  {'\u21BB'}
+                </button>
+                <button className="devops-btn devops-btn--primary" onClick={openNewConnection}>
+                  + {t('devops.addConnection')}
+                </button>
+              </div>
+            </div>
+
+            {/* Pipelines content */}
+            {activeConnection && subTab === 'pipelines' && (
+              <div className="devops-content">
+                <div className="devops-pipelines-list">
+                  {pipelinesLoading && <div className="devops-loading">{t('devops.loadingPipelines')}</div>}
+                  {pipelinesError && <div className="devops-error">{pipelinesError}</div>}
+                  {!pipelinesLoading && !pipelinesError && pipelines.length === 0 && (
+                    <div className="devops-empty">{t('devops.noPipelines')}</div>
+                  )}
+                  {pipelines.map((pipeline, index) => (
+                    <PipelineCard
+                      key={pipeline.id}
+                      pipeline={pipeline}
+                      index={index}
+                      isSelected={selectedPipelineId === pipeline.id}
+                      onSelect={() => selectPipeline(pipeline.id)}
+                      onRun={() => handleRunPipeline(pipeline.id)}
+                      onOpenUrl={() => handleOpenPipelineUrl(pipeline.url)}
+                      onDragStart={handlePipelineDragStart}
+                      onDragOver={handlePipelineDragOver}
+                      onDrop={handlePipelineDrop}
+                      onDragEnd={handlePipelineDragEnd}
+                      isDragOver={dropTarget === index}
+                    />
+                  ))}
+                </div>
+                <div className="devops-detail-panel">
+                  {selectedPipeline ? (
+                    <PipelineRunsDetail
+                      runs={pipelineRuns}
+                      loading={runsLoading}
+                      pipelineName={selectedPipeline.name}
+                      activeConnection={activeConnection}
+                      onCreateTicket={handleCreateTicket}
+                    />
+                  ) : (
+                    <div className="devops-empty">{t('devops.selectPipeline')}</div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

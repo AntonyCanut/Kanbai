@@ -26,22 +26,114 @@
   color: var(--text-primary, #e0e0e0);
 }
 
-/* Connection bar */
-.devops-connection-bar {
+/* Main layout with optional connections sidebar */
+.devops-main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  gap: 0;
+}
+
+/* Connections sidebar */
+.devops-connections-sidebar {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color, #333);
+  overflow: hidden;
+}
+
+.devops-connections-sidebar-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color, #333);
   flex-shrink: 0;
 }
 
-.devops-connection-select {
+.devops-connections-sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary, #777);
+}
+
+.devops-connections-sidebar-list {
   flex: 1;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #333);
-  background: var(--input-bg, #2a2a2a);
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.devops-connection-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 2px solid transparent;
+}
+
+.devops-connection-item:hover {
+  background: var(--card-bg-hover, #252525);
+}
+
+.devops-connection-item--active {
+  background: var(--card-bg-selected, #1a2a3a);
+  border-left-color: var(--accent-color, #4fc3f7);
+}
+
+.devops-connection-item-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.devops-connection-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.devops-connection-item-name {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-primary, #e0e0e0);
-  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.devops-connection-item-project {
+  font-size: 10px;
+  color: var(--text-tertiary, #777);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.devops-connection-item-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Pipeline area (right of sidebar) */
+.devops-pipeline-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  padding: 0 0 0 16px;
 }
 
 /* Content layout */

@@ -1784,6 +1784,7 @@ export const en = {
   // DevOps
   'devops.title': 'DevOps',
   'devops.pipelines': 'Pipelines',
+  'devops.connections': 'Connections',
   'devops.addConnection': 'Add Connection',
   'devops.editConnection': 'Edit Connection',
   'devops.deleteConnection': 'Delete',
