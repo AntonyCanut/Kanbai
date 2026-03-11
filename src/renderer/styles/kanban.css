@@ -855,6 +855,7 @@
   position: relative;
   display: flex;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .kanban-card-accent {
