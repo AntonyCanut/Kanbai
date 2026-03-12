@@ -55,6 +55,7 @@ export function getExtendedToolPaths(): string[] {
       'C:\\ProgramData\\chocolatey\\bin',
       `${process.env.APPDATA || ''}\\npm`,
       `${home}\\.cargo\\bin`,
+      'C:\\Program Files (x86)\\GnuWin32\\bin',
       'C:\\Program Files\\PostgreSQL\\17\\bin',
       'C:\\Program Files\\PostgreSQL\\16\\bin',
       'C:\\Program Files\\PostgreSQL\\15\\bin',
@@ -185,6 +186,53 @@ export async function refreshWindowsPath(): Promise<void> {
   }
 }
 
+/**
+ * Add a directory to the user PATH in the Windows registry if not already present.
+ * Also updates process.env.PATH so the current process picks it up immediately.
+ * No-op on non-Windows platforms.
+ */
+export async function addToWindowsUserPath(dirPath: string): Promise<void> {
+  if (!IS_WIN) return
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require for test compatibility
+  const { execFile } = require('child_process') as typeof import('child_process')
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { promisify } = require('util') as typeof import('util')
+  const execFileAsync = promisify(execFile)
+
+  // Read current user PATH
+  let currentUserPath = ''
+  try {
+    const { stdout } = await execFileAsync(
+      'reg', ['query', 'HKCU\\Environment', '/v', 'Path'],
+      { timeout: 5000 },
+    ) as { stdout: string; stderr: string }
+    const match = stdout.match(/REG_(?:EXPAND_)?SZ\s+(.+)/i)
+    currentUserPath = match?.[1]?.trim() ?? ''
+  } catch {
+    // No user PATH exists yet — will create one
+  }
+
+  // Check if already present (case-insensitive on Windows)
+  const entries = currentUserPath.split(';').filter(Boolean)
+  const normalizedDir = dirPath.toLowerCase().replace(/\\+$/, '')
+  if (entries.some((e) => e.toLowerCase().replace(/\\+$/, '') === normalizedDir)) {
+    return
+  }
+
+  // Append and write back
+  const newPath = [...entries, dirPath].join(';')
+  await execFileAsync(
+    'reg', ['add', 'HKCU\\Environment', '/v', 'Path', '/t', 'REG_EXPAND_SZ', '/d', newPath, '/f'],
+    { timeout: 5000 },
+  )
+
+  // Update running process immediately
+  if (!process.env.PATH?.toLowerCase().includes(normalizedDir)) {
+    process.env.PATH = `${process.env.PATH};${dirPath}`
+  }
+}
+
 /** Install commands per analysis tool, platform-specific */
 export function getInstallCommands(): Record<string, string> {
   const home = process.env.HOME || process.env.USERPROFILE || ''
@@ -286,6 +334,26 @@ export function getUpdateCommands(): Record<string, { command: string; args: str
     npm: { command: 'npm', args: ['install', '-g', 'npm@latest'] },
     claude: { command: 'npm', args: ['install', '-g', '@anthropic-ai/claude-code@latest'] },
   }
+}
+
+/**
+ * Normalize a Windows shell full path to its bare name when it matches
+ * a known shell. For example, `C:\WINDOWS\system32\cmd.exe` → `cmd.exe`.
+ *
+ * This prevents mismatches between the saved full path and the dropdown
+ * options (which use bare names). Returns the input unchanged on non-Windows
+ * or if the basename is not a known shell.
+ */
+export function normalizeWindowsShell(shell: string): string {
+  if (!IS_WIN || !shell) return shell
+  const lower = shell.toLowerCase()
+  const knownBareShells = ['powershell.exe', 'cmd.exe', 'pwsh.exe']
+  // Already a bare name — no change needed
+  if (knownBareShells.includes(lower)) return shell
+  // Extract basename from full path and check if it's a known shell
+  const basename = lower.replace(/^.*[\\/]/, '')
+  if (knownBareShells.includes(basename)) return basename
+  return shell
 }
 
 /**

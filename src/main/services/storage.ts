@@ -4,7 +4,7 @@ import os from 'os'
 import { v4 as uuid } from 'uuid'
 import { Workspace, Project, AppSettings, KanbanTask, AutoClauderTemplate, SessionData, Namespace, GitProfile } from '../../shared/types'
 import { createDefaultSettings } from '../../shared/constants/defaults'
-import { getDefaultShell, isShellValid } from '../../shared/platform'
+import { getDefaultShell, isShellValid, normalizeWindowsShell } from '../../shared/platform'
 
 const DATA_DIR = path.join(os.homedir(), '.kanbai')
 
@@ -88,6 +88,15 @@ export class StorageService {
       // Migration: ensure gitProfiles array exists
       if (!data.gitProfiles) {
         data.gitProfiles = []
+      }
+      // Migration: normalize Windows shell full paths to bare names
+      // (e.g. C:\WINDOWS\system32\cmd.exe → cmd.exe) so they match dropdown options
+      if (data.settings?.defaultShell) {
+        const normalized = normalizeWindowsShell(data.settings.defaultShell)
+        if (normalized !== data.settings.defaultShell) {
+          data.settings.defaultShell = normalized
+          needsSave = true
+        }
       }
       // Migration: reset defaultShell if it doesn't exist on the current platform
       // (handles cross-platform scenarios, e.g. /bin/zsh saved on macOS used on Windows)

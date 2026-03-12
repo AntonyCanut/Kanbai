@@ -5,7 +5,7 @@ import os from 'os'
 import fs from 'fs'
 import path from 'path'
 import { IPC_CHANNELS } from '../../shared/types'
-import { IS_WIN, getDefaultShell, getDefaultShellArgs, killProcess, isShellValid } from '../../shared/platform'
+import { IS_WIN, getDefaultShell, getDefaultShellArgs, killProcess, isShellValid, normalizeWindowsShell } from '../../shared/platform'
 import { StorageService } from '../services/storage'
 
 interface ManagedTerminal {
@@ -96,7 +96,9 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
     IPC_CHANNELS.TERMINAL_CREATE,
     async (_event, options: { cwd?: string; shell?: string; workspaceId?: string; tabId?: string; provider?: string }) => {
       const id = uuid()
-      const savedShell = new StorageService().getSettings().defaultShell
+      const rawShell = new StorageService().getSettings().defaultShell
+      // Normalize full paths (e.g. C:\WINDOWS\system32\cmd.exe → cmd.exe)
+      const savedShell = normalizeWindowsShell(rawShell)
       // Validate saved shell exists — it may be a macOS path (e.g. /bin/zsh)
       // on a Windows machine if data.json was synced across platforms.
       // isShellValid handles Windows bare names (powershell.exe, cmd.exe, pwsh.exe)

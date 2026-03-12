@@ -1044,13 +1044,31 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
     const relativePromptPath = `.kanbai/.kanban-prompt-${task.id}.md`
     const isWin = navigator.platform.startsWith('Win')
 
+    // Detect shell type to generate correct syntax (PowerShell vs cmd.exe vs bash)
+    let shellType: 'powershell' | 'cmd' | 'bash' = 'bash'
+    if (isWin) {
+      try {
+        const settings = await window.kanbai.settings.get()
+        const shell = (settings.defaultShell || '').toLowerCase()
+        if (shell.includes('cmd')) {
+          shellType = 'cmd'
+        } else if (shell.includes('bash')) {
+          shellType = 'bash'
+        } else {
+          shellType = 'powershell'
+        }
+      } catch {
+        shellType = 'powershell'
+      }
+    }
+
     // Build platform-specific shell fragments
     let unsetEnv: string
     let exportEnv: string
     let catCmd: string
     let recoverySuffix: string
 
-    if (isWin) {
+    if (isWin && shellType === 'powershell') {
       // PowerShell syntax
       unsetEnv = providerConfig.envVarsToUnset.length > 0
         ? providerConfig.envVarsToUnset.map((v) => `Remove-Item Env:${v} -ErrorAction SilentlyContinue`).join('; ') + '; '
@@ -1058,8 +1076,16 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       exportEnv = `$env:KANBAI_KANBAN_TASK_ID="${task.id}"; $env:KANBAI_KANBAN_FILE="${kanbanFilePath}"; $env:KANBAI_KANBAN_TICKET="${ticketLabel}"; $env:KANBAI_WORKSPACE_ID="${workspaceId}"; `
       catCmd = `Get-Content "${relativePromptPath}" | `
       recoverySuffix = '; $recoveryScript = "$env:USERPROFILE\\.kanbai\\hooks\\kanbai-terminal-recovery.ps1"; if (Test-Path $recoveryScript) { & $recoveryScript }'
+    } else if (isWin && shellType === 'cmd') {
+      // cmd.exe syntax
+      unsetEnv = providerConfig.envVarsToUnset.length > 0
+        ? providerConfig.envVarsToUnset.map((v) => `set "${v}="`).join(' & ') + ' & '
+        : ''
+      exportEnv = `set "KANBAI_KANBAN_TASK_ID=${task.id}" & set "KANBAI_KANBAN_FILE=${kanbanFilePath}" & set "KANBAI_KANBAN_TICKET=${ticketLabel}" & set "KANBAI_WORKSPACE_ID=${workspaceId}" & `
+      catCmd = `type "${relativePromptPath}" | `
+      recoverySuffix = ` & if exist "%USERPROFILE%\\.kanbai\\hooks\\kanbai-terminal-recovery.ps1" powershell -ExecutionPolicy Bypass -File "%USERPROFILE%\\.kanbai\\hooks\\kanbai-terminal-recovery.ps1"`
     } else {
-      // Bash / POSIX syntax
+      // Bash / POSIX syntax (macOS, Linux, Git Bash on Windows)
       unsetEnv = providerConfig.envVarsToUnset.length > 0
         ? `unset ${providerConfig.envVarsToUnset.join(' ')} && `
         : ''

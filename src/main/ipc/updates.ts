@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import fsSync from 'fs'
 import path from 'path'
 import { IPC_CHANNELS, UpdateInfo } from '../../shared/types'
-import { IS_WIN, getWhichCommand, getExtendedToolPaths, PATH_SEP, crossExecFile, refreshWindowsPath } from '../../shared/platform'
+import { IS_WIN, getWhichCommand, getExtendedToolPaths, PATH_SEP, crossExecFile, refreshWindowsPath, addToWindowsUserPath } from '../../shared/platform'
 
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
@@ -1314,6 +1314,10 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
         sendStatus('installing', 50)
         if (command === 'winget') {
           await wingetExec(args, 120000)
+          // GnuWin32.Make does not add its bin dir to the system PATH
+          if (tool === 'make') {
+            await addToWindowsUserPath('C:\\Program Files (x86)\\GnuWin32\\bin')
+          }
           // Refresh PATH from registry so the just-installed tool is detected
           await refreshWindowsPath()
         } else {
