@@ -9,6 +9,7 @@ export interface PaneLeaf {
   initialCommand: string | null
   externalSessionId: string | null
   componentType?: 'terminal' | 'pixel-agents'
+  shell?: string
 }
 
 export interface PaneSplit {
@@ -44,7 +45,7 @@ interface TerminalTabState {
 }
 
 interface TerminalTabActions {
-  createTab: (workspaceId: string, cwd: string, label?: string, initialCommand?: string, activate?: boolean) => string
+  createTab: (workspaceId: string, cwd: string, label?: string, initialCommand?: string, activate?: boolean, shell?: string) => string
   createSplitTab: (workspaceId: string, cwd: string, label: string, leftCommand: string | null, rightCommand: string | null) => string
   createViewOnlyTab: (workspaceId: string, cwd: string, label: string, externalSessionId: string) => string
   createPixelAgentsTab: (workspaceId: string, cwd: string) => string
@@ -81,7 +82,7 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-function createLeafPane(initialCommand?: string, externalSessionId?: string, componentType?: 'terminal' | 'pixel-agents'): PaneLeaf {
+function createLeafPane(initialCommand?: string, externalSessionId?: string, componentType?: 'terminal' | 'pixel-agents', shell?: string): PaneLeaf {
   return {
     type: 'leaf',
     id: generateId('pane'),
@@ -89,6 +90,7 @@ function createLeafPane(initialCommand?: string, externalSessionId?: string, com
     initialCommand: initialCommand ?? null,
     externalSessionId: externalSessionId ?? null,
     ...(componentType && componentType !== 'terminal' ? { componentType } : {}),
+    ...(shell ? { shell } : {}),
   }
 }
 
@@ -229,14 +231,14 @@ export const useTerminalTabStore = create<TerminalTabStore>((set, get) => ({
   tabs: [],
   activeTabId: null,
 
-  createTab: (workspaceId: string, cwd: string, label?: string, initialCommand?: string, activate = true) => {
+  createTab: (workspaceId: string, cwd: string, label?: string, initialCommand?: string, activate = true, shell?: string) => {
     const workspaceTabs = get().tabs.filter((t) => t.workspaceId === workspaceId)
     if (workspaceTabs.length >= MAX_TERMINALS_PER_WORKSPACE) {
       // eslint-disable-next-line no-console
       console.warn(`Terminal limit (${MAX_TERMINALS_PER_WORKSPACE}) reached for workspace ${workspaceId}`)
       return ''
     }
-    const pane = createLeafPane(initialCommand)
+    const pane = createLeafPane(initialCommand, undefined, undefined, shell)
     const id = generateId('tab')
     const tabLabel = label || `Terminal ${nextTabNumber++}`
     const tab: TerminalTabData = {

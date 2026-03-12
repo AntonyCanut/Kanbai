@@ -24,6 +24,11 @@ function findPaneComponent(node: PaneNode, paneId: string): 'terminal' | 'pixel-
   return findPaneComponentType(node, paneId)
 }
 
+function findPaneShell(node: PaneNode, paneId: string): string | undefined {
+  if (node.type === 'leaf') return node.id === paneId ? node.shell : undefined
+  return findPaneShell(node.children[0], paneId) ?? findPaneShell(node.children[1], paneId)
+}
+
 interface SplitContainerProps {
   tabId: string
   fontSize: number
@@ -71,6 +76,7 @@ export function SplitContainer({ tabId, fontSize }: SplitContainerProps) {
           initialCommand={findPaneInitialCommand(tab.paneTree, rect.id)}
           externalSessionId={findPaneExternalSessionId(tab.paneTree, rect.id)}
           componentType={findPaneComponent(tab.paneTree, rect.id)}
+          shell={findPaneShell(tab.paneTree, rect.id)}
           isSplit={allPaneRects.length > 1}
           rect={rect}
           fontSize={fontSize}
@@ -107,6 +113,7 @@ interface FlatPaneViewProps {
   initialCommand: string | null
   externalSessionId: string | null
   componentType: 'terminal' | 'pixel-agents'
+  shell?: string
   isSplit: boolean
   rect: { x: number; y: number; w: number; h: number }
   fontSize: number
@@ -127,6 +134,7 @@ function FlatPaneView({
   initialCommand,
   externalSessionId,
   componentType,
+  shell,
   isSplit,
   rect,
   fontSize,
@@ -187,7 +195,7 @@ function FlatPaneView({
       {componentType === 'pixel-agents' ? (
         <PixelAgentsPane isVisible={isTabVisible} workspaceId={workspaceId} />
       ) : (
-        <Terminal cwd={cwd} initialCommand={initialCommand} externalSessionId={externalSessionId} workspaceId={workspaceId} tabId={tabId} isVisible={isTabVisible} fontSize={fontSize} isSplit={isSplit} onActivity={handleActivity} onClose={handleClose} onSessionCreated={handleSessionCreated} onUserInput={handleUserInput} />
+        <Terminal cwd={cwd} shell={shell} initialCommand={initialCommand} externalSessionId={externalSessionId} workspaceId={workspaceId} tabId={tabId} isVisible={isTabVisible} fontSize={fontSize} isSplit={isSplit} onActivity={handleActivity} onClose={handleClose} onSessionCreated={handleSessionCreated} onUserInput={handleUserInput} />
       )}
     </div>
   )

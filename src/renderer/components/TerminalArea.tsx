@@ -330,9 +330,23 @@ export function TerminalArea() {
     [closeTab, isDragging],
   )
 
+  const isWindows = navigator.platform.startsWith('Win')
+
   const handleNewTab = useCallback(() => {
     if (activeWorkspaceId && envCwd) {
       createTab(activeWorkspaceId, envCwd)
+    }
+  }, [activeWorkspaceId, envCwd, createTab])
+
+  const handleNewCmdTab = useCallback(() => {
+    if (activeWorkspaceId && envCwd) {
+      createTab(activeWorkspaceId, envCwd, 'Command Prompt', undefined, true, 'cmd.exe')
+    }
+  }, [activeWorkspaceId, envCwd, createTab])
+
+  const handleNewPowershellTab = useCallback(() => {
+    if (activeWorkspaceId && envCwd) {
+      createTab(activeWorkspaceId, envCwd, 'PowerShell', undefined, true, 'powershell.exe')
     }
   }, [activeWorkspaceId, envCwd, createTab])
 
@@ -512,10 +526,23 @@ export function TerminalArea() {
               }}
               onMouseLeave={handleAddWrapperLeave}
             >
-              <button className="tab-add-dropdown-item" onClick={handleNewTab}>
-                <span className="tab-add-dropdown-icon">{'>'}_</span>
-                <span>{t('terminal.newTerminalShort')}</span>
-              </button>
+              {isWindows ? (
+                <>
+                  <button className="tab-add-dropdown-item" onClick={handleNewCmdTab}>
+                    <span className="tab-add-dropdown-icon">{'>'}_</span>
+                    <span>Command Prompt</span>
+                  </button>
+                  <button className="tab-add-dropdown-item" onClick={handleNewPowershellTab}>
+                    <span className="tab-add-dropdown-icon">PS</span>
+                    <span>PowerShell</span>
+                  </button>
+                </>
+              ) : (
+                <button className="tab-add-dropdown-item" onClick={handleNewTab}>
+                  <span className="tab-add-dropdown-icon">{'>'}_</span>
+                  <span>{t('terminal.newTerminalShort')}</span>
+                </button>
+              )}
               <button className="tab-add-dropdown-item" onClick={handleNewClaudeTab}>
                 <span className="tab-add-dropdown-icon tab-add-dropdown-icon--claude">C</span>
                 <span>{t('terminal.newClaudeTerminal')}</span>
