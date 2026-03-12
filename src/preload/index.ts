@@ -816,8 +816,8 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.DEVOPS_LIST_PIPELINES, { connection }),
     getPipelineRuns: (connection: DevOpsConnection, pipelineId: number, count?: number): Promise<{ success: boolean; runs: PipelineRun[]; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.DEVOPS_GET_PIPELINE_RUNS, { connection, pipelineId, count }),
-    runPipeline: (connection: DevOpsConnection, pipelineId: number, branch?: string): Promise<{ success: boolean; run?: PipelineRun; error?: string }> =>
-      ipcRenderer.invoke(IPC_CHANNELS.DEVOPS_RUN_PIPELINE, { connection, pipelineId, branch }),
+    runPipeline: (connection: DevOpsConnection, pipelineId: number, branch?: string, parameters?: Record<string, string>): Promise<{ success: boolean; run?: PipelineRun; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.DEVOPS_RUN_PIPELINE, { connection, pipelineId, branch, parameters }),
     getBuildTimeline: (connection: DevOpsConnection, buildId: number): Promise<{ success: boolean; stages: PipelineStage[]; error?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.DEVOPS_GET_BUILD_TIMELINE, { connection, buildId }),
     getApprovals: (connection: DevOpsConnection, buildIds: number[]): Promise<{ success: boolean; approvals: PipelineApproval[]; error?: string }> =>

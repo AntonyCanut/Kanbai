@@ -1841,6 +1841,15 @@ export const fr = {
   'devops.owner': 'Proprietaire (owner)',
   'devops.repository': 'Repository',
   'devops.privateKey': 'Cle privee (PEM)',
+  'devops.runPipelineTitle': 'Lancer le pipeline',
+  'devops.branch': 'Branche',
+  'devops.parameters': 'Parametres',
+  'devops.addParameter': 'Ajouter un parametre',
+  'devops.removeParameter': 'Supprimer',
+  'devops.paramKey': 'Cle',
+  'devops.paramValue': 'Valeur',
+  'devops.run': 'Lancer',
+  'devops.replay': 'Relancer avec les memes parametres',
 
   // Namespace
   'namespace.create': 'Nouveau namespace',

@@ -66,7 +66,7 @@ interface DevOpsState {
   loadPipelineRuns: (connection: DevOpsConnection, pipelineId: number) => Promise<void>
   selectRun: (runId: number | null) => void
   loadRunStages: (connection: DevOpsConnection, buildId: number) => Promise<void>
-  runPipeline: (connection: DevOpsConnection, pipelineId: number, branch?: string) => Promise<{ success: boolean; error?: string }>
+  runPipeline: (connection: DevOpsConnection, pipelineId: number, branch?: string, parameters?: Record<string, string>) => Promise<{ success: boolean; error?: string }>
   startMonitoring: (connection: DevOpsConnection) => void
   stopMonitoring: () => void
   expandRun: (connection: DevOpsConnection, buildId: number) => Promise<void>
@@ -292,8 +292,8 @@ export const useDevOpsStore = create<DevOpsState>((set, get) => ({
     }
   },
 
-  runPipeline: async (connection, pipelineId, branch) => {
-    const result = await window.kanbai.devops.runPipeline(connection, pipelineId, branch)
+  runPipeline: async (connection, pipelineId, branch, parameters) => {
+    const result = await window.kanbai.devops.runPipeline(connection, pipelineId, branch, parameters)
     if (result.success) {
       // Refresh pipeline runs after triggering
       const { loadPipelineRuns } = get()

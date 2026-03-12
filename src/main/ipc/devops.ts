@@ -186,6 +186,8 @@ interface AzureBuildRun {
   sourceVersion: string
   requestedFor?: { displayName: string }
   _links?: { web?: { href?: string } }
+  templateParameters?: Record<string, string>
+  parameters?: string
 }
 
 interface AzureTimelineIssue {
@@ -342,6 +344,26 @@ function mapTimelineToStages(records: AzureTimelineRecord[]): PipelineStage[] {
     })
 }
 
+function extractAzureParameters(run: AzureBuildRun): Record<string, string> {
+  const params: Record<string, string> = {}
+  if (run.templateParameters) {
+    for (const [key, value] of Object.entries(run.templateParameters)) {
+      params[key] = String(value)
+    }
+  }
+  if (run.parameters) {
+    try {
+      const parsed = JSON.parse(run.parameters) as Record<string, string>
+      for (const [key, value] of Object.entries(parsed)) {
+        params[key] = String(value)
+      }
+    } catch {
+      // Ignore invalid JSON in parameters
+    }
+  }
+  return params
+}
+
 function mapBuildRun(run: AzureBuildRun): PipelineRun {
   return {
     id: run.id,
@@ -354,6 +376,7 @@ function mapBuildRun(run: AzureBuildRun): PipelineRun {
     sourceBranch: (run.sourceBranch || '').replace('refs/heads/', ''),
     sourceVersion: (run.sourceVersion || '').substring(0, 8),
     requestedBy: run.requestedFor?.displayName ?? '',
+    parameters: extractAzureParameters(run),
   }
 }
 
@@ -521,6 +544,7 @@ function mapGitHubWorkflowRun(run: GitHubWorkflowRun): PipelineRun {
     sourceBranch: run.head_branch ?? '',
     sourceVersion: (run.head_sha ?? '').substring(0, 8),
     requestedBy: run.actor?.login ?? '',
+    parameters: {},
   }
 }
 
@@ -657,6 +681,7 @@ async function gitHubRunPipeline(
   connection: DevOpsConnection,
   workflowId: number,
   branch?: string,
+  parameters?: Record<string, string>,
 ): Promise<{ success: boolean; run?: PipelineRun; error?: string }> {
   try {
     const base = getGitHubApiBase(connection)
@@ -668,6 +693,11 @@ async function gitHubRunPipeline(
       ref = repo.default_branch
     }
 
+    const dispatchBody: Record<string, unknown> = { ref }
+    if (parameters && Object.keys(parameters).length > 0) {
+      dispatchBody.inputs = parameters
+    }
+
     const authHeader = await getGitHubAuthHeader(connection.auth)
     const response = await fetch(`${base}/actions/workflows/${workflowId}/dispatches`, {
       method: 'POST',
@@ -677,7 +707,7 @@ async function gitHubRunPipeline(
         'X-GitHub-Api-Version': '2022-11-28',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ref }),
+      body: JSON.stringify(dispatchBody),
     })
 
     if (!response.ok) {
@@ -913,10 +943,10 @@ export function registerDevOpsHandlers(ipcMain: IpcMain): void {
   // Run pipeline
   ipcMain.handle(
     IPC_CHANNELS.DEVOPS_RUN_PIPELINE,
-    async (_event, { connection, pipelineId, branch }: { connection: DevOpsConnection; pipelineId: number; branch?: string }) => {
+    async (_event, { connection, pipelineId, branch, parameters }: { connection: DevOpsConnection; pipelineId: number; branch?: string; parameters?: Record<string, string> }) => {
       try {
         if (isGitHub(connection)) {
-          return gitHubRunPipeline(connection, pipelineId, branch)
+          return gitHubRunPipeline(connection, pipelineId, branch, parameters)
         }
         const url = `${connection.organizationUrl}/${encodeURIComponent(connection.projectName)}/_apis/build/builds?api-version=7.1`
         const authHeader = await getAuthHeader(connection.auth)
@@ -924,6 +954,9 @@ export function registerDevOpsHandlers(ipcMain: IpcMain): void {
         const body: Record<string, unknown> = { definition: { id: pipelineId } }
         if (branch) {
           body.sourceBranch = `refs/heads/${branch}`
+        }
+        if (parameters && Object.keys(parameters).length > 0) {
+          body.templateParameters = parameters
         }
 
         const response = await fetch(url, {

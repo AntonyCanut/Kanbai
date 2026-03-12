@@ -934,6 +934,7 @@ export interface PipelineRun {
   sourceBranch: string
   sourceVersion: string
   requestedBy: string
+  parameters: Record<string, string>
 }
 
 export interface PipelineDefinition {

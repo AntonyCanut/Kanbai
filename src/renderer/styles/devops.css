@@ -1514,3 +1514,87 @@
   opacity: 1;
   background: var(--accent-soft, rgba(108, 140, 255, 0.15));
 }
+
+/* --- Run Pipeline Modal (smaller variant) --- */
+.devops-modal-container--sm {
+  width: 420px;
+}
+
+.devops-modal-body {
+  padding: 14px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+/* Parameters section in modal */
+.devops-params-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.devops-params-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.devops-param-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.devops-param-key {
+  flex: 2;
+}
+
+.devops-param-value {
+  flex: 3;
+}
+
+/* Parameters display in expanded run */
+.devops-params-display {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.devops-params-display h5 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.devops-params-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.devops-param-display-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.devops-param-display-key {
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.devops-param-display-key::after {
+  content: ':';
+}
+
+.devops-param-display-value {
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  word-break: break-all;
+}
