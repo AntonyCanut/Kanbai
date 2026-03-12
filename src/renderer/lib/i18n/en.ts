@@ -1372,6 +1372,7 @@ export const en = {
   'updates.failedUninstall': 'Failed to uninstall {tool}: {error}',
   'updates.installViaClaude': 'Install via Claude',
   'updates.copyError': 'Copy error to clipboard',
+  'updates.dismiss': 'Dismiss',
   'updates.checkingNow': 'Checking for updates...',
   'updates.allUpToDate': 'Everything is up to date.',
   'updates.openToolsSettings': 'View applications',

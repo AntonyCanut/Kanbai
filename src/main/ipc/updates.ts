@@ -29,6 +29,25 @@ function enrichedEnv(): NodeJS.ProcessEnv {
   }
 }
 
+/**
+ * Extract a meaningful error message from exec failures.
+ * child_process errors include stderr in a separate property that
+ * error.message doesn't surface — append it for better diagnostics.
+ */
+function extractExecErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+
+  const execError = error as Error & { stderr?: string; stdout?: string }
+  const stderr = execError.stderr?.trim()
+  const stdout = execError.stdout?.trim()
+
+  // error.message is typically "Command failed: <cmd>" — not informative
+  // Prefer stderr (actual error output), fall back to stdout, then message
+  if (stderr) return stderr
+  if (stdout) return stdout
+  return error.message
+}
+
 function enrichedExecFile(
   command: string,
   args: string[],
@@ -1123,7 +1142,7 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
 
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
+        const message = extractExecErrorMessage(error)
         sendStatus('failed')
         return { success: false, error: message }
       }
@@ -1203,7 +1222,7 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
 
         return { success: true }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
+        const message = extractExecErrorMessage(error)
         sendStatus('failed')
         return { success: false, error: message }
       }

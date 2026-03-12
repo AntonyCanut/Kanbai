@@ -3250,14 +3250,45 @@ body {
   word-break: break-word;
 }
 
+.notification-status-text--selectable {
+  user-select: text;
+  cursor: text;
+}
+
 .notification-status-text:hover {
   opacity: 0.8;
+}
+
+.notification-status-text--selectable:hover {
+  opacity: 1;
 }
 
 .notification-status-error {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+}
+
+.notification-status-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.notification-status-dismiss {
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 2px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.notification-status-dismiss:hover {
+  opacity: 1;
 }
 
 .notification-status-copy {
