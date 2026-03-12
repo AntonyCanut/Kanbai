@@ -37,15 +37,87 @@ function enrichedEnv(): NodeJS.ProcessEnv {
 function extractExecErrorMessage(error: unknown): string {
   if (!(error instanceof Error)) return String(error)
 
-  const execError = error as Error & { stderr?: string; stdout?: string }
+  const execError = error as Error & { stderr?: string; stdout?: string; code?: number | string }
   const stderr = execError.stderr?.trim()
   const stdout = execError.stdout?.trim()
 
   // error.message is typically "Command failed: <cmd>" — not informative
-  // Prefer stderr (actual error output), fall back to stdout, then message
+  // Prefer stderr (actual error output), fall back to stdout, then message.
+  // Combine stderr + stdout when both present for tools like winget that mix output streams.
+  if (stderr && stdout) return `${stderr}\n${stdout}`
   if (stderr) return stderr
   if (stdout) return stdout
   return error.message
+}
+
+/**
+ * Winget-specific exit codes that indicate non-error conditions.
+ * @see https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
+ */
+const WINGET_EXIT_NO_UPDATE = -1978335189       // 0x8A15002B — No applicable update found
+const WINGET_EXIT_ALREADY_INSTALLED = -1978335210 // 0x8A150016 — Package already installed
+const WINGET_EXIT_NO_UPDATE_ALT = 0x8A150056    // No newer package version found
+
+/**
+ * Execute a winget command with better error handling:
+ * - Treats "already installed" and "no update available" as success
+ * - Detects admin privilege errors and provides an actionable message
+ * - Captures full winget output (stdout + stderr) for diagnostics
+ */
+async function wingetExec(
+  args: string[],
+  timeout = 120000,
+): Promise<{ stdout: string; stderr: string }> {
+  try {
+    return await enrichedExecFile('winget', args, timeout)
+  } catch (error) {
+    const execError = error as Error & { stderr?: string; stdout?: string; code?: number | string }
+    const exitCode = typeof execError.code === 'number' ? execError.code : null
+    const output = [execError.stderr, execError.stdout].filter(Boolean).join('\n').toLowerCase()
+
+    // Treat "already installed" / "no update available" as success
+    if (
+      exitCode === WINGET_EXIT_NO_UPDATE ||
+      exitCode === WINGET_EXIT_ALREADY_INSTALLED ||
+      exitCode === WINGET_EXIT_NO_UPDATE_ALT ||
+      output.includes('no applicable update') ||
+      output.includes('no available upgrade') ||
+      output.includes('already installed') ||
+      output.includes('no newer package version')
+    ) {
+      return { stdout: execError.stdout ?? '', stderr: '' }
+    }
+
+    // Detect admin privilege errors and provide actionable message
+    if (
+      output.includes('administrator') ||
+      output.includes('elevated') ||
+      output.includes('access is denied') ||
+      output.includes('0x80070005') ||
+      output.includes('requires elevation')
+    ) {
+      throw new Error(
+        'winget requires administrator privileges for this installation. '
+        + 'Please open a terminal as administrator and run:\n'
+        + `winget ${args.join(' ')}`,
+      )
+    }
+
+    // Re-throw with better message including full output
+    const fullOutput = [execError.stderr?.trim(), execError.stdout?.trim()]
+      .filter(Boolean)
+      .join('\n')
+    if (fullOutput) {
+      throw new Error(fullOutput)
+    }
+
+    // Last resort: provide the raw command for manual execution
+    throw new Error(
+      `winget command failed (exit code: ${exitCode ?? 'unknown'}). `
+      + 'Try running manually in an administrator terminal:\n'
+      + `winget ${args.join(' ')}`,
+    )
+  }
 }
 
 function enrichedExecFile(
@@ -379,8 +451,7 @@ async function ensureNpmForInstall(
 
   if (IS_WIN) {
     sendStatus('installing_prerequisite', 10)
-    await enrichedExecFile(
-      'winget',
+    await wingetExec(
       [
         'install', '--id', 'OpenJS.NodeJS.LTS', '--silent',
         '--accept-source-agreements', '--accept-package-agreements',
@@ -1137,7 +1208,11 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
         }
 
         sendStatus('installing', 50)
-        await enrichedExecFile(command, args, 120000)
+        if (command === 'winget') {
+          await wingetExec(args, 120000)
+        } else {
+          await enrichedExecFile(command, args, 120000)
+        }
         sendStatus('completed', 100)
 
         return { success: true }
@@ -1217,7 +1292,11 @@ export function registerUpdateHandlers(ipcMain: IpcMain): void {
             throw new Error(`Cannot uninstall core tool: ${tool}`)
         }
 
-        await enrichedExecFile(command, args, 120000)
+        if (command === 'winget') {
+          await wingetExec(args, 120000)
+        } else {
+          await enrichedExecFile(command, args, 120000)
+        }
         sendStatus('completed')
 
         return { success: true }
