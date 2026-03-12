@@ -21,16 +21,29 @@ const terminals = new Map<string, ManagedTerminal>()
  * Dispose listeners BEFORE killing the pty process.
  * This prevents native callbacks from firing into a dying JS context (SIGABRT).
  *
- * We use process.kill(pid, 'SIGKILL') instead of pty.kill() (SIGHUP) so the
- * child exits immediately — minimising the window where node-pty's native read
- * thread can queue a ThreadSafeFunction callback into a shutting-down V8 isolate.
+ * On macOS/Linux we use process.kill(pid, 'SIGKILL') so the child exits
+ * immediately — minimising the window where node-pty's native read thread
+ * can queue a ThreadSafeFunction callback into a shutting-down V8 isolate.
+ *
+ * On Windows we must use pty.kill() because ConPTY requires proper handle
+ * cleanup via ClosePseudoConsole. Calling process.kill(pid) only terminates
+ * the child shell but leaves the ConPTY baton alive — when the native read
+ * thread later calls remove_pty_baton() the assertion fails (conpty.cc:106).
  */
 function disposeTerminal(terminal: ManagedTerminal): void {
   for (const d of terminal.disposables) {
     d.dispose()
   }
   terminal.disposables.length = 0
-  killProcess(terminal.pty.pid, 'SIGKILL')
+  if (IS_WIN) {
+    try {
+      terminal.pty.kill()
+    } catch {
+      // PTY already exited
+    }
+  } else {
+    killProcess(terminal.pty.pid, 'SIGKILL')
+  }
 }
 
 /**

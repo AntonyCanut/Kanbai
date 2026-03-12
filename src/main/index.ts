@@ -41,6 +41,7 @@ import { StorageService } from './services/storage'
 import { readKanbanTasks, maybeCreateMemoryRefactorTicket } from '../mcp-server/lib/kanban-store'
 import { IPC_CHANNELS } from '../shared/types'
 import { IS_MAC, IS_WIN, getExtendedToolPaths } from '../shared/platform'
+import { isAppUpdateInstalling } from './services/appUpdateState'
 
 // Fix PATH for packaged app — Electron bundles inherit a minimal PATH which
 // prevents finding user-installed tools (node, npm, claude, brew, cargo, etc.).
@@ -429,9 +430,29 @@ app.on('window-all-closed', () => {
 // causing SIGABRT. By intercepting quit, doing cleanup, then calling
 // app.exit(0) (which uses C exit() and skips FreeEnvironment), we
 // bypass the crash entirely.
+//
+// On Windows during app update install, we must NOT intercept the quit:
+// quitAndInstall launches the NSIS installer then quits the app. If we
+// call app.exit(0) instead of letting the normal quit proceed, the NSIS
+// installer cannot replace the locked executable — requiring a manual
+// reinstall. The appUpdate handler already performs PTY cleanup before
+// calling quitAndInstall, so the TSFN crash is avoided.
 let isExiting = false
+
 app.on('before-quit', (event) => {
   if (isExiting) return
+
+  // During app update install on Windows, let the quit proceed normally
+  // so the NSIS installer can replace the app files.
+  if (isAppUpdateInstalling() && IS_WIN) {
+    cleanupTerminals()
+    cleanupClaudeSessions()
+    databaseService.disconnectAll()
+    shutdownPixelAgentsService()
+    healthCheckScheduler.stopAll()
+    return
+  }
+
   event.preventDefault()
   isExiting = true
 

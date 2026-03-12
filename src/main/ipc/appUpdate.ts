@@ -3,9 +3,11 @@ import { autoUpdater } from 'electron-updater'
 import fs from 'fs'
 import path from 'path'
 import { IPC_CHANNELS } from '../../shared/types'
+import { IS_WIN } from '../../shared/platform'
 import { StorageService } from '../services/storage'
 import { cleanupTerminals } from './terminal'
 import { cleanupClaudeSessions } from './claude'
+import { setAppUpdateInstalling } from '../services/appUpdateState'
 
 const storage = new StorageService()
 
@@ -139,8 +141,19 @@ export function registerAppUpdateHandlers(ipcMain: IpcMain): void {
       cleanupTerminals()
       cleanupClaudeSessions()
 
+      // On Windows, signal the before-quit handler to let the quit proceed
+      // normally so the NSIS installer can replace the app executable.
+      // Without this, app.exit(0) short-circuits the installer → requires
+      // manual reinstall (F-125).
+      if (IS_WIN) {
+        setAppUpdateInstalling()
+      }
+
       // Allow native PTY read threads to detect closed fds and stop before
       // the quit sequence triggers FreeEnvironment.
+      // On Windows ConPTY needs more time to tear down than Unix PTY (conpty.cc
+      // runs ClosePseudoConsole in a background thread). Use 1000ms on Windows.
+      const teardownDelay = IS_WIN ? 1000 : 300
       setTimeout(() => {
         try {
           autoUpdater.quitAndInstall(false, true)
@@ -158,7 +171,7 @@ export function registerAppUpdateHandlers(ipcMain: IpcMain): void {
           app.relaunch()
           app.quit()
         }, 3000)
-      }, 300)
+      }, teardownDelay)
     }, 500)
   })
 
