@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { IS_WIN } from '../helpers/platform'
 
 // Mock the window.kanbai API
 const mockKanbanUpdate = vi.fn()
@@ -252,7 +253,12 @@ describe('Kanban → Claude Integration (PTY interactif)', () => {
       const initialCommand = mockCreateTab.mock.calls[0]![3] as string
 
       // Command must unset Claude env vars to avoid nested session errors
-      expect(initialCommand).toContain('unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT')
+      if (IS_WIN) {
+        expect(initialCommand).toContain('Remove-Item Env:CLAUDECODE')
+        expect(initialCommand).toContain('Remove-Item Env:CLAUDE_CODE_ENTRYPOINT')
+      } else {
+        expect(initialCommand).toContain('unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT')
+      }
 
       // Command must set kanban env vars for the hook
       expect(initialCommand).toContain('KANBAI_KANBAN_TASK_ID="task-1"')
