@@ -11,10 +11,17 @@ export function CopyableError({ error, className }: CopyableErrorProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(error).then(() => {
+    try {
+      window.kanbai.clipboard.writeText(error)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    })
+    } catch {
+      // Fallback to navigator.clipboard if preload API is unavailable
+      navigator.clipboard.writeText(error).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => { /* clipboard access denied */ })
+    }
   }, [error])
 
   return (

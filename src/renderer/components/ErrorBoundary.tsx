@@ -8,10 +8,17 @@ function ErrorFallback({ error, onReset }: { error: Error | null; onReset: () =>
     : 'Unknown error'
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(fullError).then(() => {
+    try {
+      window.kanbai.clipboard.writeText(fullError)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    })
+    } catch {
+      // Fallback to navigator.clipboard if preload API is unavailable
+      navigator.clipboard.writeText(fullError).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => { /* clipboard access denied */ })
+    }
   }
 
   const handleReload = () => {

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, clipboard } from 'electron'
 import { IPC_CHANNELS, AppSettings, Workspace, Namespace, KanbanTask, KanbanAttachment, FileEntry, SessionData, NpmPackageInfo, TodoEntry, ProjectStatsData, SearchResult, PromptTemplate, HttpMethod, ApiHeader, ApiTestAssertion, ApiTestFile, ApiResponse, ApiTestResult, DbConnectionConfig, DbFile, DbTable, DbTableInfo, DbQueryResult, DbBackupResult, DbBackupEntry, DbRestoreResult, DbEnvironmentTag, DbBackupLogEntry, DbNlPermissions, DbNlQueryResponse, DbNlGenerateResponse, DbNlHistoryEntry, DbNlInterpretRequest, DbNlInterpretResponse, McpServerConfig, McpHelpResult, SshKeyInfo, SshKeyType, AnalysisToolDef, AnalysisRunOptions, AnalysisReport, AnalysisProgress, AnalysisTicketRequest, RuleEntry, TemplateRuleEntry, PackageManagerType, PackageInfo, ProjectPackageManager, PkgNlMessage, HealthCheckConfig, HealthCheckFile, HealthCheckLogEntry, HealthCheckSchedulerStatus, DevOpsFile, DevOpsConnection, PipelineDefinition, PipelineRun, PipelineStage, PipelineApproval } from '../shared/types'
 
 // Increase max listeners to accommodate multiple terminal tabs and event streams.
@@ -838,6 +838,12 @@ const api = {
     const listener = (_event: Electron.IpcRendererEvent, action: string) => callback(action)
     ipcRenderer.on(IPC_CHANNELS.MENU_ACTION, listener)
     return () => { ipcRenderer.removeListener(IPC_CHANNELS.MENU_ACTION, listener) }
+  },
+
+  // Clipboard — use Electron's clipboard module (works reliably in sandbox mode)
+  clipboard: {
+    writeText: (text: string): void => clipboard.writeText(text),
+    readText: (): string => clipboard.readText(),
   },
 
   // Utility — resolve file path from drag & drop (required for sandbox mode)
