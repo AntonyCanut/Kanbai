@@ -22,9 +22,9 @@ export function getDefaultShell(): string {
 export function getDefaultShellArgs(shell: string): string[] {
   if (IS_WIN) {
     const lower = shell.toLowerCase()
-    // PowerShell: -NoLogo for a cleaner startup
+    // PowerShell: -NoLogo for a cleaner startup, -ExecutionPolicy Bypass to allow npm-installed scripts (e.g. claude.ps1)
     if (lower.includes('powershell') || lower.includes('pwsh')) {
-      return ['-NoLogo']
+      return ['-ExecutionPolicy', 'Bypass', '-NoLogo']
     }
     // Git Bash: --login for PATH setup
     if (lower.includes('bash')) {
