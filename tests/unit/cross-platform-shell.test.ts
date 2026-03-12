@@ -144,8 +144,8 @@ describe('cross-platform shell', () => {
 
   describe('getDefaultShellArgs()', () => {
     if (TEST_IS_WIN) {
-      it('returns [-NoLogo] for PowerShell and empty array for cmd', () => {
-        expect(getDefaultShellArgs('powershell.exe')).toEqual(['-NoLogo'])
+      it('returns [-ExecutionPolicy, Bypass, -NoLogo] for PowerShell and empty array for cmd', () => {
+        expect(getDefaultShellArgs('powershell.exe')).toEqual(['-ExecutionPolicy', 'Bypass', '-NoLogo'])
         expect(getDefaultShellArgs('cmd.exe')).toEqual([])
       })
     }

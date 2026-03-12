@@ -67,8 +67,8 @@ describe('platform module', () => {
 
   describe('getDefaultShellArgs()', () => {
     if (TEST_IS_WIN) {
-      it('returns [-NoLogo] for PowerShell and empty array for cmd on Windows', () => {
-        expect(getDefaultShellArgs('powershell.exe')).toEqual(['-NoLogo'])
+      it('returns PowerShell args with ExecutionPolicy Bypass and NoLogo on Windows', () => {
+        expect(getDefaultShellArgs('powershell.exe')).toEqual(['-ExecutionPolicy', 'Bypass', '-NoLogo'])
         expect(getDefaultShellArgs('cmd.exe')).toEqual([])
       })
     }
