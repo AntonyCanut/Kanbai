@@ -1234,6 +1234,55 @@ export function SettingsPanel() {
                 </div>
               )}
 
+              {/* Kanbai app entry */}
+              <div className="settings-card">
+                <div
+                  className={`notification-item${appUpdateStatus === 'available' ? ' notification-item--update' : ''}`}
+                >
+                  <div className="notification-item-info">
+                    <span className="notification-item-name">Kanbai</span>
+                    <span className="notification-item-version">
+                      {appVersion?.version ?? '—'}
+                      {appUpdateStatus === 'available' && appUpdateVersion && (
+                        <> {' \u2192 '} <span className="notification-item-latest">{appUpdateVersion}</span> </>
+                      )}
+                    </span>
+                    <span className="notification-item-scope">{t('appUpdate.appScope')}</span>
+                  </div>
+                  <div className="notification-item-actions">
+                    {appUpdateStatus === 'available' && (
+                      <button className="notification-item-btn" onClick={downloadUpdate}>
+                        {t('appUpdate.download')}
+                      </button>
+                    )}
+                    {appUpdateStatus === 'downloading' && (
+                      <button className="notification-item-btn" disabled>
+                        {downloadPercent}%
+                      </button>
+                    )}
+                    {appUpdateStatus === 'downloaded' && (
+                      <button className="notification-item-btn" onClick={installAppUpdate}>
+                        {t('appUpdate.installAndRestart')}
+                      </button>
+                    )}
+                    {(appUpdateStatus === 'idle' || appUpdateStatus === 'not-available' || appUpdateStatus === 'checking') && (
+                      <button
+                        className="notification-item-btn"
+                        onClick={checkForUpdate}
+                        disabled={appUpdateStatus === 'checking'}
+                      >
+                        {appUpdateStatus === 'checking' ? t('appUpdate.checking') : t('appUpdate.checkNow')}
+                      </button>
+                    )}
+                    {appUpdateStatus === 'error' && (
+                      <button className="notification-item-btn" onClick={checkForUpdate}>
+                        {t('appUpdate.retry')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="settings-card">
                 {toolUpdates.length === 0 && !toolsChecking ? (
                   <p className="notification-empty">{t('updates.noInfo')}</p>
