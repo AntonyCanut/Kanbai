@@ -162,21 +162,31 @@ export function UpdateCenter() {
                 </span>
               ) : (
                 <div className="notification-status-error">
-                  <span className="notification-status-text" onClick={clearInstallStatus}>
+                  <span className="notification-status-text notification-status-text--selectable">
                     {'\u2717'} {t('updates.failedUpdate', { tool: installStatus.tool, error: installStatus.error || '' })}
                   </span>
-                  <button
-                    className="notification-status-copy"
-                    title={t('updates.copyError')}
-                    onClick={() => {
-                      navigator.clipboard.writeText(installStatus.error || '')
-                      setCopied(true)
-                      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-                      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
-                    }}
-                  >
-                    {copied ? '\u2713' : '\u2398'}
-                  </button>
+                  <div className="notification-status-error-actions">
+                    <button
+                      className="notification-status-copy"
+                      title={t('updates.copyError')}
+                      onClick={() => {
+                        void navigator.clipboard.writeText(installStatus.error || '').then(() => {
+                          setCopied(true)
+                          if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+                          copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
+                        })
+                      }}
+                    >
+                      {copied ? '\u2713' : '\u2398'}
+                    </button>
+                    <button
+                      className="notification-status-dismiss"
+                      title={t('updates.dismiss')}
+                      onClick={clearInstallStatus}
+                    >
+                      {'\u2715'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
