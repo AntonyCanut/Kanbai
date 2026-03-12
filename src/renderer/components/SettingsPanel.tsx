@@ -1342,7 +1342,9 @@ export function SettingsPanel() {
                                 onClick={() => handleToolInstall(update.tool, update.scope)}
                                 disabled={installingTool === update.tool}
                               >
-                                {installingTool === update.tool ? '...' : t('updates.update')}
+                                {installingTool === update.tool ? (
+                                  <span className="notification-spinner">{'\u21BB'}</span>
+                                ) : t('updates.update')}
                               </button>
                             )}
                             {!update.installed && update.canInstall && (
@@ -1351,7 +1353,9 @@ export function SettingsPanel() {
                                 onClick={() => handleToolInstall(update.tool, update.scope)}
                                 disabled={installingTool === update.tool}
                               >
-                                {installingTool === update.tool ? '...' : t('updates.install')}
+                                {installingTool === update.tool ? (
+                                  <span className="notification-spinner">{'\u21BB'}</span>
+                                ) : t('updates.install')}
                               </button>
                             )}
                             {update.installed && update.canUninstall && (
@@ -1360,7 +1364,9 @@ export function SettingsPanel() {
                                 onClick={() => handleToolUninstall(update.tool)}
                                 disabled={installingTool === update.tool}
                               >
-                                {installingTool === update.tool ? '...' : t('updates.uninstall')}
+                                {installingTool === update.tool ? (
+                                  <span className="notification-spinner">{'\u21BB'}</span>
+                                ) : t('updates.uninstall')}
                               </button>
                             )}
                           </div>
