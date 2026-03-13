@@ -1415,9 +1415,23 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       window.kanbai.git.worktreeUnlock(task.worktreePath).catch(() => { /* best-effort */ })
     }
 
-    // If task is already DONE in memory, merge directly
+    // Cleanup worktree if its branch has been merged (handles autoMerge disabled or manual merge)
+    const cleanupMergedWorktree = (t: KanbanTask) => {
+      if (!t.worktreePath || !t.worktreeBranch) return
+      const repoPath = repoPathFromWorktree(t.worktreePath)
+      const worktreePath = t.worktreePath
+      const worktreeBranch = t.worktreeBranch
+      window.kanbai.git.branchIsMerged(repoPath, worktreeBranch).then(async (merged) => {
+        if (!merged) return
+        await window.kanbai.git.worktreeRemove(repoPath, worktreePath, true).catch(() => { /* best-effort */ })
+        await window.kanbai.git.deleteBranch(repoPath, worktreeBranch).catch(() => { /* best-effort */ })
+      }).catch(() => { /* best-effort */ })
+    }
+
+    // If task is already DONE in memory, try auto-merge then cleanup any remaining worktree
     if (task?.worktreePath && task.worktreeBranch && task.status === 'DONE' && wsId) {
-      autoMergeWorktree(task, wsId).catch(() => { /* best-effort */ })
+      autoMergeWorktree(task, wsId)
+        .finally(() => cleanupMergedWorktree(task!))
       return
     }
 
@@ -1436,7 +1450,8 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           )
           set({ tasks: updatedTasks })
           if (fileTask.status === 'DONE' && capturedTask.worktreePath && capturedTask.worktreeBranch) {
-            autoMergeWorktree({ ...capturedTask, status: 'DONE' }, capturedWsId).catch(() => { /* best-effort */ })
+            autoMergeWorktree({ ...capturedTask, status: 'DONE' }, capturedWsId)
+              .finally(() => cleanupMergedWorktree(capturedTask))
           }
         } else {
           // File is not DONE — safe to set to PENDING
@@ -1466,16 +1481,9 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           }).catch(() => { /* best-effort */ })
         }
       })
-    } else if (task?.worktreePath && task.worktreeBranch) {
+    } else if (task) {
       // Task not WORKING and not DONE — cleanup worktree if branch was already merged
-      const repoPath = repoPathFromWorktree(task.worktreePath)
-      const worktreePath = task.worktreePath
-      const worktreeBranch = task.worktreeBranch
-      window.kanbai.git.branchIsMerged(repoPath, worktreeBranch).then(async (merged) => {
-        if (!merged) return
-        await window.kanbai.git.worktreeRemove(repoPath, worktreePath, true).catch(() => { /* best-effort */ })
-        await window.kanbai.git.deleteBranch(repoPath, worktreeBranch).catch(() => { /* best-effort */ })
-      }).catch(() => { /* best-effort */ })
+      cleanupMergedWorktree(task)
     }
   },
 
