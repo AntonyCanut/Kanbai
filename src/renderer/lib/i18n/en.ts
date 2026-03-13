@@ -1315,6 +1315,7 @@ export const en = {
   'command.showStats': 'Show Statistics',
   'command.showPrompts': 'Show Prompts',
   'command.showShortcuts': 'Show Shortcuts',
+  'command.showNotes': 'Show Notes',
   'command.globalSearch': 'Global Search',
 
   // Shortcuts
