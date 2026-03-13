@@ -1573,6 +1573,7 @@ function TaskDetailPanel({
   const [conversationContent, setConversationContent] = useState<Array<{ role: string; message: string; timestamp?: string }>>([])
   const [conversationLoading, setConversationLoading] = useState(false)
   const [conversationError, setConversationError] = useState<string | null>(null)
+  const [copiedResult, setCopiedResult] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const descRef = useRef<HTMLTextAreaElement>(null)
 
@@ -1898,7 +1899,21 @@ function TaskDetailPanel({
       {/* Result */}
       {task.result && (
         <div className="kanban-detail-section">
-          <span className="kanban-detail-section-title">{t('kanban.result')}</span>
+          <div className="kanban-detail-section-header">
+            <span className="kanban-detail-section-title">{t('kanban.result')}</span>
+            <button
+              className={`kanban-detail-copy-btn${copiedResult ? ' kanban-detail-copy-btn--copied' : ''}`}
+              onClick={() => {
+                navigator.clipboard.writeText(task.result!).then(() => {
+                  setCopiedResult(true)
+                  setTimeout(() => setCopiedResult(false), 2000)
+                })
+              }}
+              title={t('common.copy')}
+            >
+              {copiedResult ? '\u2713' : t('common.copy')}
+            </button>
+          </div>
           <div className="kanban-detail-result">{task.result}</div>
         </div>
       )}

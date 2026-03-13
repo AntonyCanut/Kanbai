@@ -1503,6 +1503,35 @@
   white-space: pre-wrap;
 }
 
+.kanban-detail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.kanban-detail-copy-btn {
+  background: none;
+  border: 1px solid rgba(69, 71, 90, 0.4);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kanban-detail-copy-btn:hover {
+  background: rgba(69, 71, 90, 0.3);
+  color: var(--text);
+  border-color: rgba(69, 71, 90, 0.6);
+}
+
+.kanban-detail-copy-btn--copied {
+  color: var(--success);
+  border-color: rgba(61, 214, 140, 0.4);
+}
+
 .kanban-detail-result {
   padding: 8px 10px;
   background: rgba(61, 214, 140, 0.08);
