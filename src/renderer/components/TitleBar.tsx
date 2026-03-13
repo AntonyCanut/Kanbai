@@ -195,6 +195,13 @@ export function TitleBar(_props: TitleBarProps) {
         <TabDropdown config={PROJECTS_DROPDOWN} viewMode={viewMode} setViewMode={setViewMode} t={t} />
 
         <button
+          className={`view-btn${viewMode === 'notes' ? ' view-btn--active' : ''}`}
+          onClick={() => setViewMode('notes')}
+        >
+          {t('view.notes')}
+        </button>
+
+        <button
           className={`view-btn${viewMode === 'claude' || viewMode === 'ai' ? ' view-btn--active' : ''}`}
           onClick={() => setViewMode('ai')}
         >
