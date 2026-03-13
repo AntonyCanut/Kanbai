@@ -5865,6 +5865,126 @@ body {
   color: var(--text-secondary);
 }
 
+/* Skills Store */
+.cs-store-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+.cs-store-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cs-store-filter-select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: 160px;
+}
+.cs-store-search {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 10px;
+  flex: 1;
+}
+.cs-store-search::placeholder { color: var(--text-muted); }
+.cs-store-repos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.cs-store-repo-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.cs-store-repo-chip:hover { border-color: var(--accent); }
+.cs-store-repo-name { font-weight: 600; }
+.cs-store-repo-link { color: var(--accent); font-size: 10px; }
+.cs-store-error { color: var(--danger); font-size: 12px; }
+.cs-store-empty { color: var(--text-muted); font-size: 12px; font-style: italic; }
+.cs-store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.cs-store-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+.cs-store-card:hover { border-color: var(--text-muted); }
+.cs-store-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cs-store-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-store-card-installed {
+  font-size: 10px;
+  color: var(--success);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cs-store-card-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cs-store-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: auto;
+}
+.cs-store-card-repo {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.cs-store-card-link {
+  font-size: 10px;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.cs-store-card-link:hover { text-decoration: underline; }
+
 /* Modal for agent creation */
 .cs-modal-overlay {
   position: fixed;

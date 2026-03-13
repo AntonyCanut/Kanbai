@@ -36,6 +36,31 @@ export interface TemplateRuleEntry {
 
 // --- End rules tree types ---
 
+// --- Skills store types ---
+
+export interface SkillStoreRepo {
+  id: string
+  owner: string
+  repo: string
+  displayName: string
+  description: string
+  url: string
+}
+
+export interface SkillStoreEntry {
+  id: string
+  repoId: string
+  name: string
+  filename: string
+  description: string
+  content: string
+  path: string
+  repoUrl: string
+  author: string
+}
+
+// --- End skills store types ---
+
 export interface Namespace {
   id: string
   name: string
@@ -1313,6 +1338,10 @@ export const IPC_CHANNELS = {
   DB_NL_INTERPRET: 'db:nlInterpret',
   DB_NL_CANCEL: 'db:nlCancel',
   DB_GET_SCHEMA_CONTEXT: 'db:getSchemaContext',
+
+  // Skills Store
+  SKILLS_STORE_FETCH: 'skillsStore:fetch',
+  SKILLS_STORE_INSTALL: 'skillsStore:install',
 
   // Shell
   SHELL_OPEN_EXTERNAL: 'shell:openExternal',

@@ -10,7 +10,8 @@ import { CodexRulesTab } from './CodexRulesTab'
 import { CodexSkillsTab } from './CodexSkillsTab'
 import { CodexMemoryTab } from './CodexMemoryTab'
 import { SecuritySandboxTab } from './SecuritySandboxTab'
-import { AgentsSkillsTab } from './AgentsSkillsTab'
+import { AgentsTab } from './AgentsTab'
+import { SkillsTab } from './SkillsTab'
 import { IntegrationsTab } from './IntegrationsTab'
 import { MemoryTab } from './MemoryTab'
 import { CopilotGeneralTab } from './CopilotGeneralTab'
@@ -28,7 +29,7 @@ import { useGeminiConfig } from './useGeminiConfig'
 import { WORKFLOW_MARKER } from '../../../shared/constants/defaultWorkflows'
 
 type SidebarSection = 'general' | 'claude' | 'codex' | 'copilot' | 'gemini'
-type ClaudeSubTab = 'general' | 'security' | 'agents' | 'integrations' | 'memory'
+type ClaudeSubTab = 'general' | 'security' | 'agents' | 'skills' | 'integrations' | 'memory'
 type CodexSubTab = 'general' | 'rules' | 'skills' | 'memory'
 type CopilotSubTab = 'general' | 'rules' | 'skills' | 'memory'
 type GeminiSubTab = 'general' | 'ui' | 'tools' | 'security' | 'agents' | 'skills' | 'memory'
@@ -204,6 +205,7 @@ export function ClaudeSettingsPanel() {
     { key: 'general', label: t('claude.generalTab') },
     { key: 'security', label: t('claude.securityTab') },
     { key: 'agents', label: t('claude.agentsTab') },
+    { key: 'skills', label: t('claude.skillsTab') },
     { key: 'integrations', label: t('claude.integrationsTab') },
     { key: 'memory', label: t('claude.memoryTab') },
   ]
@@ -292,10 +294,13 @@ export function ClaudeSettingsPanel() {
                   />
                 )}
                 {claudeSubTab === 'agents' && (
-                  <AgentsSkillsTab
+                  <AgentsTab
                     projectPath={activeProject.path}
                     onDeploySuccess={loadData}
                   />
+                )}
+                {claudeSubTab === 'skills' && (
+                  <SkillsTab projectPath={activeProject.path} />
                 )}
                 {claudeSubTab === 'integrations' && (
                   <IntegrationsTab
