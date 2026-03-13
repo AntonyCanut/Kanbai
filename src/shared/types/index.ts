@@ -78,6 +78,7 @@ export interface Workspace {
   color: string
   namespaceId?: string
   projectIds: string[]
+  visibleTabs?: string[]
   createdAt: number
   updatedAt: number
   deletedAt?: number
@@ -290,6 +291,7 @@ export interface AppSettings {
   }
   tutorialCompleted: boolean
   tutorialSeenSections: string[]
+  defaultVisibleTabs?: string[]
 }
 
 export interface ProjectInfo {
