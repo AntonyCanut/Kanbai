@@ -1989,6 +1989,8 @@ export const fr = {
   'companion.connectedInfo': 'Application compagnon connectée.',
   'companion.syncTickets': 'Synchroniser les tickets',
   'companion.syncing': 'Synchronisation...',
+  'companion.connectedAs': 'Connecté : {name}',
+  'companion.disconnect': 'Déconnecter',
   'companion.lostInfo': 'La connexion avec le compagnon a été perdue.',
   'companion.reconnect': 'Reconnecter',
   'companion.status.maintenance': 'Serveur indisponible',

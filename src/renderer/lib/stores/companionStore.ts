@@ -7,14 +7,17 @@ interface CompanionState {
   status: CompanionStatus
   pairingCode: string | null
   syncing: boolean
+  companionName: string | null
 }
 
 interface CompanionActions {
   setStatus: (status: CompanionStatus) => void
   setPairingCode: (code: string | null) => void
+  setCompanionName: (name: string | null) => void
   register: (workspaceId: string) => Promise<void>
   cancel: () => Promise<void>
   syncTickets: (workspaceId: string) => Promise<void>
+  disconnect: () => Promise<void>
 }
 
 type CompanionStore = CompanionState & CompanionActions
@@ -23,9 +26,11 @@ export const useCompanionStore = create<CompanionStore>((set) => ({
   status: 'disconnected',
   pairingCode: null,
   syncing: false,
+  companionName: null,
 
   setStatus: (status) => set({ status }),
   setPairingCode: (code) => set({ pairingCode: code }),
+  setCompanionName: (name) => set({ companionName: name }),
 
   register: async (workspaceId: string) => {
     try {
@@ -38,7 +43,12 @@ export const useCompanionStore = create<CompanionStore>((set) => ({
 
   cancel: async () => {
     await window.kanbai.companion.cancel()
-    set({ pairingCode: null, status: 'disconnected' })
+    set({ pairingCode: null, status: 'disconnected', companionName: null })
+  },
+
+  disconnect: async () => {
+    await window.kanbai.companion.disconnect()
+    set({ pairingCode: null, status: 'disconnected', companionName: null })
   },
 
   syncTickets: async (workspaceId: string) => {
@@ -52,11 +62,16 @@ export const useCompanionStore = create<CompanionStore>((set) => ({
 }))
 
 export function initCompanionListener(): () => void {
-  const cleanupStatus = window.kanbai.companion.onStatusChanged((status: string) => {
+  const cleanupStatus = window.kanbai.companion.onStatusChanged((status: string, companionName?: string) => {
     const validStatus = status as CompanionStatus
-    useCompanionStore.getState().setStatus(validStatus)
+    const store = useCompanionStore.getState()
+    store.setStatus(validStatus)
+    if (validStatus === 'connected' && companionName) {
+      store.setCompanionName(companionName)
+    }
     if (validStatus === 'disconnected') {
-      useCompanionStore.getState().setPairingCode(null)
+      store.setPairingCode(null)
+      store.setCompanionName(null)
     }
   })
 

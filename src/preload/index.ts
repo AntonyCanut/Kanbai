@@ -875,8 +875,11 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.COMPANION_DATA_INFO),
     syncTickets: (workspaceId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.COMPANION_SYNC_TICKETS, workspaceId),
-    onStatusChanged: (callback: (status: string) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, status: string) => callback(status)
+    disconnect: (): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.COMPANION_DISCONNECT),
+    onStatusChanged: (callback: (status: string, companionName?: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: string, companionName?: string) =>
+        callback(status, companionName)
       ipcRenderer.on(IPC_CHANNELS.COMPANION_STATUS_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.COMPANION_STATUS_CHANGED, listener)
     },

@@ -182,7 +182,7 @@ function startPolling(code: string, getWindow: () => BrowserWindow | null): void
   stopPolling()
   pollTimer = setInterval(async () => {
     try {
-      const status = await apiRequest<{ status: string; companionId?: string }>(
+      const status = await apiRequest<{ status: string; companionId?: string; companionName?: string }>(
         'GET',
         `/api/v1/pair/status/${code}`,
       )
@@ -201,7 +201,7 @@ function startPolling(code: string, getWindow: () => BrowserWindow | null): void
               console.error('[Companion] Failed to start data server:', err)
             })
         }
-        win.webContents.send(IPC_CHANNELS.COMPANION_STATUS_CHANGED, 'connected')
+        win.webContents.send(IPC_CHANNELS.COMPANION_STATUS_CHANGED, 'connected', status.companionName ?? null)
 
         // Start polling for ticket changes once connected
         startChangePoll(getWindow)
@@ -267,6 +267,22 @@ export function registerCompanionHandlers(ipcMain: IpcMain, getWindow: () => Bro
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_DATA_INFO, () => {
     return getCompanionServerInfo()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.COMPANION_DISCONNECT, async () => {
+    stopPolling()
+    if (currentToken) {
+      try {
+        await apiRequest<unknown>('DELETE', '/api/v1/pair/unregister', undefined, currentToken)
+      } catch {
+        // Best effort — session may already be expired
+      }
+    }
+    currentToken = null
+    const win = getWindow()
+    if (win && !win.isDestroyed()) {
+      win.webContents.send(IPC_CHANNELS.COMPANION_STATUS_CHANGED, 'disconnected')
+    }
   })
 }
 
