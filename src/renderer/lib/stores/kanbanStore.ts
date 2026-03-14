@@ -40,6 +40,9 @@ function repoPathFromWorktree(worktreePath: string): string {
  * then remove the worktree and delete the branch.
  * Uses worktreeBaseBranch to merge into the branch that was active at worktree creation.
  * Only runs if the task has worktree info and autoMergeWorktrees is enabled.
+ *
+ * On merge conflict: aborts the merge, preserves the worktree and branch,
+ * sets the task to PENDING with conflict details, and notifies the user.
  */
 async function autoMergeWorktree(
   task: KanbanTask,
@@ -59,6 +62,44 @@ async function autoMergeWorktree(
       task.worktreeBaseBranch,
     )
     if (!result?.success) {
+      if (result?.conflict) {
+        // Merge conflict detected — preserve worktree, notify user, set task PENDING
+        const conflictFiles: string[] = result.conflictFiles ?? []
+        const t = useI18n.getState().t
+        const wsName = useWorkspaceStore.getState().workspaces.find((w) => w.id === workspaceId)?.name ?? ''
+        const conflictSummary = conflictFiles.length <= 5
+          ? conflictFiles.join(', ')
+          : `${conflictFiles.slice(0, 5).join(', ')} (+${conflictFiles.length - 5})`
+
+        pushNotification(
+          'warning',
+          wsName,
+          t('notifications.mergeConflict', {
+            ticket: ticketLabel,
+            branch: task.worktreeBranch,
+            target: result.targetBranch ?? task.worktreeBaseBranch ?? 'main',
+            files: conflictSummary,
+            count: conflictFiles.length,
+          }),
+          { workspaceId },
+        )
+
+        // Update task to PENDING with conflict details so user can resolve manually
+        const conflictQuestion = t('notifications.mergeConflictQuestion', {
+          branch: task.worktreeBranch,
+          target: result.targetBranch ?? task.worktreeBaseBranch ?? 'main',
+          files: conflictFiles.join('\n  - '),
+        })
+
+        await window.kanbai.kanban.update({
+          id: task.id,
+          workspaceId,
+          status: 'PENDING',
+          question: conflictQuestion,
+        }).catch(() => { /* best-effort */ })
+
+        return
+      }
       // eslint-disable-next-line no-console
       console.warn(`Auto-merge failed for ${ticketLabel}:`, result?.error)
     }
