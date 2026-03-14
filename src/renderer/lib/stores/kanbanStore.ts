@@ -535,13 +535,25 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
                 maxConcurrent = kanbanConfig.maxConcurrentWorktrees
               }
 
-              // Auto-close terminals for completed tickets based on config
+              // Auto-close terminals for completed tickets based on config.
+              // Merge worktrees BEFORE closing tabs so the merge hook completes
+              // while the terminal process is still alive.
               const termStore = useTerminalTabStore.getState()
+              const { kanbanTabIds: currentTabIds, tasks: currentTasksForClose } = get()
               for (const { tabId, isCto } of capturedTabsToClose) {
                 const shouldClose = isCto
                   ? kanbanConfig?.autoCloseCtoTerminals
                   : kanbanConfig?.autoCloseCompletedTerminals
                 if (shouldClose) {
+                  // Find the task linked to this tab and merge its worktree first
+                  const taskId = Object.keys(currentTabIds).find((id) => currentTabIds[id] === tabId)
+                  const task = taskId ? currentTasksForClose.find((t) => t.id === taskId) : undefined
+                  if (task?.worktreePath && task.worktreeBranch && task.status === 'DONE' && wsId) {
+                    try {
+                      await window.kanbai.git.worktreeUnlock(task.worktreePath).catch(() => { /* best-effort */ })
+                      await autoMergeWorktree(task, wsId)
+                    } catch { /* best-effort — closeTab will still run */ }
+                  }
                   termStore.closeTab(tabId)
                 }
               }
@@ -1359,16 +1371,31 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       if (taskFinished) {
         const capturedTabsToClose = [...tabsToAutoClose]
         setTimeout(async () => {
-          // Auto-close terminals for completed tickets based on config
+          // Auto-close terminals for completed tickets based on config.
+          // Merge worktrees BEFORE closing tabs so the merge hook completes
+          // while the terminal process is still alive.
           if (capturedTabsToClose.length > 0) {
             try {
               const kanbanConfig = await window.kanbai.kanban.getConfig(wsId)
               const termStore = useTerminalTabStore.getState()
+              const { kanbanTabIds: bgTabIds, tasks: bgTasksForClose, backgroundTasks: bgTasksMap } = get()
+              const allBgTasks = bgTasksMap[wsId] ?? []
               for (const { tabId, isCto } of capturedTabsToClose) {
                 const shouldClose = isCto
                   ? kanbanConfig?.autoCloseCtoTerminals
                   : kanbanConfig?.autoCloseCompletedTerminals
                 if (shouldClose) {
+                  // Find the task linked to this tab and merge its worktree first
+                  const taskId = Object.keys(bgTabIds).find((id) => bgTabIds[id] === tabId)
+                  const task = taskId
+                    ? (bgTasksForClose.find((t) => t.id === taskId) ?? allBgTasks.find((t) => t.id === taskId))
+                    : undefined
+                  if (task?.worktreePath && task.worktreeBranch && task.status === 'DONE') {
+                    try {
+                      await window.kanbai.git.worktreeUnlock(task.worktreePath).catch(() => { /* best-effort */ })
+                      await autoMergeWorktree(task, wsId)
+                    } catch { /* best-effort — closeTab will still run */ }
+                  }
                   termStore.closeTab(tabId)
                 }
               }
@@ -1428,7 +1455,8 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       }).catch(() => { /* best-effort */ })
     }
 
-    // If task is already DONE in memory, try auto-merge then cleanup any remaining worktree
+    // If task is already DONE in memory, try auto-merge then cleanup any remaining worktree.
+    // This may be a no-op if auto-close already merged the worktree before closing the tab.
     if (task?.worktreePath && task.worktreeBranch && task.status === 'DONE' && wsId) {
       autoMergeWorktree(task, wsId)
         .finally(() => cleanupMergedWorktree(task!))
