@@ -2,6 +2,7 @@ import type { IpcMain, BrowserWindow } from 'electron'
 import crypto from 'crypto'
 import http from 'http'
 import { IPC_CHANNELS } from '../../shared/types'
+import { startCompanionServer, stopCompanionServer, getCompanionServerInfo } from '../services/companion-server'
 
 const API_HOST = process.env['KANBAI_API_HOST'] ?? 'localhost'
 const API_PORT = parseInt(process.env['KANBAI_API_PORT'] ?? '3847', 10)
@@ -61,9 +62,20 @@ function startPolling(code: string, getWindow: () => BrowserWindow | null): void
 
       if (status.status === 'connected') {
         stopPolling()
+        // Start data server for companion data retrieval
+        if (currentToken) {
+          startCompanionServer(currentToken)
+            .then((info) => {
+              win.webContents.send(IPC_CHANNELS.COMPANION_DATA_INFO, info)
+            })
+            .catch((err) => {
+              console.error('[Companion] Failed to start data server:', err)
+            })
+        }
         win.webContents.send(IPC_CHANNELS.COMPANION_STATUS_CHANGED, 'connected')
       } else if (status.status === 'expired') {
         stopPolling()
+        stopCompanionServer()
         currentToken = null
         win.webContents.send(IPC_CHANNELS.COMPANION_STATUS_CHANGED, 'disconnected')
       }
@@ -95,6 +107,7 @@ export function registerCompanionHandlers(ipcMain: IpcMain, getWindow: () => Bro
 
   ipcMain.handle(IPC_CHANNELS.COMPANION_CANCEL, async () => {
     stopPolling()
+    stopCompanionServer()
     // Call API to delete the session
     if (currentToken) {
       try {
@@ -104,6 +117,10 @@ export function registerCompanionHandlers(ipcMain: IpcMain, getWindow: () => Bro
       }
     }
     currentToken = null
+  })
+
+  ipcMain.handle(IPC_CHANNELS.COMPANION_DATA_INFO, () => {
+    return getCompanionServerInfo()
   })
 }
 
@@ -142,6 +159,7 @@ export async function initDevCompanion(getWindow: () => BrowserWindow | null): P
 
 export function cleanupCompanion(): void {
   stopPolling()
+  stopCompanionServer()
   if (currentToken) {
     // Best-effort cleanup on quit — fire and forget
     try {
