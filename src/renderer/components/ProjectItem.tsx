@@ -127,6 +127,11 @@ export function ProjectItem({ project, isActive }: ProjectItemProps) {
 
   const contextMenuItems: ContextMenuItem[] = [
     {
+      label: t('project.openInFinder'),
+      action: () => window.kanbai.fs.openInFinder(project.path),
+    },
+    { separator: true, label: '', action: () => {} },
+    {
       label: t('project.deployClaude'),
       action: handleDeployClaude,
     },

@@ -93,6 +93,7 @@ export const en = {
   'icon.code': 'Code',
 
   // Project
+  'project.openInFinder': 'Open in Finder',
   'project.deployClaude': 'Deploy .claude',
   'project.hideClaudeConfig': 'Hide Claude config',
   'project.showClaudeConfig': 'Show Claude config',
