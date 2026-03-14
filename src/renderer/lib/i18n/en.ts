@@ -1912,6 +1912,9 @@ export const en = {
   'companion.connectedInfo': 'Companion app connected.',
   'companion.lostInfo': 'Connection to companion was lost.',
   'companion.reconnect': 'Reconnect',
+  'companion.status.maintenance': 'Server unavailable',
+  'companion.maintenanceInfo': 'The companion server is currently under maintenance.',
+  'companion.retry': 'Retry',
 
   // Title bar
   'titlebar.title': 'Kanbai',
