@@ -215,6 +215,17 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
     fitAddonRef.current = fitAddon
     searchAddonRef.current = searchAddon
 
+    // Prevent the browser native paste event from reaching xterm.js.
+    // Without this, Cmd+V triggers BOTH the custom key handler (which
+    // writes clipboard text to the PTY) AND xterm's internal paste
+    // listener (which sends the same text again via onData), causing
+    // the pasted text to appear twice.
+    const xtermTextarea = containerRef.current.querySelector('.xterm-helper-textarea')
+    const preventDuplicatePaste = (e: Event) => e.preventDefault()
+    if (xtermTextarea) {
+      xtermTextarea.addEventListener('paste', preventDuplicatePaste)
+    }
+
     // Track scroll position for scroll-to-bottom button
     const viewport = containerRef.current.querySelector('.xterm-viewport')
     if (viewport) {
@@ -457,6 +468,9 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
 
     return () => {
       resizeObserver.disconnect()
+      if (xtermTextarea) {
+        xtermTextarea.removeEventListener('paste', preventDuplicatePaste)
+      }
       cleanupDataRef.current?.()
       cleanupCloseRef.current?.()
       if (!externalSessionId && sessionIdRef.current) {
