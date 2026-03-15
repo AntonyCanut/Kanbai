@@ -345,8 +345,10 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
       // Show banner everywhere except AI terminals in split view (banner already shows on the plain side)
       const showBanner = !(initialCommand && isSplit)
       if (showBanner) {
-        const TC = '\x1b[38;2;204;108;72m' // terracotta
-        const WH = '\x1b[38;2;255;255;255m' // white
+        const dataTheme = document.documentElement.getAttribute('data-theme') || 'dark'
+        const isLight = dataTheme === 'light'
+        const TC = isLight ? '\x1b[38;2;183;80;48m' : '\x1b[38;2;204;108;72m' // terracotta (darker on light)
+        const WH = isLight ? '\x1b[38;2;13;15;18m' : '\x1b[38;2;255;255;255m' // dark text on light, white on dark
         const DM = '\x1b[90m' // dim
         const RS = '\x1b[0m' // reset
         window.kanbai.app.version().then(({ version }) => {
