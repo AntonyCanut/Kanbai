@@ -221,11 +221,20 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
     IPC_CHANNELS.WORKSPACE_ENV_SETUP,
     async (
       _event,
-      { workspaceName, workspaceId, projectPaths }: { workspaceName: string; workspaceId?: string; projectPaths: string[] },
+      { workspaceName, workspaceId, projectPaths }: {
+        workspaceName: string
+        workspaceId?: string
+        projectPaths: Array<string | { path: string; name: string }>
+      },
     ) => {
       try {
         ensureEnvsDir()
         const envDir = getEnvDir(workspaceName)
+
+        // Normalize projectPaths to { path, name } tuples
+        const entries = projectPaths.map((p) =>
+          typeof p === 'string' ? { path: p, name: path.basename(p) } : p,
+        )
 
         // Clean existing env dir: remove old symlinks/junctions AND leftover
         // copied directories (from a previous fs.cpSync fallback).
@@ -252,8 +261,9 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
         }
 
         // Create symlinks for each project
-        for (const projectPath of projectPaths) {
-          const folderName = path.basename(projectPath)
+        for (const entry of entries) {
+          const folderName = entry.name
+          const projectPath = entry.path
           const linkPath = path.join(envDir, folderName)
 
           // Handle duplicate folder names by appending a suffix
@@ -272,8 +282,11 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
           }
         }
 
+        // Extract raw paths for AI rules and hooks
+        const rawPaths = entries.map((e) => e.path)
+
         // Auto-apply AI config rules from the first project that has them
-        applyAiRulesToEnv(envDir, projectPaths)
+        applyAiRulesToEnv(envDir, rawPaths)
 
         // Install activity hooks for all AI providers in the env directory
         await installActivityHooks(envDir, workspaceName, 'claude')
@@ -282,7 +295,7 @@ export function registerWorkspaceEnvHandlers(ipcMain: IpcMain): void {
         await installActivityHooks(envDir, workspaceName, 'gemini')
 
         // Also install hooks in each project for the AI providers they have configured
-        for (const projectPath of projectPaths) {
+        for (const projectPath of rawPaths) {
           if (fs.existsSync(path.join(projectPath, '.claude'))) {
             await installActivityHooks(projectPath, workspaceName, 'claude')
           }

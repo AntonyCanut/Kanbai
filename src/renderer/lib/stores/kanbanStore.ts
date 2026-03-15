@@ -894,22 +894,20 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
       if (project) cwd = project.path
     }
     if (!cwd) {
-      // Claude can navigate the workspace env (meta-directory with symlinks).
-      // Other providers (Codex) need a real project path to work correctly.
-      if (provider === 'claude') {
-        const workspace = workspaces.find((w) => w.id === workspaceId)
-        if (workspace && workspaceProjects.length > 0) {
-          try {
-            const envResult = await window.kanbai.workspaceEnv.setup(
-              workspace.name,
-              workspaceProjects.map((p) => p.path),
-              workspaceId,
-            )
-            if (envResult?.success && envResult.envPath) {
-              cwd = envResult.envPath
-            }
-          } catch { /* fallback below */ }
-        }
+      // Setup workspace env (meta-directory with symlinks to all projects)
+      // so the agent can navigate between projects regardless of AI provider
+      const workspace = workspaces.find((w) => w.id === workspaceId)
+      if (workspace && workspaceProjects.length > 0) {
+        try {
+          const envResult = await window.kanbai.workspaceEnv.setup(
+            workspace.name,
+            workspaceProjects.map((p) => p.path),
+            workspaceId,
+          )
+          if (envResult?.success && envResult.envPath) {
+            cwd = envResult.envPath
+          }
+        } catch { /* fallback below */ }
       }
       if (!cwd) {
         cwd = workspaceProjects[0]?.path ?? null
@@ -944,9 +942,11 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
                   const workspace = workspaces.find((w) => w.id === workspaceId)
                   if (workspace && workspaceProjects.length > 0) {
                     const taskEnvName = `${workspace.name}__wt_${task.id.slice(0, 8)}`
-                    // Replace the git project's original path with the worktree path
+                    // Replace the git project's path with the worktree, preserving the original folder name
                     const modifiedPaths = workspaceProjects.map((p) =>
-                      p.path === projectPath ? worktreeDir : p.path,
+                      p.path === projectPath
+                        ? { path: worktreeDir, name: p.path.split('/').pop()! }
+                        : p.path,
                     )
                     const envResult = await window.kanbai.workspaceEnv.setup(
                       taskEnvName,

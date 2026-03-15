@@ -377,7 +377,7 @@ const api = {
 
   // Workspace env (virtual env with symlinks)
   workspaceEnv: {
-    setup: (workspaceName: string, projectPaths: string[], workspaceId?: string) =>
+    setup: (workspaceName: string, projectPaths: Array<string | { path: string; name: string }>, workspaceId?: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_ENV_SETUP, { workspaceName, workspaceId, projectPaths }),
     getPath: (workspaceName: string): Promise<string | null> =>
       ipcRenderer.invoke(IPC_CHANNELS.WORKSPACE_ENV_PATH, { workspaceName }),
