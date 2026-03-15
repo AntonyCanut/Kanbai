@@ -1,10 +1,89 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react'
-import { Terminal as XTerm } from '@xterm/xterm'
+import { Terminal as XTerm, type ITheme } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
 import '../styles/terminal.css'
+
+const TERMINAL_THEMES = {
+  dark: {
+    background: '#0B0D0F',
+    foreground: '#F0F2F4',
+    cursor: '#f5e0dc',
+    selectionBackground: '#1F232880',
+    selectionForeground: '#F0F2F4',
+    black: '#1F2328',
+    red: '#F47067',
+    green: '#3DD68C',
+    yellow: '#fbbf24',
+    blue: '#6C8CFF',
+    magenta: '#ec4899',
+    cyan: '#22d3ee',
+    white: '#bac2de',
+    brightBlack: '#585b70',
+    brightRed: '#F47067',
+    brightGreen: '#3DD68C',
+    brightYellow: '#fbbf24',
+    brightBlue: '#6C8CFF',
+    brightMagenta: '#ec4899',
+    brightCyan: '#22d3ee',
+    brightWhite: '#8B929A',
+  },
+  light: {
+    background: '#F8F9FA',
+    foreground: '#0D0F12',
+    cursor: '#4B6BEF',
+    selectionBackground: '#4B6BEF30',
+    selectionForeground: '#0D0F12',
+    black: '#0D0F12',
+    red: '#DC2626',
+    green: '#16A34A',
+    yellow: '#D97706',
+    blue: '#2563EB',
+    magenta: '#9333EA',
+    cyan: '#0891B2',
+    white: '#E2E4E8',
+    brightBlack: '#5C6370',
+    brightRed: '#EF4444',
+    brightGreen: '#22C55E',
+    brightYellow: '#F59E0B',
+    brightBlue: '#3B82F6',
+    brightMagenta: '#A855F7',
+    brightCyan: '#06B6D4',
+    brightWhite: '#9BA1AB',
+  },
+  terracotta: {
+    background: '#1A1210',
+    foreground: '#E8D5C4',
+    cursor: '#D4845A',
+    selectionBackground: '#D4845A30',
+    selectionForeground: '#E8D5C4',
+    black: '#231A17',
+    red: '#C75050',
+    green: '#7A9E6E',
+    yellow: '#D4A24E',
+    blue: '#7AADE0',
+    magenta: '#B07AAD',
+    cyan: '#6DBFBF',
+    white: '#A68E7A',
+    brightBlack: '#6E574A',
+    brightRed: '#D96060',
+    brightGreen: '#8FB87E',
+    brightYellow: '#E0B45E',
+    brightBlue: '#8ABDE8',
+    brightMagenta: '#C08ABD',
+    brightCyan: '#7DCFCF',
+    brightWhite: '#E8D5C4',
+  },
+}
+
+function getCurrentTerminalTheme(): ITheme {
+  const dataTheme = document.documentElement.getAttribute('data-theme') || 'dark'
+  if (dataTheme === 'light') return TERMINAL_THEMES.light
+  if (dataTheme === 'terracotta') return TERMINAL_THEMES.terracotta
+  return TERMINAL_THEMES.dark
+}
 
 interface TerminalProps {
   cwd?: string
@@ -82,6 +161,20 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
     requestAnimationFrame(() => fitTerminal())
   }, [fontSize, fitTerminal])
 
+  // Sync terminal theme with app theme (data-theme attribute)
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const xterm = xtermRef.current
+      if (!xterm) return
+      xterm.options.theme = getCurrentTerminalTheme()
+    })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+    return () => observer.disconnect()
+  }, [])
+
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -93,29 +186,7 @@ export function Terminal({ cwd, shell, initialCommand, externalSessionId, worksp
       cursorBlink: true,
       cursorStyle: 'block',
       allowProposedApi: true,
-      theme: {
-        background: '#0B0D0F',
-        foreground: '#F0F2F4',
-        cursor: '#f5e0dc',
-        selectionBackground: '#1F232880',
-        selectionForeground: '#F0F2F4',
-        black: '#1F2328',
-        red: '#F47067',
-        green: '#3DD68C',
-        yellow: '#fbbf24',
-        blue: '#6C8CFF',
-        magenta: '#ec4899',
-        cyan: '#22d3ee',
-        white: '#bac2de',
-        brightBlack: '#585b70',
-        brightRed: '#F47067',
-        brightGreen: '#3DD68C',
-        brightYellow: '#fbbf24',
-        brightBlue: '#6C8CFF',
-        brightMagenta: '#ec4899',
-        brightCyan: '#22d3ee',
-        brightWhite: '#8B929A',
-      },
+      theme: getCurrentTerminalTheme(),
     })
 
     const fitAddon = new FitAddon()
