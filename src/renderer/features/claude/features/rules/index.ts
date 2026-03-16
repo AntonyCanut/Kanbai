@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // Re-export from settings — actual files live there
+=======
+>>>>>>> kanban/r-58
 export { RulesManager } from '../settings/components/rules-manager'
 export { SettingsFileHierarchy } from '../settings/components/settings-file-hierarchy'
 export { RulesSidebar } from '../settings/features/rules/rules-sidebar'

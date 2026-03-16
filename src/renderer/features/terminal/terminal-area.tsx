@@ -6,8 +6,8 @@ import { useViewStore } from '../../lib/stores/viewStore'
 import { useUpdateStore } from '../../lib/stores/updateStore'
 import { useI18n } from '../../lib/i18n'
 import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
-import { SplitContainer } from '../../components/SplitContainer'
-import { ProjectToolbar } from '../../components/ProjectToolbar'
+import { SplitContainer } from '../../shared/layout/split-container'
+import { ProjectToolbar } from '../workspace'
 
 export function TerminalArea() {
   const { t } = useI18n()

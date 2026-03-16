@@ -20,7 +20,8 @@
     "paths": {
       "@shared/*": ["src/shared/*"],
       "@main/*": ["src/main/*"],
-      "@renderer/*": ["src/renderer/*"]
+      "@renderer/*": ["src/renderer/*"],
+      "@features/*": ["src/renderer/features/*"]
     }
   },
   "exclude": ["node_modules", "dist", "tests", "megalinter-reports", "vendor"]

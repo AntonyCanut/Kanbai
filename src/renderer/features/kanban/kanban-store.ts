@@ -1,8 +1,13 @@
 import { create } from 'zustand'
 import type { KanbanTask, KanbanTaskType, KanbanStatus, KanbanComment } from '../../../shared/types/index'
 import { AI_PROVIDERS, type AiProviderId } from '../../../shared/types/ai-provider'
+<<<<<<< HEAD
 import { useTerminalTabStore } from '../terminal'
 import { useWorkspaceStore } from '../workspace/workspace-store'
+=======
+import { useTerminalTabStore } from '../../features/terminal'
+import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
+>>>>>>> kanban/r-58
 import { pushNotification } from '../../shared/stores/notification-store'
 import { useI18n } from '../../lib/i18n'
 

@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 // Re-export from settings/features/codex — actual files live there
+=======
+>>>>>>> kanban/r-58
 export { CodexGeneralTab } from '../../../settings/features/codex/codex-general-tab'
 export { CodexAgentsTab } from '../../../settings/features/codex/codex-agents-tab'
 export { CodexMcpTab } from '../../../settings/features/codex/codex-mcp-tab'

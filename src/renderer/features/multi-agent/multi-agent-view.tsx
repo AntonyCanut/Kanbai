@@ -2,7 +2,11 @@ import { useState, useCallback } from 'react'
 import { Terminal } from '../terminal'
 import { useClaudeStore } from '../claude'
 import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
+<<<<<<< HEAD
 import './multiagent.css'
+=======
+import '../../styles/multiagent.css'
+>>>>>>> kanban/r-58
 
 interface AgentPane {
   id: string

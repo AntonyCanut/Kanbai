@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { clampPanelHeight } from '../../src/renderer/components/DatabaseQueryArea'
+import { clampPanelHeight } from '../../src/renderer/features/database'
 
 /**
  * Tests for the panel resize clamping logic used in DatabaseQueryArea.

@@ -4,9 +4,9 @@ import type { editor } from 'monaco-editor'
 import { useI18n } from '../../../../lib/i18n'
 import { DatabaseResultsTable } from './results-table'
 import { DatabaseNLChat } from '../nl-chat/nl-chat'
-import { ResizeDivider } from '../../../../components/ResizeDivider'
+import { ResizeDivider } from '../../../../shared/layout/resize-divider'
 import { DatabaseTabBar } from './tab-bar'
-import { CopyableError } from '../../../../components/CopyableError'
+import { CopyableError } from '../../../../shared/ui/copyable-error'
 import { useDatabaseTabStore } from '../../database-tab-store'
 import type {
   DbConnection,

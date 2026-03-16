@@ -3,7 +3,7 @@ import { useWorkspaceStore, useFilteredWorkspaces } from './workspace-store'
 import { useViewStore } from '../../lib/stores/viewStore'
 import { useI18n } from '../../lib/i18n'
 import { WorkspaceItem } from './workspace-item'
-import { AiProviderSelector } from '../../components/AiProviderSelector'
+import { AiProviderSelector } from '../claude'
 import type { Workspace, AppSettings } from '../../../shared/types/index'
 import type { AiProviderId } from '../../../shared/types/ai-provider'
 

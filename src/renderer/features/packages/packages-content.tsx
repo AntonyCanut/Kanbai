@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, type MouseEvent } from 'react'
 import { usePackagesStore } from './packages-store'
 import { PackagesChat } from './packages-chat'
-import { ResizeDivider } from '../../components/ResizeDivider'
-import { clampPanelHeight } from '../../components/DatabaseQueryArea'
+import { ResizeDivider } from '../../shared/layout/resize-divider'
+import { clampPanelHeight } from '../database'
 import { useI18n } from '../../lib/i18n'
 import type { PackageManagerType } from '../../../shared/types'
 

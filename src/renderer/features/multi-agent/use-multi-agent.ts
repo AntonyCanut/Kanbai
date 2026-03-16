@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useClaudeStore } from '../../lib/stores/claudeStore'
+import { useClaudeStore } from '../claude'
 import { useWorkspaceStore } from '../workspace'
 
 interface AgentPane {
