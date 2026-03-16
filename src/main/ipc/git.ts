@@ -120,27 +120,44 @@ function hasCommits(cwd: string): boolean {
 }
 
 /**
+ * Resolve the namespace git profile for a workspace.
+ * Returns { userName, userEmail } or null if no custom profile is configured.
+ */
+function resolveGitProfileByWorkspace(workspaceId: string): { userName: string; userEmail: string } | null {
+  const storage = new StorageService()
+  const workspace = storage.getWorkspace(workspaceId)
+  if (!workspace?.namespaceId) return null
+
+  const namespace = storage.getNamespace(workspace.namespaceId)
+  if (!namespace || namespace.isDefault) return null
+
+  const profile = storage.getGitProfile(workspace.namespaceId)
+  if (!profile) return null
+
+  return { userName: profile.userName, userEmail: profile.userEmail }
+}
+
+/**
+ * Resolve the namespace git profile for a project path.
+ * Matches the path against known projects to find the workspace/namespace.
+ * Returns { userName, userEmail } or null if no custom profile is configured.
+ */
+function resolveGitProfileByPath(cwd: string): { userName: string; userEmail: string } | null {
+  const storage = new StorageService()
+  const projects = storage.getProjects()
+  const project = projects.find((p) => cwd.startsWith(p.path))
+  if (!project) return null
+
+  return resolveGitProfileByWorkspace(project.workspaceId)
+}
+
+/**
  * Resolve git config overrides (-c flags) for a project path based on its namespace profile.
  * Returns an array like ['-c', 'user.name=X', '-c', 'user.email=Y'] or empty.
  */
 function getGitConfigOverrides(cwd: string): string[] {
-  const storage = new StorageService()
-  // Find the project by path
-  const projects = storage.getProjects()
-  const project = projects.find((p) => cwd.startsWith(p.path))
-  if (!project) return []
-
-  // Find the workspace
-  const workspace = storage.getWorkspace(project.workspaceId)
-  if (!workspace?.namespaceId) return []
-
-  // Find the namespace
-  const namespace = storage.getNamespace(workspace.namespaceId)
-  if (!namespace || namespace.isDefault) return [] // Default namespace uses global git config
-
-  // Find the git profile
-  const profile = storage.getGitProfile(workspace.namespaceId)
-  if (!profile) return [] // No custom profile, use global
+  const profile = resolveGitProfileByPath(cwd)
+  if (!profile) return []
 
   const overrides: string[] = []
   if (profile.userName) {
@@ -150,6 +167,45 @@ function getGitConfigOverrides(cwd: string): string[] {
     overrides.push('-c', `user.email=${profile.userEmail}`)
   }
   return overrides
+}
+
+/**
+ * Return GIT_AUTHOR/COMMITTER environment variables for a workspace's namespace profile.
+ * Used to inject into terminal sessions so external tools (Claude Code, etc.) commit
+ * with the correct identity.
+ */
+export function getGitProfileEnvForWorkspace(
+  workspaceId: string,
+): Record<string, string> {
+  const profile = resolveGitProfileByWorkspace(workspaceId)
+  if (!profile) return {}
+
+  const env: Record<string, string> = {}
+  if (profile.userName) {
+    env.GIT_AUTHOR_NAME = profile.userName
+    env.GIT_COMMITTER_NAME = profile.userName
+  }
+  if (profile.userEmail) {
+    env.GIT_AUTHOR_EMAIL = profile.userEmail
+    env.GIT_COMMITTER_EMAIL = profile.userEmail
+  }
+  return env
+}
+
+/**
+ * Apply the namespace git profile as local git config in a directory.
+ * Used when creating worktrees so processes that don't inherit terminal env vars
+ * (e.g. IDE-triggered commits) still use the correct identity.
+ */
+function applyLocalGitConfig(cwd: string, profile: { userName: string; userEmail: string }): void {
+  try {
+    if (profile.userName) {
+      execGit(['config', '--local', 'user.name', profile.userName], cwd)
+    }
+    if (profile.userEmail) {
+      execGit(['config', '--local', 'user.email', profile.userEmail], cwd)
+    }
+  } catch { /* best-effort — worktree may not have a writable git config */ }
 }
 
 export function registerGitHandlers(ipcMain: IpcMain): void {
@@ -752,6 +808,15 @@ export function registerGitHandlers(ipcMain: IpcMain): void {
           }
         } catch { /* hook propagation is best-effort */ }
 
+        // Apply namespace git profile as local config in the worktree so external
+        // tools (Claude Code, Codex, etc.) commit with the correct identity
+        try {
+          const worktreeGitProfile = resolveGitProfileByPath(worktreePath)
+          if (worktreeGitProfile) {
+            applyLocalGitConfig(worktreePath, worktreeGitProfile)
+          }
+        } catch { /* git profile propagation is best-effort */ }
+
         // Ensure .kanbai-worktrees/ is in .gitignore of the main repo
         const gitignorePath = path.join(cwd, '.gitignore')
         const worktreeDirEntry = '.kanbai-worktrees/'
@@ -813,10 +878,11 @@ export function registerGitHandlers(ipcMain: IpcMain): void {
           return { success: true, committed: false, message: 'No uncommitted changes' }
         }
 
-        // Stage all changes and commit
+        // Stage all changes and commit with namespace profile overrides
         execGit(['add', '-A'], worktreePath)
+        const overrides = getGitConfigOverrides(worktreePath)
         const commitMessage = `chore(kanban): auto-commit ${ticketLabel} worktree changes`
-        execGit(['commit', '-m', commitMessage], worktreePath)
+        execGit([...overrides, 'commit', '-m', commitMessage], worktreePath)
 
         return { success: true, committed: true, message: `Auto-committed changes for ${ticketLabel}` }
       } catch (err) {
@@ -870,8 +936,9 @@ export function registerGitHandlers(ipcMain: IpcMain): void {
             const status = execGit(['status', '--porcelain'], worktreePath).trim()
             if (status) {
               execGit(['add', '-A'], worktreePath)
+              const mergeOverrides = getGitConfigOverrides(worktreePath)
               const commitMessage = `chore(kanban): auto-commit ${ticketLabel} worktree changes`
-              execGit(['commit', '-m', commitMessage], worktreePath)
+              execGit([...mergeOverrides, 'commit', '-m', commitMessage], worktreePath)
             }
           } catch {
             // Auto-commit is best-effort — worktree may already be in a clean state
