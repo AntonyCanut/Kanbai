@@ -1574,6 +1574,8 @@ function TaskDetailPanel({
   const [conversationLoading, setConversationLoading] = useState(false)
   const [conversationError, setConversationError] = useState<string | null>(null)
   const [copiedResult, setCopiedResult] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; filename: string } | null>(null)
+  const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({})
   const titleRef = useRef<HTMLInputElement>(null)
   const descRef = useRef<HTMLTextAreaElement>(null)
 
@@ -1594,6 +1596,30 @@ function TaskDetailPanel({
       descRef.current.focus()
     }
   }, [editingDesc])
+
+  useEffect(() => {
+    const imageAttachments = (task.attachments ?? []).filter((att) =>
+      att.mimeType.startsWith('image/')
+    )
+    if (imageAttachments.length === 0) {
+      setAttachmentPreviews({})
+      return
+    }
+    let cancelled = false
+    const loadPreviews = async (): Promise<void> => {
+      const previews: Record<string, string> = {}
+      for (const att of imageAttachments) {
+        if (cancelled) return
+        const base64 = await window.kanbai.kanban.readAttachment(att.storedPath)
+        if (base64 && !cancelled) {
+          previews[att.id] = `data:${att.mimeType};base64,${base64}`
+        }
+      }
+      if (!cancelled) setAttachmentPreviews(previews)
+    }
+    loadPreviews()
+    return () => { cancelled = true }
+  }, [task.id, task.attachments])
 
   const saveTitle = useCallback(() => {
     const trimmed = titleValue.trim()
@@ -1822,24 +1848,55 @@ function TaskDetailPanel({
         <span className="kanban-detail-section-title">{t('kanban.attachedFiles')}</span>
         <div className="kanban-detail-attachments">
           {task.attachments && task.attachments.length > 0 ? (
-            task.attachments.map((att) => (
-              <div key={att.id} className="kanban-attachment-item">
-                <span className="kanban-attachment-item-icon">
-                  {att.mimeType.startsWith('image/') ? '🖼' : '📄'}
-                </span>
-                <span className="kanban-attachment-item-name" title={att.storedPath}>{att.filename}</span>
-                <span className="kanban-attachment-item-size">
-                  {att.size < 1024 ? `${att.size} o` : att.size < 1048576 ? `${(att.size / 1024).toFixed(1)} Ko` : `${(att.size / 1048576).toFixed(1)} Mo`}
-                </span>
-                <button
-                  className="kanban-attachment-item-remove"
-                  onClick={() => onRemoveAttachment(att.id)}
-                  title={t('common.delete')}
-                >
-                  &times;
-                </button>
-              </div>
-            ))
+            <>
+              {/* Image thumbnails grid */}
+              {task.attachments.some((att) => attachmentPreviews[att.id]) && (
+                <div className="kanban-attachment-thumbnails">
+                  {task.attachments.filter((att) => attachmentPreviews[att.id]).map((att) => (
+                    <div
+                      key={att.id}
+                      className="kanban-attachment-thumbnail"
+                      onClick={() => setLightboxImage({ src: attachmentPreviews[att.id]!, filename: att.filename })}
+                      title={att.filename}
+                    >
+                      <img src={attachmentPreviews[att.id]} alt={att.filename} />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* File list */}
+              {task.attachments.map((att) => (
+                <div key={att.id} className={`kanban-attachment-item${attachmentPreviews[att.id] ? ' kanban-attachment-item--image' : ''}`}>
+                  {attachmentPreviews[att.id] ? (
+                    <img
+                      className="kanban-attachment-item-thumb"
+                      src={attachmentPreviews[att.id]}
+                      alt={att.filename}
+                      onClick={() => setLightboxImage({ src: attachmentPreviews[att.id]!, filename: att.filename })}
+                    />
+                  ) : (
+                    <span className="kanban-attachment-item-icon">📄</span>
+                  )}
+                  <span
+                    className={`kanban-attachment-item-name${attachmentPreviews[att.id] ? ' kanban-attachment-item-name--clickable' : ''}`}
+                    title={att.storedPath}
+                    onClick={attachmentPreviews[att.id] ? () => setLightboxImage({ src: attachmentPreviews[att.id]!, filename: att.filename }) : undefined}
+                  >
+                    {att.filename}
+                  </span>
+                  <span className="kanban-attachment-item-size">
+                    {att.size < 1024 ? `${att.size} o` : att.size < 1048576 ? `${(att.size / 1024).toFixed(1)} Ko` : `${(att.size / 1048576).toFixed(1)} Mo`}
+                  </span>
+                  <button
+                    className="kanban-attachment-item-remove"
+                    onClick={() => onRemoveAttachment(att.id)}
+                    title={t('common.delete')}
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </>
           ) : (
             <span className="kanban-detail-empty-hint">{t('kanban.noAttachments')}</span>
           )}
@@ -1848,6 +1905,17 @@ function TaskDetailPanel({
           {t('kanban.addFile')}
         </button>
       </div>
+
+      {/* Image lightbox */}
+      {lightboxImage && (
+        <div className="kanban-lightbox-overlay" onClick={() => setLightboxImage(null)}>
+          <div className="kanban-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img src={lightboxImage.src} alt={lightboxImage.filename} onClick={() => setLightboxImage(null)} />
+            <div className="kanban-lightbox-filename">{lightboxImage.filename}</div>
+          </div>
+          <button className="kanban-lightbox-close" onClick={() => setLightboxImage(null)}>&times;</button>
+        </div>
+      )}
 
       {/* Description */}
       <div className="kanban-detail-section">

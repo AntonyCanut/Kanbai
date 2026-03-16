@@ -1065,6 +1065,20 @@ export function registerKanbanHandlers(ipcMain: IpcMain): void {
   )
 
   ipcMain.handle(
+    IPC_CHANNELS.KANBAN_READ_ATTACHMENT,
+    async (_event, { storedPath }: { storedPath: string }) => {
+      if (typeof storedPath !== 'string') return null
+      try {
+        if (!fs.existsSync(storedPath)) return null
+        const data = fs.readFileSync(storedPath)
+        return data.toString('base64')
+      } catch {
+        return null
+      }
+    },
+  )
+
+  ipcMain.handle(
     IPC_CHANNELS.KANBAN_GET_WORKING_TICKET,
     async (_event, { workspaceId }: { workspaceId: string }) => {
       const tasks = readKanbanTasks(workspaceId)

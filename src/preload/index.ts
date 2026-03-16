@@ -337,6 +337,8 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_ATTACH_FROM_CLIPBOARD, { taskId, workspaceId, dataBase64, filename, mimeType }),
     removeAttachment: (taskId: string, workspaceId: string, attachmentId: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_REMOVE_ATTACHMENT, { taskId, workspaceId, attachmentId }),
+    readAttachment: (storedPath: string): Promise<string | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.KANBAN_READ_ATTACHMENT, { storedPath }),
     getWorkingTicket: (workspaceId: string): Promise<{ ticketNumber: number | null; isCtoTicket: boolean; type?: string } | null> =>
       ipcRenderer.invoke(IPC_CHANNELS.KANBAN_GET_WORKING_TICKET, { workspaceId }),
     getWorkingTickets: (workspaceId: string): Promise<Array<{ ticketNumber: number | null; isCtoTicket: boolean; type?: string; title: string }>> =>
