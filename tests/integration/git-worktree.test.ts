@@ -5,14 +5,16 @@ import * as path from 'path'
 import * as os from 'os'
 import { createMockIpcMain } from '../mocks/electron'
 
-// Mock StorageService to avoid filesystem side effects from git config overrides
+// Mock StorageService to avoid filesystem side effects from git config overrides.
+// Use a class (not an arrow function) so `new StorageService()` works after vi.resetModules().
 vi.mock('../../src/main/services/storage', () => ({
-  StorageService: vi.fn().mockImplementation(() => ({
-    getProjects: () => [],
-    getWorkspace: () => null,
-    getNamespace: () => null,
-    getGitProfile: () => null,
-  })),
+  StorageService: class MockStorageService {
+    getProjects() { return [] }
+    getWorkspace() { return null }
+    getNamespace() { return null }
+    getGitProfile() { return null }
+    getSettings() { return {} }
+  },
 }))
 
 function git(args: string[], cwd: string): string {

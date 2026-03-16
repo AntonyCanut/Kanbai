@@ -7,6 +7,7 @@ import path from 'path'
 import { IPC_CHANNELS } from '../../shared/types'
 import { IS_WIN, getDefaultShell, getDefaultShellArgs, killProcess, isShellValid, normalizeWindowsShell } from '../../shared/platform'
 import { StorageService } from '../services/storage'
+import { getGitProfileEnvForWorkspace } from './git'
 
 interface ManagedTerminal {
   id: string
@@ -128,6 +129,13 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
       if (options.workspaceId) shellEnv.KANBAI_WORKSPACE_ID = options.workspaceId
       if (options.tabId) shellEnv.KANBAI_TAB_ID = options.tabId
       if (options.provider) shellEnv.KANBAI_AI_PROVIDER = options.provider
+
+      // Inject namespace git profile so AI tools (Claude Code, Codex, etc.)
+      // commit with the correct identity for this workspace's namespace
+      if (options.workspaceId) {
+        const gitEnv = getGitProfileEnvForWorkspace(options.workspaceId)
+        Object.assign(shellEnv, gitEnv)
+      }
 
       if (isZsh) {
         shellEnv.ZDOTDIR = ensureZshWrapper()
