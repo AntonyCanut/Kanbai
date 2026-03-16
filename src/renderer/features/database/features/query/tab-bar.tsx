@@ -1,4 +1,4 @@
-import { useDatabaseTabStore } from '../lib/stores/databaseTabStore'
+import { useDatabaseTabStore } from '../../database-tab-store'
 
 interface DatabaseTabBarProps {
   connectionId: string

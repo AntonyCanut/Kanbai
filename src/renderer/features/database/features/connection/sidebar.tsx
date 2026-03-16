@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useI18n } from '../lib/i18n'
-import { ContextMenu, type ContextMenuItem } from './ContextMenu'
+import { useI18n } from '../../../../lib/i18n'
+import { ContextMenu, type ContextMenuItem } from '../../../../components/ContextMenu'
 import type {
   DbConnection,
   DbConnectionStatus,
   DbTable,
   DbEnvironmentTag,
   DbBackupEntry,
-} from '../../shared/types'
+} from '../../../../../shared/types'
 
 interface DatabaseSidebarProps {
   connections: DbConnection[]

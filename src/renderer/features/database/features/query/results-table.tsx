@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useI18n } from '../lib/i18n'
-import type { DbQueryResult } from '../../shared/types'
+import { useI18n } from '../../../../lib/i18n'
+import type { DbQueryResult } from '../../../../../shared/types'
 
 interface DatabaseResultsTableProps {
   result: DbQueryResult | null

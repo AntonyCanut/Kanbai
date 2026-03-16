@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { useWorkspaceStore } from '../lib/stores/workspaceStore'
-import { useDatabaseStore } from '../lib/stores/databaseStore'
-import { useViewStore } from '../lib/stores/viewStore'
-import { useI18n } from '../lib/i18n'
-import { DatabaseSidebar } from './DatabaseSidebar'
-import { DatabaseQueryArea } from './DatabaseQueryArea'
-import { DatabaseConnectionModal } from './DatabaseConnectionModal'
-import type { DbConnection, DbTable, DbBackupEntry, DbBackupLogEntry } from '../../shared/types'
+import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
+import { useDatabaseStore } from './database-store'
+import { useViewStore } from '../../lib/stores/viewStore'
+import { useI18n } from '../../lib/i18n'
+import { DatabaseSidebar } from './features/connection/sidebar'
+import { DatabaseQueryArea } from './features/query/query-area'
+import { DatabaseConnectionModal } from './features/connection/connection-modal'
+import type { DbConnection, DbTable, DbBackupEntry, DbBackupLogEntry } from '../../../shared/types'
 
 export function DatabaseExplorer() {
   const { t } = useI18n()

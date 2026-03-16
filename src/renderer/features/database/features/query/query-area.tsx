@@ -1,19 +1,19 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
-import { useI18n } from '../lib/i18n'
-import { DatabaseResultsTable } from './DatabaseResultsTable'
-import { DatabaseNLChat } from './DatabaseNLChat'
-import { ResizeDivider } from './ResizeDivider'
-import { DatabaseTabBar } from './DatabaseTabBar'
-import { CopyableError } from './CopyableError'
-import { useDatabaseTabStore } from '../lib/stores/databaseTabStore'
+import { useI18n } from '../../../../lib/i18n'
+import { DatabaseResultsTable } from './results-table'
+import { DatabaseNLChat } from '../nl-chat/nl-chat'
+import { ResizeDivider } from '../../../../components/ResizeDivider'
+import { DatabaseTabBar } from './tab-bar'
+import { CopyableError } from '../../../../components/CopyableError'
+import { useDatabaseTabStore } from '../../database-tab-store'
 import type {
   DbConnection,
   DbConnectionStatus,
   DbQueryResult,
   DbEnvironmentTag,
-} from '../../shared/types'
+} from '../../../../../shared/types'
 
 interface DatabaseQueryAreaProps {
   connection: DbConnection | null
