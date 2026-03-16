@@ -997,11 +997,11 @@ export function KanbanBoard() {
 
           {/* Lightbox for creation modal */}
           {createLightboxSrc && (
-            <div className="kanban-lightbox-overlay" onClick={() => setCreateLightboxSrc(null)}>
+            <div className="kanban-lightbox-overlay" onClick={(e) => { e.stopPropagation(); setCreateLightboxSrc(null) }}>
               <div className="kanban-lightbox-content" onClick={(e) => e.stopPropagation()}>
                 <img src={createLightboxSrc} alt="preview" onClick={() => setCreateLightboxSrc(null)} />
               </div>
-              <button className="kanban-lightbox-close" onClick={() => setCreateLightboxSrc(null)}>&times;</button>
+              <button className="kanban-lightbox-close" onClick={(e) => { e.stopPropagation(); setCreateLightboxSrc(null) }}>&times;</button>
             </div>
           )}
         </div>
