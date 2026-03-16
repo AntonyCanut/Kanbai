@@ -1,4 +1,4 @@
-import { RulesManager } from './RulesManager'
+import { RulesManager } from '../../features/claude/features/rules'
 
 interface Props {
   projectPath: string

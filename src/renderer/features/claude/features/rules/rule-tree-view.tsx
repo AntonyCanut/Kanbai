@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
-import { RuleTreeNode } from '../../../../shared/types'
-import { RuleTreeItem } from './RuleTreeItem'
-import { DropTarget } from './useRulesDragDrop'
+import { RuleTreeNode } from '../../../../../shared/types'
+import { RuleTreeItem } from './rule-tree-item'
+import { DropTarget } from './use-rules-drag-drop'
 
 interface Props {
   tree: RuleTreeNode[]

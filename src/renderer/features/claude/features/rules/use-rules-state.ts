@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RuleEntry, TemplateRuleEntry } from '../../../../shared/types'
-import { updateAuthorFrontmatter } from './treeUtils'
+import { RuleEntry, TemplateRuleEntry } from '../../../../../shared/types'
+import { updateAuthorFrontmatter } from './tree-utils'
 
 export interface SharedRule {
   filename: string

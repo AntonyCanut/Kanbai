@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { useI18n } from '../../lib/i18n'
-import { MemoryEditor } from './MemoryEditor'
-import { ConfirmModal } from '../ConfirmModal'
-import { useRulesState } from './rules/useRulesState'
-import { useRulesDragDrop } from './rules/useRulesDragDrop'
-import { buildRuleTree } from './rules/treeUtils'
-import { RulesSidebar } from './rules/RulesSidebar'
-import { RuleContextMenu } from './rules/RuleContextMenu'
-import { RuleAuthorBadge } from './rules/RuleAuthorBadge'
+import { useI18n } from '../../../../lib/i18n'
+import { MemoryEditor } from '../../../../components/claude-settings/MemoryEditor'
+import { ConfirmModal } from '../../../../components/ConfirmModal'
+import { useRulesState } from './use-rules-state'
+import { useRulesDragDrop } from './use-rules-drag-drop'
+import { buildRuleTree } from './tree-utils'
+import { RulesSidebar } from './rules-sidebar'
+import { RuleContextMenu } from './rule-context-menu'
+import { RuleAuthorBadge } from './rule-author-badge'
 
 interface Props {
   projectPath: string

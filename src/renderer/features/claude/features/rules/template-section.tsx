@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
-import { TemplateRuleEntry } from '../../../../shared/types'
-import { useI18n } from '../../../lib/i18n'
+import { TemplateRuleEntry } from '../../../../../shared/types'
+import { useI18n } from '../../../../lib/i18n'
 
 interface TemplateTreeNode {
   name: string

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
-import { RuleTreeNode } from '../../../../shared/types'
-import { DropTarget } from './useRulesDragDrop'
+import { RuleTreeNode } from '../../../../../shared/types'
+import { DropTarget } from './use-rules-drag-drop'
 
 interface Props {
   node: RuleTreeNode

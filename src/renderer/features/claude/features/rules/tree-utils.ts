@@ -1,4 +1,4 @@
-import { RuleEntry, RuleTreeNode } from '../../../../shared/types'
+import { RuleEntry, RuleTreeNode } from '../../../../../shared/types'
 
 /**
  * Build a tree structure from flat rule entries and directory list.

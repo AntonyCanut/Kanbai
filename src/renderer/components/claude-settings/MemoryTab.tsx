@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../lib/i18n'
-import { RulesManager } from './RulesManager'
+import { RulesManager } from '../../features/claude/features/rules'
 import { MemoryEditor } from './MemoryEditor'
 
 interface Props {

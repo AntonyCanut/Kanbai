@@ -1,9 +1,9 @@
-import { RuleTreeNode, TemplateRuleEntry } from '../../../../shared/types'
-import { useI18n } from '../../../lib/i18n'
-import { RuleTreeView } from './RuleTreeView'
-import { TemplateSection } from './TemplateSection'
-import { SharedRule, Selection } from './useRulesState'
-import { DropTarget } from './useRulesDragDrop'
+import { RuleTreeNode, TemplateRuleEntry } from '../../../../../shared/types'
+import { useI18n } from '../../../../lib/i18n'
+import { RuleTreeView } from './rule-tree-view'
+import { TemplateSection } from './template-section'
+import { SharedRule, Selection } from './use-rules-state'
+import { DropTarget } from './use-rules-drag-drop'
 
 interface Props {
   // Data
