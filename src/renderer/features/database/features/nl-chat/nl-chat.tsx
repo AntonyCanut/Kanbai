@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { useI18n } from '../lib/i18n'
-import { useDatabaseStore } from '../lib/stores/databaseStore'
-import { useWorkspaceStore } from '../lib/stores/workspaceStore'
-import { AI_PROVIDERS } from '../../shared/types/ai-provider'
-import type { AiProviderId } from '../../shared/types/ai-provider'
+import { useI18n } from '../../../../lib/i18n'
+import { useDatabaseStore } from '../../database-store'
+import { useWorkspaceStore } from '../../../../lib/stores/workspaceStore'
+import { AI_PROVIDERS } from '../../../../../shared/types/ai-provider'
+import type { AiProviderId } from '../../../../../shared/types/ai-provider'
 import type {
   DbConnection,
   DbConnectionStatus,
@@ -11,7 +11,7 @@ import type {
   DbNlPermissions,
   DbNlHistoryEntry,
   DbQueryResult,
-} from '../../shared/types'
+} from '../../../../../shared/types'
 
 interface DatabaseNLChatProps {
   connection: DbConnection | null

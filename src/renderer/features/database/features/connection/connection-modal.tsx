@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useI18n } from '../lib/i18n'
-import { CopyableError } from './CopyableError'
+import { useI18n } from '../../../../lib/i18n'
+import { CopyableError } from '../../../../components/CopyableError'
 import type {
   DbConnection,
   DbConnectionConfig,
   DbEngine,
   DbEnvironmentTag,
   DbNlPermissions,
-} from '../../shared/types'
+} from '../../../../../shared/types'
 
 interface DatabaseConnectionModalProps {
   connection: DbConnection | null // null = create mode
