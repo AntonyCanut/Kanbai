@@ -1,11 +1,5 @@
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/components/skills-store-section.tsx
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { useI18n } from '../../../../../lib/i18n'
-import type { SkillStoreEntry, SkillStoreRepo } from '../../../../../../shared/types'
-========
 import { useI18n } from '../../lib/i18n'
 import { useSkillsStore } from './use-skills-store'
->>>>>>>> kanban/r-67:src/renderer/features/skills-store/skills-store-section.tsx
 
 interface Props {
   projectPath: string

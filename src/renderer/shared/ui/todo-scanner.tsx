@@ -1,31 +1,6 @@
-<<<<<<<< HEAD:src/renderer/shared/ui/todo-scanner.tsx
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useWorkspaceStore } from '../lib/stores/workspaceStore'
-import { useViewStore } from '../lib/stores/viewStore'
-import { useKanbanStore } from '../features/kanban'
-import { useI18n } from '../lib/i18n'
-import type { TodoEntry } from '../../shared/types'
-
-type TodoType = 'TODO' | 'FIXME' | 'HACK' | 'NOTE' | 'XXX'
-type FilterType = TodoType | 'ALL'
-
-const TYPE_COLORS: Record<TodoType, string> = {
-  TODO: 'var(--accent)',
-  FIXME: 'var(--danger)',
-  HACK: 'var(--warning)',
-  NOTE: 'var(--success)',
-  XXX: '#a78bfa',
-}
-
-function todoKey(entry: TodoEntry): string {
-  return `${entry.file}:${entry.line}:${entry.type}`
-}
-========
 import { useViewStore } from '../../lib/stores/viewStore'
 import { useI18n } from '../../lib/i18n'
-import { useTodoScanner, todoKey, TYPE_COLORS } from './use-todo-scanner'
-import type { TodoType } from './use-todo-scanner'
->>>>>>>> kanban/r-66:src/renderer/features/search/todo-scanner.tsx
+import { useTodoScanner, todoKey, TYPE_COLORS, type TodoType } from '../../features/search/use-todo-scanner'
 
 export function TodoScanner() {
   const { t } = useI18n()

@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../../../../../lib/i18n'
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/codex/codex-memory-tab.tsx
 import { MemoryEditor } from '../memory/memory-editor'
-========
-import { MemoryEditor } from '../../../../../../components/claude-settings/MemoryEditor'
->>>>>>>> kanban/r-44:src/renderer/features/claude/features/ai-providers/features/codex/codex-memory-tab.tsx
 
 interface Props {
   projectPath: string

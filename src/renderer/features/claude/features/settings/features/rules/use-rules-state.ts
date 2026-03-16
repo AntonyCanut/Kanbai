@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/rules/use-rules-state.ts
 import { RuleEntry, TemplateRuleEntry } from '../../../../../../../shared/types'
-========
-import { RuleEntry, TemplateRuleEntry } from '../../../../../shared/types'
->>>>>>>> kanban/r-43:src/renderer/features/claude/features/rules/use-rules-state.ts
 import { updateAuthorFrontmatter } from './tree-utils'
 
 export interface SharedRule {

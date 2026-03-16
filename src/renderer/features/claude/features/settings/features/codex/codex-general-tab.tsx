@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../../../../../lib/i18n'
 import { AI_PROVIDERS } from '../../../../../../../shared/types/ai-provider'
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/codex/codex-general-tab.tsx
 import { CardSelector } from '../../components/card-selector'
 import { FeatureToggleGrid } from '../../components/feature-toggle-grid'
-========
-import { CardSelector } from '../../../../../../components/claude-settings/CardSelector'
-import { FeatureToggleGrid } from '../../../../../../components/claude-settings/FeatureToggleGrid'
->>>>>>>> kanban/r-44:src/renderer/features/claude/features/ai-providers/features/codex/codex-general-tab.tsx
 
 const ACCENT_COLOR = AI_PROVIDERS.codex.detectionColor
 

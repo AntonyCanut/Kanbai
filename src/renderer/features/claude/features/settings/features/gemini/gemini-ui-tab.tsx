@@ -1,10 +1,6 @@
 import { useI18n } from '../../../../../../lib/i18n'
 import { AI_PROVIDERS } from '../../../../../../../shared/types/ai-provider'
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/gemini/gemini-ui-tab.tsx
 import { CardSelector } from '../../components/card-selector'
-========
-import { CardSelector } from '../../../../../../components/claude-settings/CardSelector'
->>>>>>>> kanban/r-44:src/renderer/features/claude/features/ai-providers/features/gemini/gemini-ui-tab.tsx
 import type { GeminiFullConfig } from './use-gemini-config'
 
 const ACCENT_COLOR = AI_PROVIDERS.gemini.detectionColor

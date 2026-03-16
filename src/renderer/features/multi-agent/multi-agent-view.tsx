@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react'
-import { Terminal } from '../features/terminal'
-import { useClaudeStore } from '../features/claude'
-import { useWorkspaceStore } from '../lib/stores/workspaceStore'
-import '../styles/multiagent.css'
+import { Terminal } from '../terminal'
+import { useClaudeStore } from '../claude'
+import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
+import './multiagent.css'
 
 interface AgentPane {
   id: string

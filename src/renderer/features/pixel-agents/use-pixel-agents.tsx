@@ -1,10 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { useTerminalTabStore } from '../features/terminal'
-import { useViewStore } from '../lib/stores/viewStore'
-import { useI18n } from '../lib/i18n'
+import { useTerminalTabStore } from '../terminal'
+import { useViewStore } from '../../lib/stores/viewStore'
+import { useI18n } from '../../lib/i18n'
 
-interface PixelAgentsPaneProps {
-  isVisible: boolean
+interface UsePixelAgentsOptions {
   workspaceId?: string
 }
 
@@ -40,7 +39,7 @@ function translateTool(toolName: string): string {
   return translated === key ? toolName : translated
 }
 
-export function PixelAgentsPane({ isVisible, workspaceId }: PixelAgentsPaneProps) {
+export function usePixelAgents({ workspaceId }: UsePixelAgentsOptions) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const agentIdRef = useRef(createAgentIdMapper())
@@ -173,27 +172,5 @@ export function PixelAgentsPane({ isVisible, workspaceId }: PixelAgentsPaneProps
     }
   }, [postToIframe, sendInitData])
 
-  return (
-    <div
-      className="pixel-agents-pane"
-      style={{
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-        visibility: isVisible ? 'visible' : 'hidden',
-      }}
-    >
-      <iframe
-        ref={iframeRef}
-        src="pixel-agents://app/"
-        sandbox="allow-scripts allow-same-origin"
-        style={{
-          width: '100%',
-          height: '100%',
-          border: 'none',
-          backgroundColor: '#1a1a2e',
-        }}
-      />
-    </div>
-  )
+  return { iframeRef }
 }
