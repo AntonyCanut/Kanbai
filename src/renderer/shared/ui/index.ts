@@ -1,8 +1,5 @@
-export { CommandPalette } from './command-palette'
 export { GlobalSearch } from './global-search'
 export { TodoScanner } from './todo-scanner'
-export { ShortcutsPanel } from './shortcuts-panel'
-export { PromptTemplates } from './prompt-templates'
 export { ConfirmModal } from './confirm-modal'
 export { TutorialModal } from './tutorial-modal'
 export { SessionModal } from './session-modal'

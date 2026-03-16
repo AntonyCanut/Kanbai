@@ -50,6 +50,7 @@ export default defineConfig({
     alias: {
       '@shared': path.resolve(__dirname, 'src/shared'),
       '@renderer': path.resolve(__dirname, 'src/renderer'),
+      '@features': path.resolve(__dirname, 'src/renderer/features'),
     },
     // Prevent Vite from resolving symlinks/junctions to their real paths.
     // Without this, esbuild outputs use the real path while Vite's dep

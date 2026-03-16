@@ -3,7 +3,7 @@ import Editor, { OnMount } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import { useViewStore } from '../../lib/stores/viewStore'
 import { useI18n } from '../../lib/i18n'
-import { CopyableError } from '../../components/CopyableError'
+import { CopyableError } from '../../shared/ui/copyable-error'
 
 const EXT_TO_LANGUAGE: Record<string, string> = {
   '.ts': 'typescript',

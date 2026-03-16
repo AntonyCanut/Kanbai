@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useI18n } from '../../../../../../lib/i18n'
 import { AgentCard } from '../../agent-card'
-import { AddCard } from '../../../../../../components/claude-settings/AddCard'
+import { AddCard } from '../../../settings/components/add-card'
 import { AddAgentModal } from '../../add-agent-modal'
 import { AgentSkillEditorModal } from './agent-skill-editor-modal'
 import { DefaultAgentsSection } from '../../default-agents-section'

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { FileEntry } from '../../../shared/types'
 import { useViewStore } from '../../lib/stores/viewStore'
-import { ContextMenu, ContextMenuItem } from '../../components/ContextMenu'
+import { ContextMenu, type ContextMenuItem } from '../../shared/ui/context-menu'
 import { FolderIcon, getFileIcon } from './file-icons'
 
 interface SidebarFileTreeProps {

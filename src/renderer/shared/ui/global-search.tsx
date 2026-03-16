@@ -1,22 +1,8 @@
-<<<<<<<< HEAD:src/renderer/shared/ui/global-search.tsx
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useViewStore } from '../stores/view-store'
-import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
-import { useI18n } from '../../lib/i18n'
-import type { SearchResult } from '../../../shared/types'
-
-interface GroupedResults {
-  file: string
-  relativePath: string
-  matches: SearchResult[]
-}
-========
 import { useEffect, useRef, useCallback } from 'react'
-import { useViewStore } from '../../lib/stores/viewStore'
+import { useViewStore } from '../stores/view-store'
+import { useSearch } from '../../features/search/use-search'
 import { useI18n } from '../../lib/i18n'
-import { useSearch } from './use-search'
 import type { SearchResult } from '../../../shared/types'
->>>>>>>> kanban/r-66:src/renderer/features/search/global-search.tsx
 
 export function GlobalSearch() {
   const { t } = useI18n()

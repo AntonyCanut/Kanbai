@@ -3,10 +3,10 @@ import type { Project } from '../../../../../shared/types/index'
 import { useWorkspaceStore } from '../../workspace-store'
 import { useTerminalTabStore } from '../../../../lib/stores/terminalTabStore'
 import { useI18n } from '../../../../lib/i18n'
-import { ContextMenu, ContextMenuItem } from '../../../../components/ContextMenu'
+import { ContextMenu, type ContextMenuItem } from '../../../../shared/ui/context-menu'
 import { useViewStore } from '../../../../lib/stores/viewStore'
-import { ClaudeInfoPanel } from '../../../../components/ClaudeInfoPanel'
-import { ConfirmModal } from '../../../../components/ConfirmModal'
+import { ClaudeInfoPanel } from '../../../claude'
+import { ConfirmModal } from '../../../../shared/ui/confirm-modal'
 import { SidebarFileTree } from '../../../files'
 
 interface ProjectItemProps {

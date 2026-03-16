@@ -1,16 +1,9 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useI18n } from '../../../../../../lib/i18n'
-<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/gemini/gemini-skills-tab.tsx
 import { AgentCard } from '../../components/agent-card'
 import { AddCard } from '../../components/add-card'
 import { AgentSkillEditorModal } from '../../components/agent-skill-editor-modal'
 import { parseAgentFrontmatter, type EnrichedAgent } from '../../components/parse-agent-frontmatter'
-========
-import { AgentCard } from '../../../../../../components/claude-settings/AgentCard'
-import { AddCard } from '../../../../../../components/claude-settings/AddCard'
-import { AgentSkillEditorModal } from '../../../../../../components/claude-settings/AgentSkillEditorModal'
-import { parseAgentFrontmatter, type EnrichedAgent } from '../../../../../../components/claude-settings/parseAgentFrontmatter'
->>>>>>>> kanban/r-44:src/renderer/features/claude/features/ai-providers/features/gemini/gemini-skills-tab.tsx
 
 interface SkillEntry {
   name: string

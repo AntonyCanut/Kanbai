@@ -6,9 +6,9 @@ import {
   findPaneComponentType,
   Terminal,
   type PaneNode,
-} from '../features/terminal'
-import { useKanbanStore } from '../lib/stores/kanbanStore'
-import { PixelAgentsPane } from './PixelAgentsPane'
+} from '../../features/terminal'
+import { useKanbanStore } from '../../lib/stores/kanbanStore'
+import { PixelAgentsPane } from '../../features/pixel-agents/pixel-agents-pane'
 
 function findPaneInitialCommand(node: PaneNode, paneId: string): string | null {
   if (node.type === 'leaf') return node.id === paneId ? node.initialCommand : null

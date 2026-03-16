@@ -6,7 +6,7 @@ import { useI18n } from '../../lib/i18n'
 import { useAppUpdateStore } from '../updates/app-update-store'
 import { useWorkspaceStore } from '../workspace/workspace-store'
 import { useUpdateStore } from '../updates/update-store'
-import { AiProviderSelector } from '../../components/AiProviderSelector'
+import { AiProviderSelector } from '../claude'
 import { CONFIGURABLE_TABS, ALL_TAB_IDS } from '../../../shared/constants/tabs'
 
 const FONT_FAMILIES = [

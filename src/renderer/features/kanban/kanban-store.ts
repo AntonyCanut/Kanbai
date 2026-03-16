@@ -2,9 +2,9 @@ import { create } from 'zustand'
 import type { KanbanTask, KanbanTaskType, KanbanStatus, KanbanComment } from '../../../shared/types/index'
 import { AI_PROVIDERS, type AiProviderId } from '../../../shared/types/ai-provider'
 import { useTerminalTabStore } from '../../features/terminal'
-import { useWorkspaceStore } from './workspaceStore'
+import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
 import { pushNotification } from '../../shared/stores/notification-store'
-import { useI18n } from '../i18n'
+import { useI18n } from '../../lib/i18n'
 
 const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 }
 
