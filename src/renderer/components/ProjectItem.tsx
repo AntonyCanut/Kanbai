@@ -5,7 +5,7 @@ import { useTerminalTabStore } from '../lib/stores/terminalTabStore'
 import { useI18n } from '../lib/i18n'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 import { useViewStore } from '../lib/stores/viewStore'
-import { ClaudeInfoPanel } from './ClaudeInfoPanel'
+import { ClaudeInfoPanel } from '../features/claude'
 import { ConfirmModal } from './ConfirmModal'
 import { SidebarFileTree } from './SidebarFileTree'
 

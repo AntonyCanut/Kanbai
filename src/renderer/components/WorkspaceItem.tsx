@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import type { Workspace, Project, DbEnvironmentTag } from '../../shared/types/index'
 import { useWorkspaceStore } from '../lib/stores/workspaceStore'
-import { useClaudeStore } from '../lib/stores/claudeStore'
+import { useClaudeStore } from '../features/claude'
 import { useViewStore } from '../lib/stores/viewStore'
 import { useDatabaseStore } from '../lib/stores/databaseStore'
 import { useI18n } from '../lib/i18n'
