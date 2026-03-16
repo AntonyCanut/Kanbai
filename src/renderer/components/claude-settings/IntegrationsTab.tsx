@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useI18n } from '../../lib/i18n'
-import { McpPanel } from '../McpPanel'
+import { McpPanel } from '../../features/mcp'
 import { WorkflowTab } from './WorkflowTab'
 import { EnvVarsEditor } from './EnvVarsEditor'
 
