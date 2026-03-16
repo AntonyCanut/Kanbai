@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useI18n } from '../../../../../../lib/i18n'
 import { AI_PROVIDERS } from '../../../../../../../shared/types/ai-provider'
+<<<<<<<< HEAD:src/renderer/features/claude/features/settings/features/codex/codex-agents-tab.tsx
 import { CardSelector } from '../../components/card-selector'
+========
+import { CardSelector } from '../../../../../../components/claude-settings/CardSelector'
+>>>>>>>> kanban/r-44:src/renderer/features/claude/features/ai-providers/features/codex/codex-agents-tab.tsx
 
 const ACCENT_COLOR = AI_PROVIDERS.codex.detectionColor
 
