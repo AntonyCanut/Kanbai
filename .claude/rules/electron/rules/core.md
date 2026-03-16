@@ -49,7 +49,7 @@ src/
     assets/          # Static assets (rule-templates)
   preload/           # Preload scripts — contextBridge, exposes window.kanbai
   renderer/          # Renderer process (React + Zustand)
-    components/      # All UI components (flat + claude-settings subdirectory, ~60 components)
+    components/      # All UI components (flat + claude-settings subdirectory, ~130 components)
     lib/stores/      # Zustand stores (per domain, 15 stores)
     styles/          # CSS custom properties
   shared/            # Shared types and constants (both processes)
@@ -174,6 +174,11 @@ npm run lint:fix         # ESLint auto-fix
 npm run typecheck        # TypeScript check
 npm run format           # Prettier
 npm run build:mcp        # Build MCP server
+npm run pixel-agents:setup   # Install Pixel agents integration
+npm run pixel-agents:update  # Update Pixel agents
+npm run rtk:setup            # Setup RTK (Rust Token Killer) on macOS
+npm run rtk:setup:windows    # Setup RTK on Windows
+npm run rtk:update           # Update RTK
 ```
 
 ## Testing

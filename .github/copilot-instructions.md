@@ -32,7 +32,7 @@ Three-process Electron model:
 
 - **Main** (`src/main/`) — Node.js, IPC handlers in `ipc/` (32 handlers), services in `services/` (storage, healthCheck, notifications, appUpdateState, activityHooks, ai-cli, pixel-agents-service, pixel-agents-assets, companion-server [AES-256-GCM encrypted data server], database/ [connection, queries, backup, crypto, NL, drivers/], packages/ [analysis, NL])
 - **Preload** (`src/preload/`) — contextBridge, exposes `window.kanbai` API
-- **Renderer** (`src/renderer/`) — React, flat + claude-settings components (~60), Zustand stores in `lib/stores/` (15 stores)
+- **Renderer** (`src/renderer/`) — React, flat + claude-settings components (~130), Zustand stores in `lib/stores/` (15 stores)
 - **Shared** (`src/shared/`) — All types in `types/index.ts`, constants in `constants/`
 
 ## Security (Mandatory)
@@ -134,6 +134,11 @@ npm run lint:fix         # ESLint auto-fix
 npm run typecheck        # TypeScript check
 npm run format           # Prettier
 npm run build:mcp        # Build MCP server
+npm run pixel-agents:setup   # Install Pixel agents integration
+npm run pixel-agents:update  # Update Pixel agents
+npm run rtk:setup            # Setup RTK (Rust Token Killer) on macOS
+npm run rtk:setup:windows    # Setup RTK on Windows
+npm run rtk:update           # Update RTK
 ```
 
 ## Workflow

@@ -41,7 +41,7 @@ Three-process Electron model:
 
 3. **Renderer** (`src/renderer/`) — Chromium, sandboxed
    - React app with Zustand state management
-   - Flat component architecture + claude-settings subdirectory in `components/` (~60 components)
+   - Flat component architecture + claude-settings subdirectory in `components/` (~130 components)
    - Stores in `lib/stores/` (15 stores)
    - CSS custom properties in `styles/`
 
@@ -148,6 +148,11 @@ npm run lint:fix         # ESLint auto-fix
 npm run typecheck        # TypeScript check
 npm run format           # Prettier
 npm run build:mcp        # Build MCP server
+npm run pixel-agents:setup   # Install Pixel agents integration
+npm run pixel-agents:update  # Update Pixel agents
+npm run rtk:setup            # Setup RTK (Rust Token Killer) on macOS
+npm run rtk:setup:windows    # Setup RTK on Windows
+npm run rtk:update           # Update RTK
 ```
 
 ## Testing

@@ -196,5 +196,5 @@ Perimetre : `src/**/*.ts`, excluant `src/renderer/**` et les fichiers `index.ts`
 | Composants React (`src/renderer/components/`) | 0 tests - pas de setup jsdom/testing-library |
 | `claudeStore` | Store non couvert |
 | `kanbanStore` | Store non couvert |
-| Tests E2E (Playwright/Spectron) | Non mis en place |
+| Tests E2E (Playwright) | Non mis en place |
 | Preload scripts | Testes indirectement via les tests d'integration IPC |

@@ -641,9 +641,8 @@ Workspaces/
 | Rejetee | Raison |
 |---------|--------|
 | Redux Toolkit | Trop de boilerplate pour ce projet, Zustand suffit |
-| better-sqlite3 | Overhead inutile, un fichier JSON (`~/.kanbai/data.json`) suffit pour le volume de donnees |
 | Tailwind CSS | Non necessaire, CSS natif avec variables suffit |
-| Playwright / Spectron | Non installe, pas de tests E2E pour le moment |
+| Playwright | Non installe, pas de tests E2E pour le moment |
 | Zod | Non installe, validation manuelle dans les handlers IPC |
 
 ---
@@ -851,7 +850,7 @@ User action → React component → Zustand action → IPC invoke → Main servi
 - Terminal, Claude, Session, App, Updates: handlers IPC complets
 
 **E2E tests** (non mis en place):
-- Aucun test E2E pour le moment (Playwright/Spectron non configure)
+- Aucun test E2E pour le moment (Playwright non configure)
 
 ### 10.3 Infrastructure de test
 

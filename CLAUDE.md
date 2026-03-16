@@ -79,7 +79,7 @@ Visual verification (macOS):
 - Interact if needed: `osascript -e 'tell application "System Events" to click at {x, y}'`
 - Re-screenshot after interaction and compare
 
-Frameworks: Use Vitest for unit/integration tests. Use Playwright or Spectron for E2E Electron testing if needed.
+Frameworks: Use Vitest for unit/integration tests. Use Playwright for E2E Electron testing if needed.
 For Electron-specific testing: test IPC channels, main process logic, and renderer components separately.
 Always communicate your results to the team lead.
 ```
