@@ -144,6 +144,16 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.FS_OPEN_IN_FINDER, { path: filePath }),
     search: (cwd: string, query: string, fileTypes?: string[], caseSensitive?: boolean): Promise<SearchResult[]> =>
       ipcRenderer.invoke(IPC_CHANNELS.FS_SEARCH, { cwd, query, fileTypes, caseSensitive }),
+    fileInfo: (
+      filePath: string,
+    ): Promise<{ size: number; lineCount: number; encoding: string; isBinary: boolean; error: string | null }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.FS_FILE_INFO, { path: filePath }),
+    readFileChunked: (
+      filePath: string,
+      startLine: number,
+      lineCount?: number,
+    ): Promise<{ content: string | null; startLine: number; endLine: number; totalLines: number; error: string | null }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.FS_READ_FILE_CHUNKED, { path: filePath, startLine, lineCount }),
   },
 
   // Git

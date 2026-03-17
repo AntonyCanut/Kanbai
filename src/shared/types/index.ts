@@ -1155,6 +1155,8 @@ export const IPC_CHANNELS = {
   FS_READ_BASE64: 'fs:readBase64',
   FS_OPEN_IN_FINDER: 'fs:openInFinder',
   FS_SEARCH: 'fs:search',
+  FS_FILE_INFO: 'fs:fileInfo',
+  FS_READ_FILE_CHUNKED: 'fs:readFileChunked',
 
   // Git
   GIT_INIT: 'git:init',

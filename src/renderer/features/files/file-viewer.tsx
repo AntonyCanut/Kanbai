@@ -127,6 +127,15 @@ function validateJson(text: string): { valid: boolean; error?: string; line?: nu
   }
 }
 
+const CHUNK_SIZE = 1000
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+}
+
 export function FileViewer() {
   const { t } = useI18n()
   const { selectedFilePath, setViewMode, isEditorDirty, setEditorDirty, bookmarks, toggleBookmark } = useViewStore()
@@ -139,12 +148,42 @@ export function FileViewer() {
   const [jsonError, setJsonError] = useState<string | null>(null)
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
+  // Large file state
+  const [isLargeFile, setIsLargeFile] = useState(false)
+  const [largeFileSize, setLargeFileSize] = useState(0)
+  const [chunkStartLine, setChunkStartLine] = useState(0)
+  const [chunkEndLine, setChunkEndLine] = useState(0)
+  const [totalLines, setTotalLines] = useState(0)
+  const [goToLineInput, setGoToLineInput] = useState('')
+
   const isImage = selectedFilePath ? isImageFile(selectedFilePath) : false
   const isPdf = selectedFilePath ? isPdfFile(selectedFilePath) : false
   const isBinary = isImage || isPdf
   const isMd = selectedFilePath ? isMarkdownFile(selectedFilePath) : false
   const isJson = selectedFilePath ? isJsonFile(selectedFilePath) : false
   const isBookmarked = selectedFilePath ? bookmarks.includes(selectedFilePath) : false
+
+  const loadChunk = useCallback(async (filePath: string, startLine: number) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await window.kanbai.fs.readFileChunked(filePath, startLine, CHUNK_SIZE)
+      if (result.error) {
+        setError(result.error)
+        setContent(null)
+      } else {
+        setContent(result.content)
+        setChunkStartLine(result.startLine)
+        setChunkEndLine(result.endLine)
+        setTotalLines(result.totalLines)
+      }
+    } catch (err) {
+      setError(String(err))
+      setContent(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!selectedFilePath) return
@@ -155,6 +194,12 @@ export function FileViewer() {
     setEditorDirty(false)
     setMdPreview(false)
     setJsonError(null)
+    setIsLargeFile(false)
+    setLargeFileSize(0)
+    setChunkStartLine(0)
+    setChunkEndLine(0)
+    setTotalLines(0)
+    setGoToLineInput('')
 
     if (isImageFile(selectedFilePath) || isPdfFile(selectedFilePath)) {
       window.kanbai.fs
@@ -171,7 +216,13 @@ export function FileViewer() {
     } else {
       window.kanbai.fs
         .readFile(selectedFilePath)
-        .then((result: { content: string | null; error: string | null }) => {
+        .then((result: { content: string | null; error: string | null; isLargeFile?: boolean; fileSize?: number }) => {
+          if (result.isLargeFile) {
+            setIsLargeFile(true)
+            setLargeFileSize(result.fileSize ?? 0)
+            loadChunk(selectedFilePath, 0)
+            return
+          }
           if (result.error) {
             setError(result.error)
             setContent(null)
@@ -179,7 +230,6 @@ export function FileViewer() {
             const text = result.content ?? ''
             setContent(text)
             setError(null)
-            // Auto-validate JSON
             if (isJsonFile(selectedFilePath)) {
               const validation = validateJson(text)
               setJsonError(validation.valid ? null : validation.error ?? null)
@@ -192,7 +242,7 @@ export function FileViewer() {
         })
         .finally(() => setLoading(false))
     }
-  }, [selectedFilePath, setEditorDirty])
+  }, [selectedFilePath, setEditorDirty, loadChunk])
 
   const handleSave = useCallback(async () => {
     if (!selectedFilePath || !editorRef.current) return
@@ -287,6 +337,26 @@ export function FileViewer() {
     }
   }, [setEditorDirty])
 
+  const handleChunkPrev = useCallback(() => {
+    if (!selectedFilePath || chunkStartLine <= 0) return
+    const newStart = Math.max(0, chunkStartLine - CHUNK_SIZE)
+    loadChunk(selectedFilePath, newStart)
+  }, [selectedFilePath, chunkStartLine, loadChunk])
+
+  const handleChunkNext = useCallback(() => {
+    if (!selectedFilePath || chunkEndLine >= totalLines) return
+    loadChunk(selectedFilePath, chunkEndLine)
+  }, [selectedFilePath, chunkEndLine, totalLines, loadChunk])
+
+  const handleGoToLine = useCallback(() => {
+    if (!selectedFilePath) return
+    const lineNum = parseInt(goToLineInput, 10)
+    if (isNaN(lineNum) || lineNum < 1) return
+    const targetLine = lineNum - 1 // convert to 0-based
+    loadChunk(selectedFilePath, targetLine)
+    setGoToLineInput('')
+  }, [selectedFilePath, goToLineInput, loadChunk])
+
   const renderedMarkdown = useMemo(() => {
     if (!isMd || !mdPreview || content === null) return ''
     return markdownToHtml(content)
@@ -310,6 +380,12 @@ export function FileViewer() {
         {isEditorDirty && <span className="file-viewer-dirty-dot" title={t('file.modified')} />}
         <span className="file-viewer-path" title={selectedFilePath}>{selectedFilePath}</span>
 
+        {isLargeFile && (
+          <span className="file-viewer-large-badge" title={`${formatFileSize(largeFileSize)} - ${totalLines} lignes`}>
+            {formatFileSize(largeFileSize)}
+          </span>
+        )}
+
         {/* Bookmark button */}
         <button
           className={`file-viewer-bookmark btn-icon${isBookmarked ? ' file-viewer-bookmark--active' : ''}`}
@@ -320,7 +396,7 @@ export function FileViewer() {
         </button>
 
         {/* Markdown preview toggle */}
-        {isMd && !isBinary && (
+        {isMd && !isBinary && !isLargeFile && (
           <button
             className={`file-viewer-toggle-btn${mdPreview ? ' file-viewer-toggle-btn--active' : ''}`}
             onClick={() => setMdPreview(!mdPreview)}
@@ -331,7 +407,7 @@ export function FileViewer() {
         )}
 
         {/* JSON tools */}
-        {isJson && !isBinary && (
+        {isJson && !isBinary && !isLargeFile && (
           <>
             <button
               className="file-viewer-json-btn"
@@ -350,7 +426,7 @@ export function FileViewer() {
           </>
         )}
 
-        {!isBinary && !mdPreview && (
+        {!isBinary && !mdPreview && !isLargeFile && (
           <button
             className="file-viewer-save-btn"
             onClick={handleSave}
@@ -370,9 +446,51 @@ export function FileViewer() {
       </div>
 
       {/* JSON validation error */}
-      {isJson && jsonError && (
+      {isJson && jsonError && !isLargeFile && (
         <div className="file-viewer-json-error">
           {t('file.invalidJson', { error: jsonError })}
+        </div>
+      )}
+
+      {/* Large file chunk navigation */}
+      {isLargeFile && totalLines > 0 && (
+        <div className="file-viewer-chunk-nav">
+          <button
+            className="file-viewer-chunk-btn"
+            onClick={handleChunkPrev}
+            disabled={chunkStartLine <= 0 || loading}
+            title="Chunk précédent"
+          >
+            &#x25C0;
+          </button>
+          <span className="file-viewer-chunk-info">
+            Lignes {chunkStartLine + 1} - {chunkEndLine} / {totalLines}
+          </span>
+          <button
+            className="file-viewer-chunk-btn"
+            onClick={handleChunkNext}
+            disabled={chunkEndLine >= totalLines || loading}
+            title="Chunk suivant"
+          >
+            &#x25B6;
+          </button>
+          <span className="file-viewer-chunk-separator" />
+          <input
+            className="file-viewer-goto-input"
+            type="text"
+            placeholder="Ligne..."
+            value={goToLineInput}
+            onChange={(e) => setGoToLineInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleGoToLine() }}
+          />
+          <button
+            className="file-viewer-chunk-btn"
+            onClick={handleGoToLine}
+            disabled={loading}
+          >
+            Go
+          </button>
+          <span className="file-viewer-chunk-readonly">(lecture seule)</span>
         </div>
       )}
 
@@ -405,12 +523,18 @@ export function FileViewer() {
         {/* Code editor */}
         {!isBinary && content !== null && !loading && !(isMd && mdPreview) && (
           <Editor
-            key={selectedFilePath}
+            key={isLargeFile ? `${selectedFilePath}:${chunkStartLine}` : selectedFilePath}
             value={content}
             language={language}
             theme="catppuccin-mocha"
-            onChange={handleChange}
-            onMount={handleEditorMount}
+            onChange={isLargeFile ? undefined : handleChange}
+            onMount={isLargeFile ? (editorInstance) => {
+              editorRef.current = editorInstance
+              // Set line number offset for large file chunks
+              editorInstance.updateOptions({
+                lineNumbers: (lineNumber: number) => String(lineNumber + chunkStartLine),
+              })
+            } : handleEditorMount}
             beforeMount={(monaco) => {
               monaco.editor.defineTheme('catppuccin-mocha', {
                 base: 'vs-dark',
@@ -493,7 +617,7 @@ export function FileViewer() {
               cursorSmoothCaretAnimation: 'on',
               bracketPairColorization: { enabled: true },
               guides: { bracketPairs: true, indentation: true },
-              readOnly: false,
+              readOnly: isLargeFile,
             }}
           />
         )}

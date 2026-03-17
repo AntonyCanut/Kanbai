@@ -3171,6 +3171,93 @@ body {
   font-size: 14px;
 }
 
+/* Large file badge */
+.file-viewer-large-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--warning);
+  background: rgba(245, 166, 35, 0.12);
+  padding: 1px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Chunk navigation bar */
+.file-viewer-chunk-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.file-viewer-chunk-btn {
+  height: 22px;
+  padding: 0 8px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.file-viewer-chunk-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg-tertiary);
+  border-color: var(--accent);
+}
+
+.file-viewer-chunk-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.file-viewer-chunk-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Menlo', monospace;
+}
+
+.file-viewer-chunk-separator {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+.file-viewer-goto-input {
+  height: 22px;
+  width: 80px;
+  padding: 0 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Menlo', monospace;
+  outline: none;
+}
+
+.file-viewer-goto-input:focus {
+  border-color: var(--accent);
+}
+
+.file-viewer-goto-input::placeholder {
+  color: var(--text-muted);
+}
+
+.file-viewer-chunk-readonly {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-left: auto;
+}
+
 /* NPM Panel */
 .npm-panel {
   flex: 1;

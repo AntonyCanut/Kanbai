@@ -1,6 +1,7 @@
 import { IpcMain, shell } from 'electron'
-import fs from 'fs'
+import fs, { createReadStream } from 'fs'
 import path from 'path'
+import { createInterface } from 'readline'
 import { execFile } from 'child_process'
 import { IPC_CHANNELS, FileEntry, SearchResult } from '../../shared/types'
 
@@ -47,7 +48,7 @@ export function registerFilesystemHandlers(ipcMain: IpcMain): void {
     try {
       const stat = fs.statSync(filePath)
       if (stat.size > 5 * 1024 * 1024) {
-        return { content: null, error: 'Fichier trop volumineux (>5 Mo)' }
+        return { content: null, error: null, isLargeFile: true, fileSize: stat.size }
       }
       const content = fs.readFileSync(filePath, 'utf-8')
       return { content, error: null }
@@ -211,6 +212,138 @@ export function registerFilesystemHandlers(ipcMain: IpcMain): void {
 
         proc.on('error', () => resolve([]))
       })
+    },
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_FILE_INFO,
+    async (_event, { path: filePath }: { path: string }) => {
+      try {
+        const stat = fs.statSync(filePath)
+
+        // Check if binary by reading first 8KB and looking for null bytes
+        let isBinary = false
+        const checkSize = Math.min(stat.size, 8192)
+        if (checkSize > 0) {
+          const fd = fs.openSync(filePath, 'r')
+          const buffer = Buffer.alloc(checkSize)
+          fs.readSync(fd, buffer, 0, checkSize, 0)
+          fs.closeSync(fd)
+          for (let i = 0; i < checkSize; i++) {
+            if (buffer[i] === 0x00) {
+              isBinary = true
+              break
+            }
+          }
+        }
+
+        // Count lines efficiently using streaming
+        let lineCount = 0
+        if (!isBinary && stat.size > 0) {
+          const stream = createReadStream(filePath)
+          for await (const chunk of stream) {
+            const buf = chunk as Buffer
+            for (let i = 0; i < buf.length; i++) {
+              if (buf[i] === 0x0a) lineCount++
+            }
+          }
+          // Add 1 if file doesn't end with newline (file has content but no trailing newline)
+          const fd = fs.openSync(filePath, 'r')
+          const lastByte = Buffer.alloc(1)
+          fs.readSync(fd, lastByte, 0, 1, stat.size - 1)
+          fs.closeSync(fd)
+          if (lastByte[0] !== 0x0a) {
+            lineCount++
+          }
+        }
+
+        return {
+          size: stat.size,
+          lineCount,
+          encoding: 'utf-8' as const,
+          isBinary,
+          error: null,
+        }
+      } catch (err) {
+        return {
+          size: 0,
+          lineCount: 0,
+          encoding: 'utf-8' as const,
+          isBinary: false,
+          error: String(err),
+        }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.FS_READ_FILE_CHUNKED,
+    async (
+      _event,
+      { path: filePath, startLine, lineCount = 1000 }: { path: string; startLine: number; lineCount?: number },
+    ) => {
+      try {
+        const stat = fs.statSync(filePath)
+
+        // Count total lines efficiently
+        let totalLines = 0
+        const countStream = createReadStream(filePath)
+        for await (const chunk of countStream) {
+          const buf = chunk as Buffer
+          for (let i = 0; i < buf.length; i++) {
+            if (buf[i] === 0x0a) totalLines++
+          }
+        }
+        // Add 1 if file doesn't end with newline
+        if (stat.size > 0) {
+          const fd = fs.openSync(filePath, 'r')
+          const lastByte = Buffer.alloc(1)
+          fs.readSync(fd, lastByte, 0, 1, stat.size - 1)
+          fs.closeSync(fd)
+          if (lastByte[0] !== 0x0a) {
+            totalLines++
+          }
+        }
+
+        // Read the requested line range using readline for efficient line-by-line streaming
+        const lines: string[] = []
+        let currentLine = 0
+        const endTarget = startLine + lineCount
+
+        const rl = createInterface({
+          input: createReadStream(filePath, { encoding: 'utf-8' }),
+          crlfDelay: Infinity,
+        })
+
+        for await (const line of rl) {
+          if (currentLine >= endTarget) {
+            rl.close()
+            break
+          }
+          if (currentLine >= startLine) {
+            lines.push(line)
+          }
+          currentLine++
+        }
+
+        const actualEndLine = startLine + lines.length
+
+        return {
+          content: lines.join('\n'),
+          startLine,
+          endLine: actualEndLine,
+          totalLines,
+          error: null,
+        }
+      } catch (err) {
+        return {
+          content: null,
+          startLine: 0,
+          endLine: 0,
+          totalLines: 0,
+          error: String(err),
+        }
+      }
     },
   )
 }

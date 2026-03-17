@@ -110,7 +110,7 @@ describe('Filesystem IPC Handlers', () => {
       expect(result.error).toBeDefined()
     })
 
-    it('refuse les fichiers de plus de 5 Mo', async () => {
+    it('signale les fichiers de plus de 5 Mo comme largeFile', async () => {
       const filePath = path.join(testFilesDir, 'large.bin')
       // Creer un fichier de >5 Mo
       const buf = Buffer.alloc(6 * 1024 * 1024, 'a')
@@ -119,7 +119,9 @@ describe('Filesystem IPC Handlers', () => {
       const result = await mockIpcMain._invoke('fs:readFile', { path: filePath })
 
       expect(result.content).toBeNull()
-      expect(result.error).toContain('trop volumineux')
+      expect(result.error).toBeNull()
+      expect(result.isLargeFile).toBe(true)
+      expect(result.fileSize).toBe(6 * 1024 * 1024)
     })
 
     it('lit correctement un fichier JSON', async () => {
