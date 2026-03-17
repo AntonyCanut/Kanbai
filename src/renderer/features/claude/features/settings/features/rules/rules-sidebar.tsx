@@ -1,9 +1,5 @@
 import { RuleTreeNode, TemplateRuleEntry } from '../../../../../../../shared/types'
 import { useI18n } from '../../../../../../lib/i18n'
-<<<<<<< HEAD
-=======
-
->>>>>>> kanban/r-58
 import { RuleTreeView } from './rule-tree-view'
 import { TemplateSection } from './template-section'
 import { SharedRule, Selection } from './use-rules-state'

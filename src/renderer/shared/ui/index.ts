@@ -1,13 +1,8 @@
-<<<<<<< HEAD
 export { CommandPalette } from '../../features/command-palette/command-palette'
 export { GlobalSearch } from './global-search'
 export { TodoScanner } from './todo-scanner'
 export { ShortcutsPanel } from '../../features/command-palette/shortcuts-panel'
 export { PromptTemplates } from '../../features/prompts/prompt-templates'
-=======
-export { GlobalSearch } from './global-search'
-export { TodoScanner } from './todo-scanner'
->>>>>>> kanban/r-58
 export { ConfirmModal } from './confirm-modal'
 export { TutorialModal } from './tutorial-modal'
 export { SessionModal } from './session-modal'

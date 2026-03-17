@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RuleEntry, TemplateRuleEntry } from '../../../../../../../shared/types'
-<<<<<<< HEAD
-=======
-
->>>>>>> kanban/r-58
 import { updateAuthorFrontmatter } from './tree-utils'
 
 export interface SharedRule {

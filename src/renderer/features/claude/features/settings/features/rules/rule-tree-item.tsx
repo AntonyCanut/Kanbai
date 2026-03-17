@@ -1,9 +1,5 @@
 import { useRef, useEffect } from 'react'
 import { RuleTreeNode } from '../../../../../../../shared/types'
-<<<<<<< HEAD
-=======
-
->>>>>>> kanban/r-58
 import { DropTarget } from './use-rules-drag-drop'
 
 interface Props {

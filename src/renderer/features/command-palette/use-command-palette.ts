@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useViewStore, ViewMode } from '../../lib/stores/viewStore'
-<<<<<<< HEAD
-=======
-
->>>>>>> kanban/r-58
 import { useWorkspaceStore } from '../../lib/stores/workspaceStore'
 import { useI18n } from '../../lib/i18n'
 

@@ -1,9 +1,5 @@
 import React, { useState, useCallback } from 'react'
 import { RuleTreeNode } from '../../../../../../../shared/types'
-<<<<<<< HEAD
-=======
-
->>>>>>> kanban/r-58
 import { RuleTreeItem } from './rule-tree-item'
 import { DropTarget } from './use-rules-drag-drop'
 
