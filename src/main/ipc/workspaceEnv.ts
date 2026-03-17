@@ -143,12 +143,17 @@ function applyAiRulesToEnv(envDir: string, projectPaths: string[]): void {
     const memoryFile = AI_MEMORY_FILES[configDir]
     const envMemoryFile = memoryFile ? path.join(envDir, memoryFile) : null
 
-    // Remove existing copies (not symlinks)
-    if (fs.existsSync(envConfigDir) && !fs.lstatSync(envConfigDir).isSymbolicLink()) {
-      fs.rmSync(envConfigDir, { recursive: true, force: true })
-    }
-    if (envMemoryFile && fs.existsSync(envMemoryFile) && !fs.lstatSync(envMemoryFile).isSymbolicLink()) {
-      fs.unlinkSync(envMemoryFile)
+    const hasWorkspaceConfigDir = fs.existsSync(envConfigDir) && !fs.lstatSync(envConfigDir).isSymbolicLink()
+    const hasWorkspaceMemoryFile = Boolean(
+      envMemoryFile && fs.existsSync(envMemoryFile) && !fs.lstatSync(envMemoryFile).isSymbolicLink(),
+    )
+
+    // Preserve workspace-level AI config once it exists.
+    // The env directory is the actual execution root for multi-project sessions,
+    // so subsequent env rebuilds must not overwrite user edits with the first
+    // project's config.
+    if (hasWorkspaceConfigDir || hasWorkspaceMemoryFile) {
+      continue
     }
 
     // Find the first project with this AI's config
