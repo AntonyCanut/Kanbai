@@ -109,8 +109,9 @@ Feature-local stores are colocated (e.g., `features/terminal/terminal-store.ts`)
 - **AI Configs** — Per-provider configuration (Codex, Copilot, Gemini, generic AI provider)
 - **Skills Store** — Claude Code skills marketplace with multi-repo fetching and one-click install
 - **Companion** — External companion API pairing and registration system
-- **Notes** — Per-workspace note management
+- **Notes** — Per-workspace note management with image support (paste, drag-drop, resize)
 - **SSH** — Remote SSH connection management
+- **Makefile Runner** — Makefile target buttons attached to terminal tabs (named "projectName - target")
 
 ## AI Provider Integration
 
@@ -123,7 +124,7 @@ Feature-local stores are colocated (e.g., `features/terminal/terminal-store.ts`)
 | Copilot | #e2538a (pink) | `.copilot/` | `.github/copilot-instructions.md` |
 | Gemini CLI | #4285F4 (blue) | `.gemini/` | `GEMINI.md` (this file) |
 
-Each provider has activity hooks, settings UI with provider-colored accents, Pixel Agents visual integration, and terminal integration.
+Each provider has activity hooks, settings UI with provider-colored accents, Pixel Agents visual integration, terminal integration, workspace-level AI tab with defaults propagation to all projects, and memory/instruction files managed via Kanbai UI.
 
 ## Pixel Agents
 
@@ -138,8 +139,11 @@ Animated AI characters that visually represent active AI sessions:
 - Data stored in `~/.kanbai/kanban/{workspaceId}.json`
 - Statuses: TODO, WORKING, DONE, FAILED, PENDING
 - Ticket reactivation: DONE->WORKING only on Enter (message submit), not on keystrokes
-- Auto-creation of "Refonte memoires IA" tickets every 10 tickets (configurable)
+- Auto-creation of "Refonte memoires IA" tickets every 10 tickets (configurable in Settings > Kanban)
 - Labels system and comments on tickets with timestamps
+- Cards display update time (hours/minutes) and AI provider/model used
+- PDF preview in ticket attachments
+- Worktree isolation: each ticket runs in its own git worktree branch
 
 ## Code Conventions
 
@@ -199,6 +203,13 @@ npm run rtk:update           # Update RTK
 - Mock infrastructure: `tests/mocks/electron.ts`, `tests/helpers/storage.ts`
 - Always run tests before completing work
 
+## Design System
+
+Kanbai Brand Identity v1.0 applied across the entire application:
+- Consistent color palette, typography, and spacing via CSS custom properties
+- Provider-colored accents for each AI tool (orange/green/pink/blue)
+- macOS-native feel with vibrancy and system fonts
+
 ## Data Persistence
 
 | Path | Purpose |
@@ -206,8 +217,9 @@ npm run rtk:update           # Update RTK
 | `~/.kanbai/data.json` | Global persistence (workspaces, projects, settings, via StorageService) |
 | `~/.kanbai/kanban/{workspaceId}.json` | Kanban board data per workspace |
 | `.workspaces/kanban.json` | Per-project Kanban tasks |
-| `~/.kanbai/notes-workspace/{workspaceId}.json` | Per-workspace notes |
+| `~/.kanbai/notes-workspace/{workspaceId}.json` | Per-workspace notes (including embedded images) |
 | `~/.kanbai/envs/{Name}/` | Workspace environment root |
+| `~/.kanbai/hooks/` | Shared activity and automation hooks |
 
 ## Key Architectural Decisions
 

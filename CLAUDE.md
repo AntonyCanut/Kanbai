@@ -336,8 +336,6 @@ Full project architecture, stack, IPC conventions, features, and structure are i
 - No Co-Authored-By trailers in commits
 - Build: Vite 7 + vite-plugin-electron (NOT electron-vite)
 
-<!-- KANBAI_WORKFLOW -->
-
 ## Workflow Orchestration
 
 ### 1. Mode Plan
