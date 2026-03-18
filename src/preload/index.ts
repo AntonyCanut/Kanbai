@@ -9,7 +9,7 @@ ipcRenderer.setMaxListeners(50)
 const api = {
   // Terminal
   terminal: {
-    create: (options: { cwd?: string; shell?: string; workspaceId?: string; tabId?: string; provider?: string }) =>
+    create: (options: { cwd?: string; shell?: string; workspaceId?: string; tabId?: string; provider?: string; label?: string }) =>
       ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CREATE, options),
     write: (id: string, data: string) =>
       ipcRenderer.send(IPC_CHANNELS.TERMINAL_INPUT, { id, data }),
@@ -19,6 +19,8 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CLOSE, { id }),
     checkBusy: (id: string): Promise<boolean> =>
       ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CHECK_BUSY, { id }),
+    updateLabel: (id: string, label: string) =>
+      ipcRenderer.send(IPC_CHANNELS.TERMINAL_UPDATE_LABEL, { id, label }),
     onData: (callback: (data: { id: string; data: string }) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { id: string; data: string }) =>
         callback(payload)
