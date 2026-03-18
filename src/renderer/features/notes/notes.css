@@ -243,8 +243,17 @@
   color: var(--text-muted);
 }
 
-.notes-editor-content {
+/* Editor wrapper for contenteditable + resize overlay */
+.note-editor-wrapper {
   flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.notes-editor-content {
+  width: 100%;
+  height: 100%;
   resize: none;
   background: transparent;
   border: none;
@@ -254,10 +263,96 @@
   font-family: var(--font-mono, 'SF Mono', 'Menlo', 'Monaco', monospace);
   outline: none;
   padding: 0;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
-.notes-editor-content::placeholder {
+.notes-editor-content:empty::before {
+  content: attr(data-placeholder);
   color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Inline images */
+.note-inline-image {
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 4px 0;
+  cursor: pointer;
+  vertical-align: top;
+  transition: outline 0.1s ease;
+}
+
+.note-inline-image:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Image resize overlay */
+.note-image-resize-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.note-image-resize-border {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.note-image-resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border: 2px solid var(--bg-primary);
+  border-radius: 50%;
+  pointer-events: all;
+  z-index: 11;
+}
+
+.note-image-resize-handle--top-left {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.note-image-resize-handle--top-right {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.note-image-resize-handle--bottom-left {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.note-image-resize-handle--bottom-right {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+.note-image-resize-dimensions {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .notes-editor-actions {

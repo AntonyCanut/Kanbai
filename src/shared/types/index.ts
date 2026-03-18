@@ -1237,6 +1237,9 @@ export const IPC_CHANNELS = {
   NOTES_CREATE: 'notes:create',
   NOTES_UPDATE: 'notes:update',
   NOTES_DELETE: 'notes:delete',
+  NOTES_SAVE_IMAGE: 'notes:save-image',
+  NOTES_LOAD_IMAGE: 'notes:load-image',
+  NOTES_DELETE_IMAGE: 'notes:delete-image',
 
   // Namespace
   NAMESPACE_LIST: 'namespace:list',
