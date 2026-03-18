@@ -891,6 +891,12 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.NOTES_UPDATE, { workspaceId, id, title, content }),
     delete: (workspaceId: string, id: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.NOTES_DELETE, { workspaceId, id }),
+    saveImage: (workspaceId: string, imageData: string, mimeType: string): Promise<{ imageId: string } | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.NOTES_SAVE_IMAGE, { workspaceId, imageData, mimeType }),
+    loadImage: (workspaceId: string, imageId: string): Promise<{ data: string; mimeType: string } | null> =>
+      ipcRenderer.invoke(IPC_CHANNELS.NOTES_LOAD_IMAGE, { workspaceId, imageId }),
+    deleteImage: (workspaceId: string, imageId: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.NOTES_DELETE_IMAGE, { workspaceId, imageId }),
   },
 
   companion: {

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useNotesStore } from './notes-store'
 import { useWorkspaceStore } from '../workspace'
 import { useI18n } from '../../lib/i18n'
+import { NoteEditor } from './notes-editor'
 import './notes.css'
 
 function formatRelativeDate(timestamp: number): string {
@@ -17,6 +18,23 @@ function formatRelativeDate(timestamp: number): string {
   if (hours < 24) return `${hours}h ago`
   if (days < 7) return `${days}d ago`
   return new Date(timestamp).toLocaleDateString()
+}
+
+function getContentPreview(content: string): string {
+  // Replace img tags with [image] text
+  let text = content.replace(/<img[^>]*>/gi, '[image] ')
+  // Strip remaining HTML tags
+  text = text.replace(/<[^>]*>/g, '')
+  // Decode common HTML entities
+  text = text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+  // Normalize whitespace
+  text = text.replace(/\s+/g, ' ').trim()
+  return text.slice(0, 80)
 }
 
 export function NotesPanel() {
@@ -173,7 +191,7 @@ export function NotesPanel() {
                     {note.title || t('notes.untitled')}
                   </div>
                   <div className="notes-list-item-preview">
-                    {note.content.slice(0, 80).replace(/\n/g, ' ') || t('notes.noContent')}
+                    {getContentPreview(note.content) || t('notes.noContent')}
                   </div>
                   <div className="notes-list-item-date">
                     {formatRelativeDate(note.updatedAt)}
@@ -210,7 +228,7 @@ export function NotesPanel() {
           )}
         </div>
 
-        {/* Content area - always editable */}
+        {/* Content area */}
         <div className="notes-content">
           {selectedNote ? (
             <div className="notes-editor">
@@ -222,10 +240,10 @@ export function NotesPanel() {
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder={t('notes.titlePlaceholder')}
               />
-              <textarea
-                className="notes-editor-content"
-                value={editContent}
-                onChange={(e) => handleContentChange(e.target.value)}
+              <NoteEditor
+                noteId={selectedNoteId}
+                initialContent={editContent}
+                onChange={handleContentChange}
                 placeholder={t('notes.contentPlaceholder')}
               />
             </div>
