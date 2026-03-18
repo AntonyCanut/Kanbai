@@ -296,7 +296,7 @@ describe('WorkspaceEnv IPC Handlers', () => {
       expect(fs.existsSync(path.join(result.envPath, '.claude', 'settings.local.json'))).toBe(true)
     })
 
-    it('remplace les regles Claude lors d un re-setup', async () => {
+    it('preserve les regles Claude workspace lors d un re-setup', async () => {
       // Premier setup avec project-alpha ayant des regles
       fs.writeFileSync(path.join(projectDir1, 'CLAUDE.md'), '# Old Rules')
 
@@ -308,7 +308,7 @@ describe('WorkspaceEnv IPC Handlers', () => {
       // Modifier les regles du projet
       fs.writeFileSync(path.join(projectDir1, 'CLAUDE.md'), '# New Rules')
 
-      // Deuxieme setup - les regles doivent etre mises a jour
+      // Deuxieme setup - les regles workspace sont preservees (pas ecrasees par le projet)
       const result = await mockIpcMain._invoke<{ success: boolean; envPath: string }>('workspace:envSetup', {
         workspaceName: 'ws-re-setup',
         projectPaths: [projectDir1],
@@ -316,8 +316,8 @@ describe('WorkspaceEnv IPC Handlers', () => {
 
       expect(result.success).toBe(true)
       const envClaudeMd = fs.readFileSync(path.join(result.envPath, 'CLAUDE.md'), 'utf-8')
-      expect(envClaudeMd).toContain('# New Rules')
-      expect(envClaudeMd).not.toContain('# Old Rules')
+      expect(envClaudeMd).toContain('# Old Rules')
+      expect(envClaudeMd).not.toContain('# New Rules')
     })
 
     it('prend le second projet si le premier n a pas Claude', async () => {
