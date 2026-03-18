@@ -2758,6 +2758,16 @@ body {
   border-color: var(--accent);
 }
 
+.project-toolbar-btn--attached {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.project-toolbar-btn--attached:hover {
+  background: var(--accent);
+  color: var(--bg-tertiary);
+}
+
 /* Deploy .claude button on project item */
 .project-item-deploy-btn {
   width: 18px;
