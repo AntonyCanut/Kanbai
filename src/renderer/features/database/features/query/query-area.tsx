@@ -26,7 +26,7 @@ const ENV_TAG_COLORS: Record<DbEnvironmentTag, string> = {
   local: '#20D4A0',
   dev: '#4B9CFF',
   int: '#F5A623',
-  qua: '#a78bfa',
+  qua: '#B78AFF',
   prd: '#F4585B',
   custom: 'var(--text-muted)',
 }

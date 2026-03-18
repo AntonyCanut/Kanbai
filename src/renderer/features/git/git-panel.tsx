@@ -45,7 +45,7 @@ interface GraphCommitInfo {
 
 const GRAPH_COLORS = [
   '#9747FF', '#20D4A0', '#F4585B', '#F5A623', '#fbbf24',
-  '#a78bfa', '#22d3ee', '#ec4899', '#B78AFF', '#b4befe',
+  '#B78AFF', '#22d3ee', '#ec4899', '#B78AFF', '#B78AFF',
 ]
 
 function computeGraph(entries: GitLogEntry[]): GraphCommitInfo[] {

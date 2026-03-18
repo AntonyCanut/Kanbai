@@ -632,7 +632,7 @@
 }
 
 .analysis-severity-badge[data-severity="low"] {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(151, 71, 255, 0.15);
   color: var(--accent);
 }
 
@@ -841,7 +841,7 @@
 }
 
 .analysis-entry-severity[data-severity="low"] {
-  background: rgba(108, 140, 255, 0.2);
+  background: rgba(151, 71, 255, 0.2);
   color: var(--accent);
 }
 
@@ -1089,8 +1089,8 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(108, 140, 255, 0.08);
-  border: 1px solid rgba(108, 140, 255, 0.2);
+  background: rgba(151, 71, 255, 0.08);
+  border: 1px solid rgba(151, 71, 255, 0.2);
   border-radius: 8px;
   margin-bottom: 12px;
   font-size: 13px;
@@ -1358,7 +1358,7 @@
 }
 
 .analysis-grade-badge[data-grade="B"] {
-  background: rgba(108, 140, 255, 0.2);
+  background: rgba(151, 71, 255, 0.2);
   color: var(--accent);
 }
 
@@ -1409,7 +1409,7 @@
 }
 
 .analysis-grade-large[data-grade="B"] {
-  background: rgba(108, 140, 255, 0.2);
+  background: rgba(151, 71, 255, 0.2);
   color: var(--accent);
 }
 

@@ -87,7 +87,7 @@
 }
 
 .devops-connection-item--active {
-  background: var(--accent-soft, rgba(108, 140, 255, 0.08));
+  background: var(--accent-soft, rgba(151, 71, 255, 0.08));
   border-left-color: var(--accent);
 }
 
@@ -216,7 +216,7 @@
 }
 
 .devops-pipeline-card--selected {
-  background: var(--accent-soft, rgba(108, 140, 255, 0.08));
+  background: var(--accent-soft, rgba(151, 71, 255, 0.08));
   border-color: var(--accent);
   border-left-color: var(--accent);
 }
@@ -1003,7 +1003,7 @@
 
 .devops-run-row--selected {
   border-color: var(--accent);
-  background: var(--accent-soft, rgba(108, 140, 255, 0.08));
+  background: var(--accent-soft, rgba(151, 71, 255, 0.08));
 }
 
 /* ──────────────────────────────────
@@ -1333,7 +1333,7 @@
 }
 
 .devops-modal-btn--test:hover:not(:disabled) {
-  background: var(--accent-soft, rgba(108, 140, 255, 0.1));
+  background: var(--accent-soft, rgba(151, 71, 255, 0.1));
 }
 
 /* ──────────────────────────────────
@@ -1438,7 +1438,7 @@
 .devops-field-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft, rgba(108, 140, 255, 0.15));
+  box-shadow: 0 0 0 2px var(--accent-soft, rgba(151, 71, 255, 0.15));
 }
 
 .devops-field-input::placeholder {
@@ -1512,7 +1512,7 @@
 
 .devops-btn--log-active {
   opacity: 1;
-  background: var(--accent-soft, rgba(108, 140, 255, 0.15));
+  background: var(--accent-soft, rgba(151, 71, 255, 0.15));
 }
 
 /* --- Run Pipeline Modal (smaller variant) --- */
