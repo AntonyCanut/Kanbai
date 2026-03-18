@@ -165,11 +165,17 @@ function FlatPaneView({
     closePane(tabId, paneId)
   }, [tabId, paneId, closePane, isKanbanLinkedTab])
 
+  const tabLabel = useTerminalTabStore((s) => s.tabs.find((t) => t.id === tabId)?.label)
+
   const handleSessionCreated = useCallback(
     (sessionId: string) => {
       setPaneSessionId(tabId, paneId, sessionId)
+      // Sync label to the main process for companion API visibility
+      if (tabLabel) {
+        window.kanbai.terminal.updateLabel(sessionId, tabLabel)
+      }
     },
-    [tabId, paneId, setPaneSessionId],
+    [tabId, paneId, setPaneSessionId, tabLabel],
   )
 
   const reactivateIfDone = useKanbanStore((s) => s.reactivateIfDone)

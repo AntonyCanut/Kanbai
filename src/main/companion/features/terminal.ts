@@ -1,19 +1,37 @@
-import { getTerminalSessions } from '../../ipc/terminal'
+import { getTerminalSessionsInfo } from '../../ipc/terminal'
 import type { CompanionFeature, CompanionContext, CompanionResult, CompanionCommandDef } from '../../../shared/types/companion'
 
+function formatElapsed(createdAt: number): string {
+  const seconds = Math.floor((Date.now() - createdAt) / 1000)
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return `${hours}h${remainingMinutes > 0 ? `${remainingMinutes}m` : ''}`
+}
+
 export const terminalFeature: CompanionFeature = {
-  id: 'terminal',
+  id: 'terminal-sessions',
   name: 'Terminal Sessions',
-  workspaceScoped: false,
+  workspaceScoped: true,
   projectScoped: false,
 
-  async getState(_ctx: CompanionContext): Promise<CompanionResult> {
-    const sessions = getTerminalSessions()
+  async getState(ctx: CompanionContext): Promise<CompanionResult> {
+    const sessions = getTerminalSessionsInfo()
+
+    // Filter by workspace if provided
+    const filtered = ctx.workspaceId
+      ? sessions.filter((s) => s.workspaceId === ctx.workspaceId || !s.workspaceId)
+      : sessions
+
     return {
       success: true,
-      data: sessions.map((s) => ({
+      data: filtered.map((s) => ({
         id: s.id,
-        cwd: s.cwd,
+        title: s.title,
+        status: s.status,
+        elapsed: formatElapsed(s.createdAt),
       })),
     }
   },

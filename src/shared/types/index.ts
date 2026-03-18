@@ -1081,6 +1081,7 @@ export const IPC_CHANNELS = {
   TERMINAL_CLOSE: 'terminal:close',
   TERMINAL_INPUT: 'terminal:input',
   TERMINAL_CHECK_BUSY: 'terminal:checkBusy',
+  TERMINAL_UPDATE_LABEL: 'terminal:updateLabel',
 
   // Workspace
   WORKSPACE_LIST: 'workspace:list',

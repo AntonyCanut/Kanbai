@@ -17,7 +17,22 @@ interface ManagedTerminal {
   id: string
   pty: IPty
   cwd: string
+  workspaceId: string | null
+  tabId: string | null
+  label: string | null
+  createdAt: number
   disposables: Array<{ dispose(): void }>
+}
+
+/** Exported terminal session info for the companion API */
+export interface TerminalSessionInfo {
+  id: string
+  cwd: string
+  workspaceId: string | null
+  tabId: string | null
+  title: string
+  status: 'working' | 'idle'
+  createdAt: number
 }
 
 const terminals = new Map<string, ManagedTerminal>()
@@ -100,10 +115,43 @@ export function getTerminalSessions(): Array<{ id: string; cwd: string }> {
   return Array.from(terminals.values()).map((t) => ({ id: t.id, cwd: t.cwd }))
 }
 
+/** Return enriched terminal session info for the companion feature */
+export function getTerminalSessionsInfo(): TerminalSessionInfo[] {
+  return Array.from(terminals.values()).map((t) => ({
+    id: t.id,
+    cwd: t.cwd,
+    workspaceId: t.workspaceId,
+    tabId: t.tabId,
+    title: t.label || path.basename(t.cwd) || 'Terminal',
+    status: 'idle' as const,
+    createdAt: t.createdAt,
+  }))
+}
+
+/** Persist current terminal sessions to ~/.kanbai/terminal-sessions.json for the companion API */
+function persistTerminalSessions(): void {
+  const sessions = getTerminalSessionsInfo()
+  const filePath = path.join(os.homedir(), '.kanbai', 'terminal-sessions.json')
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(sessions, null, 2), 'utf-8')
+  } catch {
+    // Best-effort — companion may not be active
+  }
+}
+
+/** Update the label for a terminal session (called from renderer via IPC) */
+export function updateTerminalLabel(sessionId: string, label: string): void {
+  const terminal = terminals.get(sessionId)
+  if (terminal) {
+    terminal.label = label
+    persistTerminalSessions()
+  }
+}
+
 export function registerTerminalHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(
     IPC_CHANNELS.TERMINAL_CREATE,
-    async (_event, options: { cwd?: string; shell?: string; workspaceId?: string; tabId?: string; provider?: string }) => {
+    async (_event, options: { cwd?: string; shell?: string; workspaceId?: string; tabId?: string; provider?: string; label?: string }) => {
       const id = uuid()
       const rawShell = new StorageService().getSettings().defaultShell
       // Normalize full paths (e.g. C:\WINDOWS\system32\cmd.exe → cmd.exe)
@@ -157,8 +205,18 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
         env: shellEnv,
       })
 
-      const managed: ManagedTerminal = { id, pty, cwd, disposables: [] }
+      const managed: ManagedTerminal = {
+        id,
+        pty,
+        cwd,
+        workspaceId: options.workspaceId ?? null,
+        tabId: options.tabId ?? null,
+        label: options.label ?? null,
+        createdAt: Date.now(),
+        disposables: [],
+      }
       terminals.set(id, managed)
+      persistTerminalSessions()
 
       // Forward output to renderer (try-catch guards against render frame disposal during reload)
       managed.disposables.push(
@@ -178,6 +236,7 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
       managed.disposables.push(
         pty.onExit(({ exitCode, signal }) => {
           terminals.delete(id)
+          persistTerminalSessions()
           for (const win of BrowserWindow.getAllWindows()) {
             try {
               if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
@@ -229,10 +288,15 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
     }
   })
 
+  ipcMain.on(IPC_CHANNELS.TERMINAL_UPDATE_LABEL, (_event, { id, label }: { id: string; label: string }) => {
+    updateTerminalLabel(id, label)
+  })
+
   ipcMain.handle(IPC_CHANNELS.TERMINAL_CLOSE, async (_event, { id }: { id: string }) => {
     const terminal = terminals.get(id)
     if (terminal) {
       terminals.delete(id)
+      persistTerminalSessions()
       disposeTerminal(terminal)
       // Notify renderer manually since onExit won't fire after dispose
       for (const win of BrowserWindow.getAllWindows()) {
@@ -251,4 +315,5 @@ export function cleanupTerminals(): void {
     disposeTerminal(terminal)
   }
   terminals.clear()
+  persistTerminalSessions()
 }
