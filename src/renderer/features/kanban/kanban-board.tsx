@@ -392,9 +392,10 @@ export function KanbanBoard() {
     [doneTasks],
   )
 
-  // Sort tasks within a column: overdue first, then by due date, then by creation (newest first)
+  // Sort tasks within a column: overdue first, then by due date, then by creation
+  // newestFirst: reverses creation date order (used for DONE column)
   const sortTasks = useCallback(
-    (taskList: KanbanTask[]): KanbanTask[] => {
+    (taskList: KanbanTask[], newestFirst = false): KanbanTask[] => {
       return [...taskList].sort((a, b) => {
         const aOverdue = a.dueDate && a.dueDate < Date.now() ? 1 : 0
         const bOverdue = b.dueDate && b.dueDate < Date.now() ? 1 : 0
@@ -402,7 +403,7 @@ export function KanbanBoard() {
         if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate
         if (a.dueDate) return -1
         if (b.dueDate) return 1
-        return b.createdAt - a.createdAt
+        return newestFirst ? b.createdAt - a.createdAt : a.createdAt - b.createdAt
       })
     },
     [],
@@ -640,7 +641,7 @@ export function KanbanBoard() {
   }
 
   const getTasksByStatus = (status: KanbanStatus): KanbanTask[] => {
-    if (status === 'DONE') return sortTasks(activeDoneTasks)
+    if (status === 'DONE') return sortTasks(activeDoneTasks, true)
     return sortTasks(filteredTasks.filter((t) => t.status === status))
   }
 
@@ -1187,7 +1188,7 @@ export function KanbanBoard() {
               <span className="kanban-column-count">{doneTasks.length}</span>
             </div>
             <div className="kanban-column-body">
-              {sortTasks(activeDoneTasks).map((task) => (
+              {sortTasks(activeDoneTasks, true).map((task) => (
                 <div key={task.id} className="kanban-done-card-wrapper">
                   <KanbanCard
                     task={task}
@@ -1223,7 +1224,7 @@ export function KanbanBoard() {
                   </button>
                   {archiveExpanded && (
                     <div className="kanban-archive-list">
-                      {sortTasks(archivedTasks).map((task) => (
+                      {sortTasks(archivedTasks, true).map((task) => (
                         <div key={task.id} className="kanban-archive-item">
                           <span className="kanban-archive-item-title">
                             {task.ticketNumber != null && <span className="kanban-card-ticket-number">{formatTicketNumber(task.ticketNumber, task.type, task.isPrequalifying)}</span>}
