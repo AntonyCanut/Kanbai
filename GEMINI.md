@@ -9,6 +9,18 @@ Kanbai is an AI-enhanced desktop terminal built with Electron. It combines a ful
 - Code (variables, functions, comments): **English**
 - Git commits, PR descriptions: **French**
 
+## Execution Rules
+
+When executing kanban tickets or task files, start implementation immediately after reading the ticket. Limit exploration to 2-3 minutes max. Do NOT spend entire sessions planning — produce code changes early and iterate.
+
+## Testing
+
+After implementing any feature, always run the existing test suite before reporting completion. Fix any failing tests before marking work as done.
+
+## Code Patterns / Gotchas
+
+When generating shell scripts or wrapper scripts, never use heredoc syntax inside template literals. Write files using direct fs.writeFileSync or equivalent with properly escaped content.
+
 ## Tech Stack
 
 - **Node.js >= 22.12.0** — Runtime requirement
