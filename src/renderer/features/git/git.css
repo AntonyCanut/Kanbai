@@ -638,7 +638,7 @@
 }
 
 .git-graph-row:hover { background: rgba(31, 35, 40, 0.15); }
-.git-graph-row--selected { background: rgba(108, 140, 255, 0.1); }
+.git-graph-row--selected { background: rgba(151, 71, 255, 0.1); }
 
 .git-graph-info {
   flex: 1;
@@ -687,9 +687,9 @@
 }
 
 .git-ref-badge--remote {
-  background: rgba(108, 140, 255, 0.15);
+  background: rgba(151, 71, 255, 0.15);
   color: var(--accent);
-  border: 1px solid rgba(108, 140, 255, 0.3);
+  border: 1px solid rgba(151, 71, 255, 0.3);
 }
 
 .git-ref-badge--tag {
@@ -752,7 +752,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--accent);
-  background: rgba(108, 140, 255, 0.1);
+  background: rgba(151, 71, 255, 0.1);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -832,7 +832,7 @@
 }
 
 .git-commit-file--clickable:hover { background: var(--bg-surface); }
-.git-commit-file--selected { background: rgba(108, 140, 255, 0.15) !important; }
+.git-commit-file--selected { background: rgba(151, 71, 255, 0.15) !important; }
 
 .git-commit-file-name {
   font-family: var(--font-mono);
@@ -858,7 +858,7 @@
 .git-fstatus--added { background: rgba(61, 214, 140, 0.2); color: var(--success); }
 .git-fstatus--modified { background: rgba(245, 166, 35, 0.2); color: var(--warning); }
 .git-fstatus--deleted { background: rgba(244, 112, 103, 0.2); color: var(--danger); }
-.git-fstatus--renamed { background: rgba(108, 140, 255, 0.2); color: var(--accent); }
+.git-fstatus--renamed { background: rgba(151, 71, 255, 0.2); color: var(--accent); }
 .git-fstatus--copied { background: rgba(61, 214, 140, 0.15); color: var(--success); }
 .git-fstatus--untracked { background: rgba(86, 92, 102, 0.2); color: var(--text-muted); }
 
@@ -912,7 +912,7 @@
   font-weight: 500;
 }
 
-.git-file-group-action:hover { background: rgba(108, 140, 255, 0.1); border-color: var(--accent); }
+.git-file-group-action:hover { background: rgba(151, 71, 255, 0.1); border-color: var(--accent); }
 
 .git-file {
   display: flex;
@@ -925,7 +925,7 @@
 }
 
 .git-file:hover { background: var(--bg-surface); }
-.git-file--selected { background: rgba(108, 140, 255, 0.1) !important; }
+.git-file--selected { background: rgba(151, 71, 255, 0.1) !important; }
 
 .git-file-badge {
   width: 16px;
@@ -1088,7 +1088,7 @@
 }
 
 .git-diff-line--hunk {
-  background: rgba(108, 140, 255, 0.08);
+  background: rgba(151, 71, 255, 0.08);
   color: var(--accent);
   font-weight: 600;
 }

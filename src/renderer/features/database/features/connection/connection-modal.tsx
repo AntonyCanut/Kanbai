@@ -30,7 +30,7 @@ const ENV_TAG_OPTIONS: { value: DbEnvironmentTag; labelKey: string; color: strin
   { value: 'local', labelKey: 'db.envLocal', color: '#20D4A0' },
   { value: 'dev', labelKey: 'db.envDev', color: '#4B9CFF' },
   { value: 'int', labelKey: 'db.envInt', color: '#F5A623' },
-  { value: 'qua', labelKey: 'db.envQua', color: '#a78bfa' },
+  { value: 'qua', labelKey: 'db.envQua', color: '#B78AFF' },
   { value: 'prd', labelKey: 'db.envPrd', color: '#F4585B' },
   { value: 'custom', labelKey: 'db.envCustom', color: 'var(--text-muted)' },
 ]
