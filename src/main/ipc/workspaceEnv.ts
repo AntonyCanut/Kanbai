@@ -137,9 +137,9 @@ function ensureRequiredClaudeMdSections(envDir: string): void {
  * that has them into the workspace env root directory.
  * Handles all AI providers: Claude, Codex, Copilot, Gemini.
  *
- * IMPORTANT: Preserves workspace-level rules/ directories. Rules are managed
- * at workspace scope (not per-project). Only seed from the first project
- * when no workspace-level rules exist yet.
+ * IMPORTANT: Preserves workspace-level AI config once it exists.
+ * The env directory is the execution root for multi-project sessions,
+ * so subsequent rebuilds must not overwrite user edits.
  */
 function applyAiRulesToEnv(envDir: string, projectPaths: string[]): void {
   for (const configDir of AI_CONFIG_DIRS) {
@@ -147,24 +147,17 @@ function applyAiRulesToEnv(envDir: string, projectPaths: string[]): void {
     const memoryFile = AI_MEMORY_FILES[configDir]
     const envMemoryFile = memoryFile ? path.join(envDir, memoryFile) : null
 
-    // Preserve workspace-level rules — they are managed at workspace scope
-    const envRulesDir = path.join(envConfigDir, 'rules')
-    const hasWorkspaceRules = fs.existsSync(envRulesDir) && !fs.lstatSync(envRulesDir).isSymbolicLink()
-    let savedRulesDir: string | null = null
+    const hasWorkspaceConfigDir = fs.existsSync(envConfigDir) && !fs.lstatSync(envConfigDir).isSymbolicLink()
+    const hasWorkspaceMemoryFile = Boolean(
+      envMemoryFile && fs.existsSync(envMemoryFile) && !fs.lstatSync(envMemoryFile).isSymbolicLink(),
+    )
 
-    if (hasWorkspaceRules) {
-      // Temporarily move rules out before cleaning the config dir
-      savedRulesDir = path.join(envDir, `._saved_${configDir}_rules`)
-      if (fs.existsSync(savedRulesDir)) fs.rmSync(savedRulesDir, { recursive: true, force: true })
-      fs.renameSync(envRulesDir, savedRulesDir)
-    }
-
-    // Remove existing copies (not symlinks)
-    if (fs.existsSync(envConfigDir) && !fs.lstatSync(envConfigDir).isSymbolicLink()) {
-      fs.rmSync(envConfigDir, { recursive: true, force: true })
-    }
-    if (envMemoryFile && fs.existsSync(envMemoryFile) && !fs.lstatSync(envMemoryFile).isSymbolicLink()) {
-      fs.unlinkSync(envMemoryFile)
+    // Preserve workspace-level AI config once it exists.
+    // The env directory is the actual execution root for multi-project sessions,
+    // so subsequent env rebuilds must not overwrite user edits with the first
+    // project's config.
+    if (hasWorkspaceConfigDir || hasWorkspaceMemoryFile) {
+      continue
     }
 
     // Find the first project with this AI's config
@@ -185,16 +178,6 @@ function applyAiRulesToEnv(envDir: string, projectPaths: string[]): void {
       }
     }
 
-    // Restore workspace-level rules (overrides project rules if they existed)
-    if (savedRulesDir && fs.existsSync(savedRulesDir)) {
-      const restoredRulesDir = path.join(envConfigDir, 'rules')
-      // Remove project-seeded rules — workspace rules take precedence
-      if (fs.existsSync(restoredRulesDir)) {
-        fs.rmSync(restoredRulesDir, { recursive: true, force: true })
-      }
-      if (!fs.existsSync(envConfigDir)) fs.mkdirSync(envConfigDir, { recursive: true })
-      fs.renameSync(savedRulesDir, restoredRulesDir)
-    }
   }
 
   // Sanitize Codex config: web_search must be a TOML boolean, not a string

@@ -277,6 +277,7 @@ export function SettingsPanel() {
   const handleLocaleChange = useCallback((newLocale: 'fr' | 'en') => {
     setLocale(newLocale)
     setSettings((prev) => ({ ...prev, locale: newLocale }))
+    window.kanbai.settings.set({ locale: newLocale })
   }, [setLocale])
 
   const handleGenerateKey = useCallback(async () => {

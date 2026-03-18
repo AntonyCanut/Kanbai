@@ -3,158 +3,28 @@ import { useI18n } from '../../../../../../lib/i18n'
 import { AI_PROVIDERS } from '../../../../../../../shared/types/ai-provider'
 import { CardSelector } from '../../components/card-selector'
 import { FeatureToggleGrid } from '../../components/feature-toggle-grid'
+import { DEFAULT_CONFIG, parseToml, serializeToml, type CodexConfig } from './codex-config'
 
 const ACCENT_COLOR = AI_PROVIDERS.codex.detectionColor
+const SCOPE_STORAGE_KEY = 'kanbai:codexConfigScope'
 
 interface Props {
   projectPath: string
+  workspaceName?: string
 }
 
-interface CodexConfig {
-  model: string
-  provider: string
-  approvalPolicy: string
-  sandboxMode: string
-  webSearch: string
-  multiAgent: boolean
-  historyPersistence: string
-  flex: boolean
-  reasoning: string
-  quiet: boolean
-  disableProjectDoc: boolean
-  personality: string
-  serviceTier: string
-  modelReasoningSummary: string
-  fileOpener: string
-  undo: boolean
-  shellSnapshot: boolean
-  unifiedExec: boolean
-  shellTool: boolean
-  commitAttribution: string
-  notify: string
-}
+type ConfigScope = 'project' | 'workspace' | 'global'
 
-const DEFAULT_CONFIG: CodexConfig = {
-  model: '',
-  provider: '',
-  approvalPolicy: 'untrusted',
-  sandboxMode: 'workspace-write',
-  webSearch: 'cached',
-  multiAgent: false,
-  historyPersistence: 'save-all',
-  flex: false,
-  reasoning: '',
-  quiet: false,
-  disableProjectDoc: false,
-  personality: 'friendly',
-  serviceTier: '',
-  modelReasoningSummary: 'auto',
-  fileOpener: '',
-  undo: true,
-  shellSnapshot: false,
-  unifiedExec: false,
-  shellTool: true,
-  commitAttribution: '',
-  notify: '',
-}
-
-function parseSectionValues(sectionContent: string): Record<string, string> {
-  const values: Record<string, string> = {}
-  for (const line of sectionContent.split('\n')) {
-    const trimmed = line.trim()
-    if (trimmed.startsWith('#') || !trimmed.includes('=')) continue
-    const eqIdx = trimmed.indexOf('=')
-    const key = trimmed.slice(0, eqIdx).trim()
-    const rawVal = trimmed.slice(eqIdx + 1).trim()
-    values[key] = rawVal.replace(/^["']|["']$/g, '')
+function getStoredScope(): ConfigScope | null {
+  if (typeof window === 'undefined') return null
+  const stored = window.sessionStorage.getItem(SCOPE_STORAGE_KEY)
+  if (stored === 'project' || stored === 'workspace' || stored === 'global') {
+    return stored
   }
-  return values
+  return null
 }
 
-function parseToml(content: string): CodexConfig {
-  const config = { ...DEFAULT_CONFIG }
-
-  // Parse top-level values (before any section)
-  const topLevel = content.split(/^\[/m)[0] ?? content
-  const topValues = parseSectionValues(topLevel)
-
-  if (topValues.model) config.model = topValues.model
-  if (topValues.provider) config.provider = topValues.provider
-  if (topValues.approval_policy) config.approvalPolicy = topValues.approval_policy
-  if (topValues.sandbox_mode) config.sandboxMode = topValues.sandbox_mode
-  if (topValues.flex !== undefined) config.flex = topValues.flex === 'true'
-  if (topValues.model_reasoning_effort) config.reasoning = topValues.model_reasoning_effort
-  if (topValues.reasoning) config.reasoning = topValues.reasoning
-  if (topValues.quiet !== undefined) config.quiet = topValues.quiet === 'true'
-  if (topValues.disable_project_doc !== undefined) config.disableProjectDoc = topValues.disable_project_doc === 'true'
-  if (topValues.personality) config.personality = topValues.personality
-  if (topValues.service_tier) config.serviceTier = topValues.service_tier
-  if (topValues.model_reasoning_summary) config.modelReasoningSummary = topValues.model_reasoning_summary
-  if (topValues.file_opener) config.fileOpener = topValues.file_opener
-  if (topValues.commit_attribution) config.commitAttribution = topValues.commit_attribution
-  if (topValues.web_search) config.webSearch = topValues.web_search
-
-  // Parse [features] section
-  const featuresMatch = content.match(/\[features\]([\s\S]*?)(?=\n\[|$)/)
-  if (featuresMatch?.[1]) {
-    const vals = parseSectionValues(featuresMatch[1])
-    if (vals.web_search) config.webSearch = vals.web_search
-    if (vals.multi_agent !== undefined) config.multiAgent = vals.multi_agent === 'true'
-    if (vals.undo !== undefined) config.undo = vals.undo === 'true'
-    if (vals.shell_snapshot !== undefined) config.shellSnapshot = vals.shell_snapshot === 'true'
-    if (vals.unified_exec !== undefined) config.unifiedExec = vals.unified_exec === 'true'
-    if (vals.shell_tool !== undefined) config.shellTool = vals.shell_tool === 'true'
-  }
-
-  // Parse [history] section
-  const historyMatch = content.match(/\[history\]([\s\S]*?)(?=\n\[|$)/)
-  if (historyMatch?.[1]) {
-    const vals = parseSectionValues(historyMatch[1])
-    if (vals.persistence) config.historyPersistence = vals.persistence
-    if (vals.notify) config.notify = vals.notify
-  }
-
-  return config
-}
-
-function serializeToml(config: CodexConfig): string {
-  const lines: string[] = []
-
-  if (config.model) lines.push(`model = "${config.model}"`)
-  if (config.provider) lines.push(`provider = "${config.provider}"`)
-  lines.push(`approval_policy = "${config.approvalPolicy}"`)
-  lines.push(`sandbox_mode = "${config.sandboxMode}"`)
-  if (config.personality && config.personality !== 'friendly') lines.push(`personality = "${config.personality}"`)
-  if (config.serviceTier) lines.push(`service_tier = "${config.serviceTier}"`)
-  if (config.reasoning) lines.push(`model_reasoning_effort = "${config.reasoning}"`)
-  if (config.modelReasoningSummary && config.modelReasoningSummary !== 'auto') lines.push(`model_reasoning_summary = "${config.modelReasoningSummary}"`)
-  if (config.fileOpener) lines.push(`file_opener = "${config.fileOpener}"`)
-  if (config.quiet) lines.push(`quiet = true`)
-  if (config.disableProjectDoc) lines.push(`disable_project_doc = true`)
-  if (config.commitAttribution) lines.push(`commit_attribution = "${config.commitAttribution}"`)
-
-  lines.push('')
-  lines.push('[features]')
-  lines.push(`web_search = ${config.webSearch !== 'disabled'}`)
-  lines.push(`multi_agent = ${config.multiAgent}`)
-  if (!config.undo) lines.push(`undo = false`)
-  if (config.shellSnapshot) lines.push(`shell_snapshot = true`)
-  if (config.unifiedExec) lines.push(`unified_exec = true`)
-  if (!config.shellTool) lines.push(`shell_tool = false`)
-  if (config.flex) lines.push(`flex = true`)
-
-  lines.push('')
-  lines.push('[history]')
-  lines.push(`persistence = "${config.historyPersistence}"`)
-  if (config.notify) lines.push(`notify = ${config.notify}`)
-
-  lines.push('')
-  return lines.join('\n')
-}
-
-type ConfigScope = 'project' | 'global'
-
-export function CodexGeneralTab({ projectPath }: Props) {
+export function CodexGeneralTab({ projectPath, workspaceName }: Props) {
   const { t } = useI18n()
   const [config, setConfig] = useState<CodexConfig>(DEFAULT_CONFIG)
   const [rawContent, setRawContent] = useState('')
@@ -162,7 +32,49 @@ export function CodexGeneralTab({ projectPath }: Props) {
   const [loading, setLoading] = useState(true)
   const [showRaw, setShowRaw] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [scope, setScope] = useState<ConfigScope>('project')
+  const [scope, setScope] = useState<ConfigScope>(() => {
+    const stored = getStoredScope()
+    if (stored === 'workspace' && !workspaceName) return 'project'
+    return stored ?? (workspaceName ? 'workspace' : 'project')
+  })
+  const [workspacePath, setWorkspacePath] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!workspaceName) {
+      setWorkspacePath(null)
+      setScope((prev) => (prev === 'workspace' ? 'project' : prev))
+      return
+    }
+    let cancelled = false
+    window.kanbai.workspaceEnv.getPath(workspaceName).then((envPath) => {
+      if (cancelled) return
+      setWorkspacePath(envPath)
+      setScope((prev) => {
+        const stored = getStoredScope()
+        if (prev === 'workspace' && !envPath) return 'project'
+        if (!stored && envPath && prev === 'project') return 'workspace'
+        return prev
+      })
+    }).catch(() => {
+      if (cancelled) return
+      setWorkspacePath(null)
+      setScope((prev) => (prev === 'workspace' ? 'project' : prev))
+    })
+    return () => { cancelled = true }
+  }, [workspaceName])
+
+  useEffect(() => {
+    window.sessionStorage.setItem(SCOPE_STORAGE_KEY, scope)
+  }, [scope])
+
+  const resolveScopedPath = useCallback(async (): Promise<string | null> => {
+    if (scope === 'workspace') {
+      if (workspacePath) return workspacePath
+      if (!workspaceName) return null
+      return window.kanbai.workspaceEnv.getPath(workspaceName)
+    }
+    return projectPath
+  }, [projectPath, scope, workspaceName, workspacePath])
 
   const loadConfig = useCallback(async () => {
     setLoading(true)
@@ -175,22 +87,43 @@ export function CodexGeneralTab({ projectPath }: Props) {
           if (result.success && result.content) {
             setRawContent(result.content)
             setConfig(parseToml(result.content))
+          } else {
+            setRawContent('')
+            setConfig(DEFAULT_CONFIG)
           }
+        } else {
+          setRawContent('')
+          setConfig(DEFAULT_CONFIG)
         }
       } else {
-        const check = await window.kanbai.codexConfig.check(projectPath)
+        const targetPath = await resolveScopedPath()
+        if (!targetPath) {
+          setExists(false)
+          setRawContent('')
+          setConfig(DEFAULT_CONFIG)
+          return
+        }
+        const check = await window.kanbai.codexConfig.check(targetPath)
         setExists(check.exists)
         if (check.exists) {
-          const result = await window.kanbai.codexConfig.read(projectPath)
+          const result = await window.kanbai.codexConfig.read(targetPath)
           if (result.success && result.content) {
             setRawContent(result.content)
             setConfig(parseToml(result.content))
+          } else {
+            setRawContent('')
+            setConfig(DEFAULT_CONFIG)
           }
+        } else {
+          setRawContent('')
+          setConfig(DEFAULT_CONFIG)
         }
       }
     } catch { /* ignore */ }
-    setLoading(false)
-  }, [projectPath, scope])
+    finally {
+      setLoading(false)
+    }
+  }, [resolveScopedPath, scope])
 
   useEffect(() => { loadConfig() }, [loadConfig])
 
@@ -201,24 +134,28 @@ export function CodexGeneralTab({ projectPath }: Props) {
     if (scope === 'global') {
       await window.kanbai.codexConfig.writeGlobal(toml)
     } else {
-      await window.kanbai.codexConfig.write(projectPath, toml)
+      const targetPath = await resolveScopedPath()
+      if (!targetPath) return
+      await window.kanbai.codexConfig.write(targetPath, toml)
     }
     setExists(true)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }, [projectPath, scope])
+  }, [resolveScopedPath, scope])
 
   const saveRaw = useCallback(async () => {
     if (scope === 'global') {
       await window.kanbai.codexConfig.writeGlobal(rawContent)
     } else {
-      await window.kanbai.codexConfig.write(projectPath, rawContent)
+      const targetPath = await resolveScopedPath()
+      if (!targetPath) return
+      await window.kanbai.codexConfig.write(targetPath, rawContent)
     }
     setConfig(parseToml(rawContent))
     setExists(true)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }, [projectPath, rawContent, scope])
+  }, [rawContent, resolveScopedPath, scope])
 
   const handleCreateConfig = useCallback(async () => {
     await saveConfig(DEFAULT_CONFIG)
@@ -242,6 +179,9 @@ export function CodexGeneralTab({ projectPath }: Props) {
           label={t('codex.configScope')}
           options={[
             { value: 'project', label: t('codex.configScopeProject'), description: t('codex.configScopeProjectDesc') },
+            ...(workspaceName
+              ? [{ value: 'workspace', label: t('codex.configScopeWorkspace'), description: t('codex.configScopeWorkspaceDesc', { workspace: workspaceName ?? '' }) }]
+              : []),
             { value: 'global', label: t('codex.configScopeGlobal'), description: t('codex.configScopeGlobalDesc') },
           ]}
           value={scope}

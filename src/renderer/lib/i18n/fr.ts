@@ -640,6 +640,8 @@ export const fr = {
   'codex.configScope': 'Portée de la configuration',
   'codex.configScopeProject': 'Projet',
   'codex.configScopeProjectDesc': 'Config spécifique au projet (.codex/config.toml)',
+  'codex.configScopeWorkspace': 'Workspace',
+  'codex.configScopeWorkspaceDesc': 'Config du workspace multi-projets ({workspace})',
   'codex.configScopeGlobal': 'Global',
   'codex.configScopeGlobalDesc': 'Config globale (~/.codex/config.toml)',
   'codex.saveConfig': 'Sauvegarder',

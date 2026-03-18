@@ -640,6 +640,8 @@ export const en = {
   'codex.configScope': 'Configuration scope',
   'codex.configScopeProject': 'Project',
   'codex.configScopeProjectDesc': 'Project-specific config (.codex/config.toml)',
+  'codex.configScopeWorkspace': 'Workspace',
+  'codex.configScopeWorkspaceDesc': 'Multi-project workspace config ({workspace})',
   'codex.configScopeGlobal': 'Global',
   'codex.configScopeGlobalDesc': 'Global config (~/.codex/config.toml)',
   'codex.saveConfig': 'Save',

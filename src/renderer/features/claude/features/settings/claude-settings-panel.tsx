@@ -397,7 +397,10 @@ export function ClaudeSettingsPanel() {
               </div>
               <div className="claude-rules-content">
                 {codexSubTab === 'general' && (
-                  <CodexGeneralTab projectPath={activeProject.path} />
+                  <CodexGeneralTab
+                    projectPath={activeProject.path}
+                    workspaceName={activeWorkspace?.name}
+                  />
                 )}
                 {codexSubTab === 'rules' && (
                   <CodexRulesTab projectPath={workspaceEnvPath ?? activeProject.path} />
