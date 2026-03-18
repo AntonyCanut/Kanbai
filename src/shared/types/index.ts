@@ -1080,6 +1080,7 @@ export const IPC_CHANNELS = {
   TERMINAL_RESIZE: 'terminal:resize',
   TERMINAL_CLOSE: 'terminal:close',
   TERMINAL_INPUT: 'terminal:input',
+  TERMINAL_CHECK_BUSY: 'terminal:checkBusy',
 
   // Workspace
   WORKSPACE_LIST: 'workspace:list',

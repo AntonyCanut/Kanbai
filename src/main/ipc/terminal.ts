@@ -4,8 +4,12 @@ import { v4 as uuid } from 'uuid'
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import { IPC_CHANNELS } from '../../shared/types'
 import { IS_WIN, getDefaultShell, getDefaultShellArgs, killProcess, isShellValid, normalizeWindowsShell } from '../../shared/platform'
+
+const execFileAsync = promisify(execFile)
 import { StorageService } from '../services/storage'
 import { getGitProfileEnvForWorkspace } from './git'
 
@@ -204,6 +208,26 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
       }
     },
   )
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_CHECK_BUSY, async (_event, { id }: { id: string }): Promise<boolean> => {
+    const terminal = terminals.get(id)
+    if (!terminal) return false
+    const pid = terminal.pty.pid
+    try {
+      if (IS_WIN) {
+        const { stdout } = await execFileAsync('wmic', ['process', 'where', `ParentProcessId=${pid}`, 'get', 'ProcessId'], { timeout: 3000 })
+        // wmic output has header + data lines; more than just header means children exist
+        const lines = stdout.trim().split('\n').filter((l: string) => l.trim().length > 0)
+        return lines.length > 1
+      }
+      // macOS / Linux: pgrep returns 0 if child processes found
+      await execFileAsync('pgrep', ['-P', String(pid)], { timeout: 3000 })
+      return true
+    } catch {
+      // pgrep exits 1 when no children found, or command failed
+      return false
+    }
+  })
 
   ipcMain.handle(IPC_CHANNELS.TERMINAL_CLOSE, async (_event, { id }: { id: string }) => {
     const terminal = terminals.get(id)

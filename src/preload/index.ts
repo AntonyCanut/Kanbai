@@ -17,6 +17,8 @@ const api = {
       ipcRenderer.send(IPC_CHANNELS.TERMINAL_RESIZE, { id, cols, rows }),
     close: (id: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CLOSE, { id }),
+    checkBusy: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_CHECK_BUSY, { id }),
     onData: (callback: (data: { id: string; data: string }) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { id: string; data: string }) =>
         callback(payload)
