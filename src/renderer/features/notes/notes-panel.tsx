@@ -141,9 +141,15 @@ export function NotesPanel() {
           updateNote(activeWorkspaceId, selectedNoteId, editTitle, editContent)
         }
       }
+      // Sync edit fields synchronously to avoid stale content in NoteEditor
+      const targetNote = notes.find((n) => n.id === noteId)
+      if (targetNote) {
+        setEditTitle(targetNote.title)
+        setEditContent(targetNote.content)
+      }
       selectNote(noteId)
     },
-    [selectNote, activeWorkspaceId, selectedNoteId, updateNote, editTitle, editContent],
+    [selectNote, activeWorkspaceId, selectedNoteId, updateNote, editTitle, editContent, notes],
   )
 
   if (!activeWorkspaceId) {
