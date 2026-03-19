@@ -82,10 +82,27 @@ export function App() {
 
   // Listen for companion-initiated terminal creation (from mobile app).
   // Must live here (always-mounted) — TerminalArea is only rendered in terminal view.
+  // Handles two cases: AI provider tabs and make target execution.
   useEffect(() => {
     const cleanup = window.kanbai.terminal.onCompanionCreate(async (payload) => {
       const wsId = payload.workspaceId || useWorkspaceStore.getState().activeWorkspaceId
       if (!wsId) return
+
+      const termStore = useTerminalTabStore.getState()
+
+      // Case 1: Make target — create a plain terminal and run the command
+      if (payload.makeTarget && payload.projectPath) {
+        const cwd = payload.projectPath as string
+        const target = payload.makeTarget as string
+        const projectName = (payload.projectName as string) || 'Project'
+        const label = `${projectName} - ${target}`
+        const escapedPath = cwd.replace(/'/g, "'\\''")
+        const initialCommand = `cd '${escapedPath}' && make ${target}`
+        termStore.createTab(wsId, cwd, label, initialCommand)
+        return
+      }
+
+      // Case 2: AI provider tab
       const provider = AI_PROVIDERS[payload.provider as AiProviderId]
       if (!provider) return
 
@@ -95,7 +112,7 @@ export function App() {
       if (!cwd) return
 
       const label = `${provider.displayName} + Terminal`
-      useTerminalTabStore.getState().createSplitTab(wsId, cwd, label, provider.cliCommand, null)
+      termStore.createSplitTab(wsId, cwd, label, provider.cliCommand, null)
     })
     return () => { cleanup() }
   }, [])
