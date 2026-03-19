@@ -4,7 +4,7 @@ import { StorageService } from '../services/storage'
 import { sendNotification } from '../services/notificationService'
 import { ensureAutoApproveScript } from '../services/activityHooks'
 import { buildApplicationMenu } from '../menu'
-import { isElevated } from '../../shared/platform'
+import { isElevated, getAvailableShells, getDefaultShell, IS_MAC, IS_WIN } from '../../shared/platform'
 
 const storage = new StorageService()
 
@@ -36,5 +36,15 @@ export function registerAppHandlers(ipcMain: IpcMain): void {
 
   ipcMain.handle(IPC_CHANNELS.APP_VERSION, () => {
     return { version: app.getVersion(), name: app.getName(), isElevated: isElevated() }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.APP_PLATFORM_INFO, () => {
+    return {
+      platform: process.platform,
+      platformLabel: IS_MAC ? 'macOS' : IS_WIN ? 'Windows' : 'Linux',
+      arch: process.arch,
+      defaultShell: getDefaultShell(),
+      availableShells: getAvailableShells(),
+    }
   })
 }

@@ -4,6 +4,7 @@ import type { CompanionFeature, CompanionContext, CompanionResult, CompanionComm
 import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
 import { IPC_CHANNELS } from '../../../shared/types'
 import { readKanbanTasks } from '../../../mcp-server/lib/kanban-store'
+import { getAvailableShells, getDefaultShell, IS_MAC, IS_WIN } from '../../../shared/platform'
 
 function formatElapsed(createdAt: number): string {
   const seconds = Math.floor((Date.now() - createdAt) / 1000)
@@ -123,7 +124,13 @@ export const terminalFeature: CompanionFeature = {
         description: 'Create a new terminal session with an AI provider',
         params: {
           provider: { type: 'string', required: true, description: 'AI provider ID (claude, codex, copilot, gemini)' },
+          shell: { type: 'string', required: false, description: 'Shell executable path (defaults to platform default)' },
         },
+      },
+      {
+        name: 'availableShells',
+        description: 'Get available shell types for the host platform',
+        params: {},
       },
       {
         name: 'closeTerminal',
@@ -175,8 +182,21 @@ export const terminalFeature: CompanionFeature = {
       return { success: true, data: providers }
     }
 
+    if (command === 'availableShells') {
+      return {
+        success: true,
+        data: {
+          platform: process.platform,
+          platformLabel: IS_MAC ? 'macOS' : IS_WIN ? 'Windows' : 'Linux',
+          defaultShell: getDefaultShell(),
+          shells: getAvailableShells(),
+        },
+      }
+    }
+
     if (command === 'createTerminal') {
       const provider = params.provider as string
+      const shell = params.shell as string | undefined
       if (!provider) return { success: false, error: 'Missing provider' }
       if (!AI_PROVIDERS[provider as keyof typeof AI_PROVIDERS]) {
         return { success: false, error: `Unknown provider: ${provider}` }
@@ -187,12 +207,13 @@ export const terminalFeature: CompanionFeature = {
           if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
             win.webContents.send(IPC_CHANNELS.TERMINAL_COMPANION_CREATE, {
               provider,
+              shell,
               workspaceId: ctx.workspaceId,
             })
           }
         } catch { /* window destroyed */ }
       }
-      return { success: true, data: { provider } }
+      return { success: true, data: { provider, shell } }
     }
 
     return { success: false, error: `Unknown command: ${command}` }

@@ -11,6 +11,7 @@ import { databaseFeature } from './features/database'
 import { devopsFeature } from './features/devops'
 import { packagesFeature } from './features/packages'
 import { settingsFeature } from './features/settings'
+import { systemInfoFeature } from './features/system-info'
 
 export function initCompanionFeatures(): void {
   companionRegistry.register(workspaceFeature)
@@ -25,6 +26,7 @@ export function initCompanionFeatures(): void {
   companionRegistry.register(devopsFeature)
   companionRegistry.register(packagesFeature)
   companionRegistry.register(settingsFeature)
+  companionRegistry.register(systemInfoFeature)
   console.log(`[Companion] ${companionRegistry.listFeatures().length} features registered`)
 }
 

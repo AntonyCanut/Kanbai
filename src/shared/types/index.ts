@@ -1398,6 +1398,7 @@ export const IPC_CHANNELS = {
   APP_SETTINGS_SET: 'app:settingsSet',
   APP_NOTIFICATION: 'app:notification',
   APP_VERSION: 'app:version',
+  APP_PLATFORM_INFO: 'app:platformInfo',
 
   // App Update (electron-updater)
   APP_UPDATE_CHECK: 'appUpdate:check',

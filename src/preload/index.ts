@@ -764,6 +764,8 @@ const api = {
   app: {
     version: (): Promise<{ version: string; name: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_VERSION),
+    getPlatformInfo: (): Promise<{ platform: string; platformLabel: string; arch: string; defaultShell: string; availableShells: Array<{ value: string; label: string }> }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_PLATFORM_INFO),
   },
 
   // App Update (electron-updater)
