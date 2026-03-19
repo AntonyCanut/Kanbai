@@ -1,5 +1,8 @@
+import { BrowserWindow } from 'electron'
 import { getTerminalSessionsInfo, getTerminalOutputClean, writeTerminalInput } from '../../ipc/terminal'
 import type { CompanionFeature, CompanionContext, CompanionResult, CompanionCommandDef } from '../../../shared/types/companion'
+import { AI_PROVIDERS } from '../../../shared/types/ai-provider'
+import { IPC_CHANNELS } from '../../../shared/types'
 
 function formatElapsed(createdAt: number): string {
   const seconds = Math.floor((Date.now() - createdAt) / 1000)
@@ -105,10 +108,22 @@ export const terminalFeature: CompanionFeature = {
           data: { type: 'string', required: true, description: 'Input data to send' },
         },
       },
+      {
+        name: 'createTerminal',
+        description: 'Create a new terminal session with an AI provider',
+        params: {
+          provider: { type: 'string', required: true, description: 'AI provider ID (claude, codex, copilot, gemini)' },
+        },
+      },
+      {
+        name: 'listProviders',
+        description: 'List available AI providers',
+        params: {},
+      },
     ]
   },
 
-  async execute(command: string, params: Record<string, unknown>, _ctx: CompanionContext): Promise<CompanionResult> {
+  async execute(command: string, params: Record<string, unknown>, ctx: CompanionContext): Promise<CompanionResult> {
     if (command === 'getOutput') {
       const sessionId = params.sessionId as string
       if (!sessionId) return { success: false, error: 'Missing sessionId' }
@@ -124,6 +139,35 @@ export const terminalFeature: CompanionFeature = {
       const ok = writeTerminalInput(sessionId, data)
       if (!ok) return { success: false, error: `Terminal session not found: ${sessionId}` }
       return { success: true }
+    }
+
+    if (command === 'listProviders') {
+      const providers = Object.values(AI_PROVIDERS).map((p) => ({
+        id: p.id,
+        name: p.displayName,
+        color: p.detectionColor,
+      }))
+      return { success: true, data: providers }
+    }
+
+    if (command === 'createTerminal') {
+      const provider = params.provider as string
+      if (!provider) return { success: false, error: 'Missing provider' }
+      if (!AI_PROVIDERS[provider as keyof typeof AI_PROVIDERS]) {
+        return { success: false, error: `Unknown provider: ${provider}` }
+      }
+      // Notify the renderer to create a new terminal tab with this provider
+      for (const win of BrowserWindow.getAllWindows()) {
+        try {
+          if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
+            win.webContents.send(IPC_CHANNELS.TERMINAL_COMPANION_CREATE, {
+              provider,
+              workspaceId: ctx.workspaceId,
+            })
+          }
+        } catch { /* window destroyed */ }
+      }
+      return { success: true, data: { provider } }
     }
 
     return { success: false, error: `Unknown command: ${command}` }

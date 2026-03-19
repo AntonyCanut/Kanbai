@@ -1085,6 +1085,7 @@ export const IPC_CHANNELS = {
   TERMINAL_SET_TASK_INFO: 'terminal:setTaskInfo',
   TERMINAL_GET_OUTPUT: 'terminal:getOutput',
   TERMINAL_SYNC_TABS: 'terminal:syncTabs',
+  TERMINAL_COMPANION_CREATE: 'terminal:companionCreate',
 
   // Workspace
   WORKSPACE_LIST: 'workspace:list',

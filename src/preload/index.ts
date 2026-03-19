@@ -41,6 +41,14 @@ const api = {
       ipcRenderer.on(IPC_CHANNELS.TERMINAL_CLOSE, listener)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_CLOSE, listener)
     },
+    onCompanionCreate: (callback: (data: { provider: string; workspaceId?: string }) => void) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        payload: { provider: string; workspaceId?: string },
+      ) => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.TERMINAL_COMPANION_CREATE, listener)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_COMPANION_CREATE, listener)
+    },
   },
 
   // Workspace
