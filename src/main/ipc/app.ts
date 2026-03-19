@@ -3,6 +3,7 @@ import { IPC_CHANNELS, AppSettings } from '../../shared/types'
 import { StorageService } from '../services/storage'
 import { sendNotification } from '../services/notificationService'
 import { ensureAutoApproveScript } from '../services/activityHooks'
+import { buildApplicationMenu } from '../menu'
 import { isElevated } from '../../shared/platform'
 
 const storage = new StorageService()
@@ -18,6 +19,9 @@ export function registerAppHandlers(ipcMain: IpcMain): void {
       storage.updateSettings(settings)
       if ('autoApprove' in settings) {
         ensureAutoApproveScript(storage.getSettings().autoApprove)
+      }
+      if ('locale' in settings) {
+        buildApplicationMenu()
       }
       return storage.getSettings()
     },

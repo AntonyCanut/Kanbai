@@ -7,16 +7,20 @@ const translations = { fr, en } as const
 
 type TranslationKeys = keyof typeof fr
 
+const LOCALE_CODES: Record<Locale, string> = { fr: 'fr-FR', en: 'en-US' }
+
 interface I18nState {
   locale: Locale
+  localeCode: string
   setLocale: (locale: Locale) => void
   t: (key: TranslationKeys | string, params?: Record<string, string | number>) => string
 }
 
 export const useI18n = create<I18nState>((set, get) => ({
   locale: 'fr',
+  localeCode: LOCALE_CODES['fr'],
   setLocale: (locale) => {
-    set({ locale })
+    set({ locale, localeCode: LOCALE_CODES[locale] })
     window.kanbai.settings.set({ locale })
   },
   t: (key, params?) => {

@@ -10,7 +10,7 @@ export const DEFAULT_CODEX_DETECTION_COLOR = '#10a37f'
 export const DEFAULT_COPILOT_DETECTION_COLOR = '#e2538a'
 export const DEFAULT_GEMINI_DETECTION_COLOR = '#4285F4'
 
-export function createDefaultSettings(): AppSettings {
+export function createDefaultSettings(overrides?: Partial<AppSettings>): AppSettings {
   return {
     theme: 'dark',
     locale: 'fr',
@@ -34,6 +34,7 @@ export function createDefaultSettings(): AppSettings {
     autoCreateAiMemoryRefactorTickets: true,
     tutorialCompleted: false,
     tutorialSeenSections: [],
+    ...overrides,
   }
 }
 
