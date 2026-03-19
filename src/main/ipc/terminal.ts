@@ -57,6 +57,9 @@ const finishedSessions: TerminalSessionInfo[] = []
 /** Output buffers preserved for finished sessions so mobile can still read them */
 const finishedOutputBuffers = new Map<string, string>()
 
+/** Pending task info for tabs not yet created (resolves race condition with setTaskInfo arriving before terminal:create) */
+const pendingTaskInfo = new Map<string, { taskId: string; ticketNumber: string }>()
+
 function addFinishedSession(info: TerminalSessionInfo): void {
   // Preserve the output buffer before it gets deleted from the live map
   const output = outputBuffers.get(info.id)
@@ -274,6 +277,8 @@ export function setTerminalTaskInfo(tabId: string, taskId: string, ticketNumber:
       return
     }
   }
+  // Terminal not yet created — queue the info so it can be applied when the terminal is spawned
+  pendingTaskInfo.set(tabId, { taskId, ticketNumber })
 }
 
 /** Return buffered output for a terminal session (checks finished buffers too) */
@@ -716,6 +721,18 @@ export function registerTerminalHandlers(ipcMain: IpcMain): void {
         disposables: [],
       }
       terminals.set(id, managed)
+
+      // Apply any pending task info that arrived before the terminal was created (race condition fix)
+      const tabKey = managed.tabId
+      if (tabKey) {
+        const pending = pendingTaskInfo.get(tabKey)
+        if (pending) {
+          managed.taskId = pending.taskId
+          managed.ticketNumber = pending.ticketNumber
+          pendingTaskInfo.delete(tabKey)
+        }
+      }
+
       persistTerminalSessions()
       bumpCompanionChangeVersion()
 
