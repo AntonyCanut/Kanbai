@@ -1935,6 +1935,7 @@ export const fr = {
   'devops.testing': 'Test en cours...',
   'devops.connectionSuccess': 'Connexion reussie !',
   'devops.connectionFailed': 'Connexion echouee',
+  'devops.connectionBroken': 'Connexion interrompue',
   'devops.save': 'Enregistrer',
   'devops.cancel': 'Annuler',
   'devops.refresh': 'Actualiser',

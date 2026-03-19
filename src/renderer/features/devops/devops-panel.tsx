@@ -1708,7 +1708,21 @@ export function DevOpsPanel() {
               <div className="devops-content">
                 <div className="devops-pipelines-list">
                   {pipelinesLoading && <div className="devops-loading">{t('devops.loadingPipelines')}</div>}
-                  {pipelinesError && <div className="devops-error">{pipelinesError}</div>}
+                  {pipelinesError && (
+                    <div className="devops-broken-connection">
+                      <div className="devops-broken-connection-icon">{'\u26A0'}</div>
+                      <div className="devops-broken-connection-title">{t('devops.connectionBroken')}</div>
+                      <div className="devops-broken-connection-message">{pipelinesError}</div>
+                      <div className="devops-broken-connection-actions">
+                        <button className="devops-btn devops-btn--primary" onClick={openEditConnection}>
+                          {'\u270E'} {t('devops.editConnection')}
+                        </button>
+                        <button className="devops-btn devops-btn--danger" onClick={() => { if (activeConnectionId) handleDeleteConnection(activeConnectionId) }}>
+                          {'\u2716'} {t('devops.deleteConnection')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {!pipelinesLoading && !pipelinesError && pipelines.length === 0 && (
                     <div className="devops-empty">{t('devops.noPipelines')}</div>
                   )}
