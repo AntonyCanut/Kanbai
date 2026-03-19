@@ -120,9 +120,9 @@ export const terminalFeature: CompanionFeature = {
       },
       {
         name: 'createTerminal',
-        description: 'Create a new terminal session with an AI provider',
+        description: 'Create a new terminal session with an AI provider or plain shell',
         params: {
-          provider: { type: 'string', required: true, description: 'AI provider ID (claude, codex, copilot, gemini)' },
+          provider: { type: 'string', required: true, description: 'AI provider ID (claude, codex, copilot, gemini) or "terminal" for a plain shell' },
         },
       },
       {
@@ -167,18 +167,24 @@ export const terminalFeature: CompanionFeature = {
     }
 
     if (command === 'listProviders') {
-      const providers = Object.values(AI_PROVIDERS).map((p) => ({
-        id: p.id,
-        name: p.displayName,
-        color: p.detectionColor,
-      }))
-      return { success: true, data: providers }
+      const platform = process.platform
+      const terminalName = platform === 'win32' ? 'PowerShell' : 'Terminal'
+      const providers = [
+        ...Object.values(AI_PROVIDERS).map((p) => ({
+          id: p.id,
+          name: p.displayName,
+          color: p.detectionColor,
+          type: 'ai' as const,
+        })),
+        { id: 'terminal', name: terminalName, color: '#A5A49E', type: 'shell' as const },
+      ]
+      return { success: true, data: { providers, platform } }
     }
 
     if (command === 'createTerminal') {
       const provider = params.provider as string
       if (!provider) return { success: false, error: 'Missing provider' }
-      if (!AI_PROVIDERS[provider as keyof typeof AI_PROVIDERS]) {
+      if (provider !== 'terminal' && !AI_PROVIDERS[provider as keyof typeof AI_PROVIDERS]) {
         return { success: false, error: `Unknown provider: ${provider}` }
       }
       // Notify the renderer to create a new terminal tab with this provider

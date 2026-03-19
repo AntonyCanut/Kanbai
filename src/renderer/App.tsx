@@ -102,10 +102,7 @@ export function App() {
         return
       }
 
-      // Case 2: AI provider tab
-      const provider = AI_PROVIDERS[payload.provider as AiProviderId]
-      if (!provider) return
-
+      // Resolve working directory for the new tab
       const { workspaces: allWs, projects: allProjects } = useWorkspaceStore.getState()
       const workspace = allWs.find((w) => w.id === wsId)
       let cwd = ''
@@ -121,6 +118,16 @@ export function App() {
         } catch { /* ignore */ }
       }
       if (!cwd) cwd = '~'
+
+      // Case 2: Plain terminal (no AI provider)
+      if (payload.provider === 'terminal') {
+        termStore.createTab(wsId, cwd, 'Terminal', undefined)
+        return
+      }
+
+      // Case 3: AI provider tab
+      const provider = AI_PROVIDERS[payload.provider as AiProviderId]
+      if (!provider) return
 
       const label = `${provider.displayName} + Terminal`
       termStore.createSplitTab(wsId, cwd, label, provider.cliCommand, null)
