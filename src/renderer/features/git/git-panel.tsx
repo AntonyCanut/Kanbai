@@ -482,7 +482,7 @@ const ALL_PROJECTS_ID = '__all_projects__'
 // === MAIN PANEL ===
 
 export function GitPanel() {
-  const { t, locale } = useI18n()
+  const { t, localeCode } = useI18n()
   const { projects } = useWorkspaceStore()
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
 
@@ -1668,7 +1668,7 @@ export function GitPanel() {
                   </div>
                   <div className="git-commit-detail-meta">
                     <span>{selectedCommit.author}</span>
-                    <span>{new Date(selectedCommit.date).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>
+                    <span>{new Date(selectedCommit.date).toLocaleString(localeCode)}</span>
                     {selectedCommit.parents.length > 0 && (
                       <span className="git-commit-detail-parents">
                         Parents: {selectedCommit.parents.map((p) => p.slice(0, 7)).join(', ')}

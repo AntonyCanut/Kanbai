@@ -4,7 +4,7 @@ import { useAppUpdateStore } from './app-update-store'
 import { useI18n } from '../../lib/i18n'
 
 export function UpdateCenter() {
-  const { t, locale } = useI18n()
+  const { t, localeCode } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const [appVersion, setAppVersion] = useState<string>('')
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -111,7 +111,7 @@ export function UpdateCenter() {
   const formatTime = (ts: number | null) => {
     if (!ts) return t('time.never')
     const date = new Date(ts)
-    return date.toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(localeCode, { hour: '2-digit', minute: '2-digit' })
   }
 
   return (

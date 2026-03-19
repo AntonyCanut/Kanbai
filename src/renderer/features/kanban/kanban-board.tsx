@@ -1290,9 +1290,7 @@ function PredefinedTaskCard({
   onDismiss: () => void
   onDoubleClick: () => void
 }) {
-  const { t } = useI18n()
-
-  const { locale } = useI18n()
+  const { t, locale } = useI18n()
 
   const priorityColors: Record<string, string> = {
     low: '#6B6A65',
@@ -1364,7 +1362,7 @@ function KanbanCard({
   projects: Array<{ id: string; name: string; aiProvider?: AiProviderId | null; aiDefaults?: AiDefaults }>
   defaultAiProvider: AiProviderId
 }) {
-  const { t, locale } = useI18n()
+  const { t, locale, localeCode } = useI18n()
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Delayed single-click: allows double-click to cancel opening the detail panel
@@ -1443,10 +1441,10 @@ function KanbanCard({
           <span className="kanban-card-split-badge">{t('kanban.splitDetected')}</span>
         )}
         <div className="kanban-card-footer">
-          <span className="kanban-card-date" title={new Date(task.updatedAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}>
-            {new Date(task.updatedAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short' })}
+          <span className="kanban-card-date" title={new Date(task.updatedAt).toLocaleString(localeCode)}>
+            {new Date(task.updatedAt).toLocaleDateString(localeCode, { day: 'numeric', month: 'short' })}
             {' '}
-            {new Date(task.updatedAt).toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            {new Date(task.updatedAt).toLocaleTimeString(localeCode, { hour: '2-digit', minute: '2-digit' })}
           </span>
           {onGoToTerminal && (
             <button
@@ -1582,7 +1580,7 @@ function TaskDetailPanel({
   onRemoveAttachment: (attachmentId: string) => void
   projects: Array<{ id: string; name: string }>
 }) {
-  const { t, locale } = useI18n()
+  const { t, locale, localeCode } = useI18n()
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(task.title)
   const [editingDesc, setEditingDesc] = useState(false)
@@ -2141,7 +2139,7 @@ function TaskDetailPanel({
                 <div key={comment.id} className={commentClass}>
                   <span className="kanban-detail-comment-date">
                     {label && <span className="kanban-detail-comment-label">{label} — </span>}
-                    {new Date(comment.createdAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}
+                    {new Date(comment.createdAt).toLocaleString(localeCode)}
                   </span>
                   <p className="kanban-detail-comment-text">{comment.text}</p>
                 </div>
@@ -2199,7 +2197,7 @@ function TaskDetailPanel({
                     </span>
                     {entry.timestamp && (
                       <span className="conversation-history-entry-time">
-                        {new Date(entry.timestamp).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}
+                        {new Date(entry.timestamp).toLocaleString(localeCode)}
                       </span>
                     )}
                   </div>
@@ -2213,8 +2211,8 @@ function TaskDetailPanel({
 
       {/* Timestamps */}
       <div className="kanban-detail-timestamps">
-        <span>{t('kanban.created')} {new Date(task.createdAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>
-        <span>{t('kanban.modified')} {new Date(task.updatedAt).toLocaleString(locale === 'en' ? 'en-US' : 'fr-FR')}</span>
+        <span>{t('kanban.created')} {new Date(task.createdAt).toLocaleString(localeCode)}</span>
+        <span>{t('kanban.modified')} {new Date(task.updatedAt).toLocaleString(localeCode)}</span>
       </div>
 
       {/* Send to AI / Reopen */}

@@ -1,12 +1,28 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { app } from 'electron'
 import { v4 as uuid } from 'uuid'
-import { Workspace, Project, AppSettings, KanbanTask, AutoClauderTemplate, SessionData, Namespace, GitProfile } from '../../shared/types'
+import { Workspace, Project, AppSettings, KanbanTask, AutoClauderTemplate, SessionData, Namespace, GitProfile, Locale } from '../../shared/types'
 import { createDefaultSettings } from '../../shared/constants/defaults'
 import { getDefaultShell, isShellValid, normalizeWindowsShell } from '../../shared/platform'
 
 const DATA_DIR = path.join(os.homedir(), '.kanbai')
+
+/**
+ * Detects the OS locale and maps it to a supported Locale.
+ * Returns 'fr' for French locales, 'en' for everything else.
+ * Falls back to 'fr' when app.getLocale() is unavailable (e.g. tests).
+ */
+function detectLocale(): Locale {
+  try {
+    const bcp47 = app.getLocale() // e.g. 'en-US', 'fr-FR', 'fr'
+    const lang = bcp47.split('-')[0]
+    return lang === 'fr' ? 'fr' : 'en'
+  } catch {
+    return 'fr'
+  }
+}
 
 interface AppData {
   workspaces: Workspace[]
@@ -171,7 +187,7 @@ export class StorageService {
       projects: [],
       namespaces: [defaultNs],
       gitProfiles: [],
-      settings: createDefaultSettings(),
+      settings: createDefaultSettings({ locale: detectLocale() }),
       kanbanTasks: [],
       autoClauderTemplates: [],
     }

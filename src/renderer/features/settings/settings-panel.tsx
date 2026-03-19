@@ -79,7 +79,7 @@ function isSettingsSection(value: string | null): value is SettingsSection {
 }
 
 export function SettingsPanel() {
-  const { t, locale, setLocale } = useI18n()
+  const { t, locale, localeCode, setLocale } = useI18n()
   const {
     status: appUpdateStatus,
     version: appUpdateVersion,
@@ -476,7 +476,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.language')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Langue de l\'interface' : 'Interface language'}</span>
+                    <span className="settings-hint">{t('settings.languageHint')}</span>
                   </div>
                   <div className="settings-radio-group">
                     <button
@@ -1165,7 +1165,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.autoClaude')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Activer le lancement automatique des sessions Claude' : 'Enable automatic Claude session launching'}</span>
+                    <span className="settings-hint">{t('settings.autoClaudeHint')}</span>
                   </div>
                   <button
                     className={`settings-toggle${settings.autoClauderEnabled ? ' settings-toggle--active' : ''}`}
@@ -1179,7 +1179,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.autoApprove')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Approuver automatiquement toutes les actions Claude (outils, commandes, etc.)' : 'Automatically approve all Claude actions (tools, commands, etc.)'}</span>
+                    <span className="settings-hint">{t('settings.autoApproveHint')}</span>
                   </div>
                   <button
                     className={`settings-toggle${settings.autoApprove ? ' settings-toggle--active' : ''}`}
@@ -1339,7 +1339,7 @@ export function SettingsPanel() {
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-info">
-                    <label className="settings-label">{t('updates.lastCheck', { time: toolsLastChecked ? new Date(toolsLastChecked).toLocaleTimeString(locale === 'en' ? 'en-US' : 'fr-FR', { hour: '2-digit', minute: '2-digit' }) : t('time.never') })}</label>
+                    <label className="settings-label">{t('updates.lastCheck', { time: toolsLastChecked ? new Date(toolsLastChecked).toLocaleTimeString(localeCode, { hour: '2-digit', minute: '2-digit' }) : t('time.never') })}</label>
                     <span className="settings-hint">{t('settings.toolsManageHint')}</span>
                   </div>
                   <button
@@ -1509,7 +1509,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.sound')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Jouer un son lors des notifications' : 'Play a sound on notifications'}</span>
+                    <span className="settings-hint">{t('settings.soundHint')}</span>
                   </div>
                   <button
                     className={`settings-toggle${settings.notificationSound ? ' settings-toggle--active' : ''}`}
@@ -1523,7 +1523,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.badge')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Afficher une pastille sur l\'icone du dock' : 'Show a badge on the dock icon'}</span>
+                    <span className="settings-hint">{t('settings.badgeHint')}</span>
                   </div>
                   <button
                     className={`settings-toggle${settings.notificationBadge ? ' settings-toggle--active' : ''}`}
@@ -1537,7 +1537,7 @@ export function SettingsPanel() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <label className="settings-label">{t('settings.checkUpdates')}</label>
-                    <span className="settings-hint">{locale === 'fr' ? 'Verifier les mises a jour au demarrage de l\'application' : 'Check for updates when the application starts'}</span>
+                    <span className="settings-hint">{t('settings.checkUpdatesHint')}</span>
                   </div>
                   <button
                     className={`settings-toggle${settings.checkUpdatesOnLaunch ? ' settings-toggle--active' : ''}`}
@@ -1589,7 +1589,7 @@ export function SettingsPanel() {
                             ? t('appUpdate.ready')
                             : appUpdateStatus === 'error'
                               ? t('appUpdate.error')
-                              : (locale === 'fr' ? 'Verifier si une nouvelle version est disponible' : 'Check if a new version is available')}
+                              : t('appUpdate.checkHint')}
                     </span>
                   </div>
                   {appUpdateStatus === 'available' && (
