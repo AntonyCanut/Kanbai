@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import { execSync, execFile, execFileSync } from 'child_process'
+import { execFile, execFileSync } from 'child_process'
 import { promisify } from 'util'
 import ignore from 'ignore'
 
@@ -136,7 +136,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
 
     if (hasGit) {
       try {
-        gitBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+        gitBranch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
           cwd: projectPath,
           encoding: 'utf-8',
           timeout: 5000,
@@ -144,7 +144,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
       } catch {
         // HEAD resolution failed — repo exists but may have no commits
         try {
-          execSync('git rev-parse --git-dir', {
+          execFileSync('git', ['rev-parse', '--git-dir'], {
             cwd: projectPath,
             encoding: 'utf-8',
             timeout: 5000,
