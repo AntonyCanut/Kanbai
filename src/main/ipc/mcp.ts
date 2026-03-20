@@ -43,7 +43,7 @@ function extractBinaryName(command: string): string {
   // Extract the base binary name from a potentially full path
   // e.g. "/usr/local/bin/npx" -> "npx"
   const parts = command.split('/')
-  return parts[parts.length - 1]
+  return parts[parts.length - 1] ?? command
 }
 
 function filterAllowedEnv(env: Record<string, string> | undefined): Record<string, string> {
