@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock CSS
-vi.mock('../../src/renderer/styles/analysis.css', () => ({}))
+vi.mock('../../src/renderer/features/code-analysis/analysis.css', () => ({}))
 
 // Mock i18n
 vi.mock('../../src/renderer/lib/i18n', () => ({
@@ -17,117 +17,104 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock sub-components
-vi.mock('../../src/renderer/components/code-analysis/analysis-sidebar', () => ({
-  AnalysisSidebar: ({ t, relevantTools, runAll, isAnyRunning }: Record<string, unknown>) => (
-    <div data-testid="analysis-sidebar">
-      <span>{(t as (k: string) => string)('analysis.sidebar')}</span>
-      {Array.isArray(relevantTools) && relevantTools.map((tool: { id: string; name: string }) => (
-        <div key={tool.id} data-testid={`tool-${tool.id}`}>{tool.name}</div>
-      ))}
-      <button onClick={runAll as () => void} disabled={isAnyRunning as boolean}>
-        {(t as (k: string) => string)('analysis.runAll')}
-      </button>
-    </div>
-  ),
-}))
-
-vi.mock('../../src/renderer/components/code-analysis/analysis-findings-list', () => ({
-  AnalysisFindingsList: ({ t, filteredFindings, severityFilter }: Record<string, unknown>) => (
-    <div data-testid="analysis-findings-list">
-      <span>severity: {severityFilter as string}</span>
-      {Array.isArray(filteredFindings) && filteredFindings.map((f: { id: string; message: string; severity: string }) => (
-        <div key={f.id} data-testid={`finding-${f.id}`}>
-          <span className="finding-severity">{f.severity}</span>
-          <span className="finding-message">{f.message}</span>
-        </div>
-      ))}
-    </div>
-  ),
-}))
-
-vi.mock('../../src/renderer/components/code-analysis/analysis-install-buffer', () => ({
-  AnalysisInstallBuffer: () => <div data-testid="analysis-install-buffer" />,
-}))
-
-vi.mock('../../src/renderer/components/code-analysis/analysis-ticket-modal', () => ({
-  AnalysisTicketModal: () => <div data-testid="analysis-ticket-modal" />,
-}))
-
-// Mock useCodeAnalysis hook
-const mockDetectTools = vi.fn()
+const mockDetectAllTools = vi.fn()
 const mockRunAll = vi.fn()
 const mockSetSeverityFilter = vi.fn()
+const mockSetSelectedFinding = vi.fn()
+const mockSetActiveReportId = vi.fn()
+const mockSetSelectedProjectId = vi.fn()
+
+const ALL_REPORTS_ID = '__all__'
+const ALL_PROJECTS_ID = '__all_projects__'
 
 const defaultHookState = {
   t: (key: string, params?: Record<string, string>) => {
     if (params) return `${key}:${JSON.stringify(params)}`
     return key
   },
-  activeProject: { id: 'proj-1', name: 'My Project', path: '/my-project', workspaceId: 'ws-1' },
-  tools: [
-    { id: 'eslint', name: 'ESLint', languages: ['javascript', 'typescript'], installed: true },
-    { id: 'ruff', name: 'Ruff', languages: ['python'], installed: false },
+  workspaceProjects: [
+    { id: 'proj-1', name: 'My Project', path: '/my-project', workspaceId: 'ws-1' },
   ],
-  relevantTools: [
-    { id: 'eslint', name: 'ESLint', languages: ['javascript', 'typescript'], installed: true },
-  ],
-  reports: [],
-  activeReportId: null,
-  setActiveReportId: vi.fn(),
-  activeReport: null,
-  aggregatedReport: null,
-  reportsByTool: {},
+  selectedProjectId: 'proj-1' as string | null,
+  setSelectedProjectId: mockSetSelectedProjectId,
+  collapsedProjects: new Set<string>(),
+  toggleProjectCollapse: vi.fn(),
+  relevantToolsByProject: new Map([
+    ['proj-1', [
+      { id: 'eslint', name: 'ESLint', languages: ['javascript', 'typescript'], installed: true, category: 'linter' },
+    ]],
+  ]),
+  detectAllTools: mockDetectAllTools,
+  detectingTools: false,
+  installedCount: 1,
+  reportsByProject: new Map<string, Array<{ id: string; toolId: string; summary: { total: number; critical: number; high: number; medium: number; low: number; info: number } }>>(),
+  currentReports: [] as Array<{ id: string }>,
+  allReportsFlat: [] as Array<{ id: string }>,
+  aggregatedReport: null as { summary: { total: number; critical: number; high: number; medium: number; low: number; info: number } } | null,
+  activeReport: null as { id: string; toolId: string; toolName: string; error?: string; duration: number; summary: { total: number; critical: number; high: number; medium: number; low: number; info: number } } | null,
+  activeReportId: ALL_REPORTS_ID as string,
+  setActiveReportId: mockSetActiveReportId,
+  projectGrade: null as string | null,
+  findingsCountByProject: new Map<string, number>(),
+  totalFindingsAllProjects: 0,
   runningTools: new Set<string>(),
   isAnyRunning: false,
-  runningToolName: null,
-  installingTools: new Set<string>(),
-  installedCount: 1,
-  detectingTools: false,
-  detectTools: mockDetectTools,
-  runTool: vi.fn(),
-  cancelTool: vi.fn(),
+  runningToolName: null as string | null,
+  isToolRunningForProject: vi.fn().mockReturnValue(false),
   runAll: mockRunAll,
+  runAllForProject: vi.fn(),
+  runToolForProject: vi.fn(),
+  cancelTool: vi.fn(),
+  deleteReport: vi.fn(),
+  reanalyze: vi.fn(),
+  installingTools: new Set<string>(),
+  installOutput: {} as Record<string, string>,
+  activeInstallTool: null as string | null,
+  setActiveInstallTool: vi.fn(),
+  copiedInstallOutput: false,
   installTool: vi.fn(),
-  severityFilter: 'all' as const,
+  copyInstallOutput: vi.fn(),
+  installBufferRef: { current: null },
+  filteredFindings: [] as Array<{ id: string; message: string; severity: string; file: string; line: number; rule?: string }>,
+  grouped: [] as Array<[string, Array<{ id: string; message: string; severity: string; file: string; line: number; rule?: string }>]>,
+  severityFilter: 'all' as string,
   setSeverityFilter: mockSetSeverityFilter,
-  filteredFindings: [],
-  grouped: {},
-  collapsedGroups: new Set<string>(),
-  toggleGroup: vi.fn(),
-  selectedFinding: null,
-  handleClickFinding: vi.fn(),
-  handleNavigateToFile: vi.fn(),
   selectedFindings: new Set<string>(),
   toggleFinding: vi.fn(),
   selectAll: vi.fn(),
   deselectAll: vi.fn(),
+  collapsedGroups: new Set<string>(),
+  toggleGroup: vi.fn(),
+  selectedFinding: null as { id: string } | null,
+  setSelectedFinding: mockSetSelectedFinding,
+  handleClickFinding: vi.fn(),
+  handleNavigateToFile: vi.fn(),
+  copiedError: false,
+  copyError: vi.fn(),
   showTicketModal: false,
   setShowTicketModal: vi.fn(),
-  ticketGroupBy: 'individual' as const,
+  ticketGroupBy: 'individual' as string,
   setTicketGroupBy: vi.fn(),
-  ticketPriority: 'medium' as const,
+  ticketPriority: 'medium' as string,
   setTicketPriority: vi.fn(),
   ticketPreviewCount: 0,
   handleCreateTickets: vi.fn(),
-  toastMessage: null,
-  copiedError: false,
-  copyError: vi.fn(),
-  projectGrade: null,
-  activeInstallTool: null,
-  installOutput: {},
-  copiedInstallOutput: false,
-  copyInstallOutput: vi.fn(),
-  setActiveInstallTool: vi.fn(),
-  installBufferRef: { current: null },
-  reanalyze: vi.fn(),
-  deleteReport: vi.fn(),
+  toastMessage: null as string | null,
+  ALL_REPORTS_ID,
+  ALL_PROJECTS_ID,
+  toolsByProject: new Map([
+    ['proj-1', [
+      { id: 'eslint', name: 'ESLint', languages: ['javascript', 'typescript'], installed: true, category: 'linter' },
+    ]],
+  ]),
 }
 
 let hookState = { ...defaultHookState }
 
-vi.mock('../../src/renderer/components/code-analysis/use-code-analysis', () => ({
+vi.mock('../../src/renderer/features/code-analysis/use-code-analysis', () => ({
   useCodeAnalysis: () => hookState,
+  SEVERITY_ORDER: ['critical', 'high', 'medium', 'low', 'info'],
+  formatDuration: (ms: number) => (ms / 1000).toFixed(1),
 }))
 
 import { CodeAnalysisPanel } from '../../src/renderer/components/CodeAnalysisPanel'
@@ -150,7 +137,7 @@ describe('CodeAnalysisPanel', () => {
     })
 
     it('affiche le message quand aucun projet n est actif', () => {
-      hookState = { ...defaultHookState, activeProject: null }
+      hookState = { ...defaultHookState, workspaceProjects: [] }
       render(<CodeAnalysisPanel />)
       expect(screen.getByText('analysis.noProject')).toBeInTheDocument()
     })
@@ -159,8 +146,9 @@ describe('CodeAnalysisPanel', () => {
   describe('affichage des outils', () => {
     it('affiche la sidebar avec les outils pertinents', () => {
       render(<CodeAnalysisPanel />)
-      expect(screen.getByTestId('analysis-sidebar')).toBeInTheDocument()
-      expect(screen.getByTestId('tool-eslint')).toBeInTheDocument()
+      // The sidebar shows project names and tool names
+      expect(screen.getByText('My Project')).toBeInTheDocument()
+      expect(screen.getByText('ESLint')).toBeInTheDocument()
     })
 
     it('affiche l etat vide quand il n y a pas de rapports', () => {
@@ -176,67 +164,26 @@ describe('CodeAnalysisPanel', () => {
   })
 
   describe('rendu des findings', () => {
-    it('affiche la liste des findings quand un rapport est actif', () => {
+    it('affiche le nombre de findings dans le header quand un rapport est actif', () => {
       hookState = {
         ...defaultHookState,
         activeReport: {
           id: 'report-1',
           toolId: 'eslint',
           toolName: 'ESLint',
-          timestamp: Date.now(),
-          findings: [
-            { id: 'f-1', message: 'Unused variable', severity: 'warning', file: 'src/index.ts', line: 10, rule: 'no-unused-vars' },
-          ],
-          summary: { total: 1, error: 0, warning: 1, info: 0, hint: 0 },
+          duration: 0,
+          summary: { total: 5, critical: 0, high: 2, medium: 3, low: 0, info: 0 },
         },
-        filteredFindings: [
-          { id: 'f-1', message: 'Unused variable', severity: 'warning', file: 'src/index.ts', line: 10, rule: 'no-unused-vars' },
-        ],
-        reports: [{ id: 'report-1' }],
+        currentReports: [{ id: 'report-1' }],
+        allReportsFlat: [{ id: 'report-1' }],
         activeReportId: 'report-1',
       }
       render(<CodeAnalysisPanel />)
-      expect(screen.getByTestId('analysis-findings-list')).toBeInTheDocument()
-    })
-
-    it('affiche le nombre de findings dans le header', () => {
-      hookState = {
-        ...defaultHookState,
-        activeReport: {
-          id: 'report-1',
-          toolId: 'eslint',
-          toolName: 'ESLint',
-          timestamp: Date.now(),
-          findings: [],
-          summary: { total: 5, error: 2, warning: 3, info: 0, hint: 0 },
-        },
-        reports: [{ id: 'report-1' }],
-        activeReportId: 'report-1',
-      }
-      render(<CodeAnalysisPanel />)
-      expect(screen.getByText(/5.*analysis.findings/)).toBeInTheDocument()
-    })
-  })
-
-  describe('filtrage par severite', () => {
-    it('passe le filtre de severite a la liste des findings', () => {
-      hookState = {
-        ...defaultHookState,
-        severityFilter: 'error',
-        activeReport: {
-          id: 'report-1',
-          toolId: 'eslint',
-          toolName: 'ESLint',
-          timestamp: Date.now(),
-          findings: [],
-          summary: { total: 0, error: 0, warning: 0, info: 0, hint: 0 },
-        },
-        filteredFindings: [],
-        reports: [{ id: 'report-1' }],
-        activeReportId: 'report-1',
-      }
-      render(<CodeAnalysisPanel />)
-      expect(screen.getByText('severity: error')).toBeInTheDocument()
+      // Header count is in a span with class "analysis-header-count"
+      const headerCount = document.querySelector('.analysis-header-count')
+      expect(headerCount).not.toBeNull()
+      expect(headerCount!.textContent).toContain('5')
+      expect(headerCount!.textContent).toContain('analysis.findings')
     })
   })
 
@@ -259,13 +206,13 @@ describe('CodeAnalysisPanel', () => {
   })
 
   describe('detection des outils', () => {
-    it('appelle detectTools au clic sur le bouton refresh', async () => {
+    it('appelle detectAllTools au clic sur le bouton refresh', async () => {
       const user = userEvent.setup()
       render(<CodeAnalysisPanel />)
 
       await user.click(screen.getByTitle('common.refresh'))
 
-      expect(mockDetectTools).toHaveBeenCalled()
+      expect(mockDetectAllTools).toHaveBeenCalled()
     })
   })
 

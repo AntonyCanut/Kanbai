@@ -60,7 +60,7 @@ describe('FileExplorer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.fs.readDir.mockResolvedValue(mockFileEntries)
 
     // Add openInFinder mock if not present
@@ -80,7 +80,7 @@ describe('FileExplorer', () => {
     })
 
     it('affiche le chargement initial', () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       // Never-resolving promise to keep loading state
       mirehub.fs.readDir.mockReturnValue(new Promise(() => {}))
 
@@ -175,7 +175,7 @@ describe('FileExplorer', () => {
 
   describe('appels IPC', () => {
     it('appelle readDir avec le chemin du projet actif', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<FileExplorer />)
 
       await waitFor(() => {

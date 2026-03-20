@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock i18n
@@ -14,20 +14,20 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock PackagesChat
-vi.mock('../../src/renderer/components/PackagesChat', () => ({
+// Mock PackagesChat (imported by component from ./packages-chat)
+vi.mock('../../src/renderer/features/packages/packages-chat', () => ({
   PackagesChat: ({ projectPath, manager }: { projectPath: string; manager: string }) => (
     <div data-testid="packages-chat">chat: {projectPath} {manager}</div>
   ),
 }))
 
-// Mock ResizeDivider
-vi.mock('../../src/renderer/components/ResizeDivider', () => ({
+// Mock ResizeDivider (imported from ../../shared/layout/resize-divider)
+vi.mock('../../src/renderer/shared/layout/resize-divider', () => ({
   ResizeDivider: () => <div data-testid="resize-divider" />,
 }))
 
-// Mock DatabaseQueryArea
-vi.mock('../../src/renderer/components/DatabaseQueryArea', () => ({
+// Mock database module (clampPanelHeight)
+vi.mock('../../src/renderer/features/database', () => ({
   clampPanelHeight: (current: number, delta: number) => Math.max(100, current + delta),
 }))
 
@@ -44,7 +44,7 @@ const mockPackagesList = [
 ]
 
 let packagesStoreState = {
-  selectedProjectId: 'proj-1',
+  selectedProjectId: 'proj-1' as string | null,
   selectedManager: 'npm' as string | null,
   packages: { 'proj-1:npm': mockPackagesList } as Record<string, typeof mockPackagesList>,
   loading: {} as Record<string, boolean>,
@@ -55,9 +55,14 @@ let packagesStoreState = {
   updatePackage: mockUpdatePackage,
   searchQuery: '',
   setSearchQuery: mockSetSearchQuery,
+  updatingPackages: {} as Record<string, string[]>,
+  updateAllLoading: {} as Record<string, boolean>,
+  addUpdatingPackage: vi.fn(),
+  removeUpdatingPackage: vi.fn(),
+  setUpdateAllLoading: vi.fn(),
 }
 
-vi.mock('../../src/renderer/lib/stores/packagesStore', () => ({
+vi.mock('../../src/renderer/features/packages/packages-store', () => ({
   usePackagesStore: () => packagesStoreState,
 }))
 
@@ -79,21 +84,22 @@ describe('PackagesContent', () => {
       updatePackage: mockUpdatePackage,
       searchQuery: '',
       setSearchQuery: mockSetSearchQuery,
-    }
-
-    // Ensure window.mirehub.shell.openExternal is available
-    const mirehub = window.mirehub as Record<string, unknown>
-    if (!(mirehub as Record<string, unknown>).shell) {
-      (mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>).shell = {
-        openExternal: vi.fn(),
-      }
+      updatingPackages: {},
+      updateAllLoading: {},
+      addUpdatingPackage: vi.fn(),
+      removeUpdatingPackage: vi.fn(),
+      setUpdateAllLoading: vi.fn(),
     }
   })
 
   describe('rendu initial', () => {
     it('affiche le header avec le nom du projet et le manager', () => {
       render(<PackagesContent />)
-      expect(screen.getByText(/My Project.*—.*npm/)).toBeInTheDocument()
+      // The h3 contains "My Project — npm"
+      const heading = document.querySelector('h3')
+      expect(heading).not.toBeNull()
+      expect(heading!.textContent).toContain('My Project')
+      expect(heading!.textContent).toContain('npm')
     })
 
     it('affiche le compteur de packages', () => {

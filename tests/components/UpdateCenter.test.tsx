@@ -10,11 +10,12 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
       return key
     },
     locale: 'fr',
+    localeCode: 'fr-FR',
     setLocale: vi.fn(),
   }),
 }))
 
-// Mock updateStore
+// Mock updateStore (now at features/updates/update-store)
 const mockCheckUpdates = vi.fn()
 const mockInstallUpdate = vi.fn()
 const mockUninstallUpdate = vi.fn()
@@ -41,11 +42,11 @@ let updateStoreState = {
   clearInstallStatus: mockClearInstallStatus,
 }
 
-vi.mock('../../src/renderer/lib/stores/updateStore', () => ({
+vi.mock('../../src/renderer/features/updates/update-store', () => ({
   useUpdateStore: () => updateStoreState,
 }))
 
-// Mock appUpdateStore
+// Mock appUpdateStore (now at features/updates/app-update-store)
 const mockCheckForUpdate = vi.fn()
 const mockDownloadUpdate = vi.fn()
 const mockInstallAppUpdate = vi.fn()
@@ -59,7 +60,7 @@ let appUpdateStoreState = {
   installUpdate: mockInstallAppUpdate,
 }
 
-vi.mock('../../src/renderer/lib/stores/appUpdateStore', () => ({
+vi.mock('../../src/renderer/features/updates/app-update-store', () => ({
   useAppUpdateStore: () => appUpdateStoreState,
 }))
 
@@ -92,9 +93,13 @@ describe('UpdateCenter', () => {
       installUpdate: mockInstallAppUpdate,
     }
 
-    // Ensure window.mirehub.app.version is available
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
-    mirehub.app.version = vi.fn().mockResolvedValue({ version: '1.0.0', name: 'Mirehub' })
+    // Ensure window.kanbai.app.version is available
+    const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    kanbai.app.version = vi.fn().mockResolvedValue({ version: '1.0.0', name: 'Kanbai' })
+    kanbai.settings = {
+      ...kanbai.settings,
+      get: vi.fn().mockResolvedValue({ toolAutoCheckEnabled: false }),
+    }
   })
 
   describe('rendu initial', () => {
@@ -109,10 +114,10 @@ describe('UpdateCenter', () => {
     })
 
     it('charge la version de l app au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<UpdateCenter />)
       await waitFor(() => {
-        expect(mirehub.app.version).toHaveBeenCalled()
+        expect(kanbai.app.version).toHaveBeenCalled()
       })
     })
   })
@@ -120,7 +125,7 @@ describe('UpdateCenter', () => {
   describe('affichage du badge', () => {
     it('n affiche pas de badge quand il n y a pas de mises a jour', () => {
       render(<UpdateCenter />)
-      const badge = document.querySelector('.notification-badge')
+      const badge = document.querySelector('.update-trigger-count')
       expect(badge).not.toBeInTheDocument()
     })
 
@@ -130,7 +135,7 @@ describe('UpdateCenter', () => {
         { tool: 'npm', scope: 'global', currentVersion: '9.0.0', latestVersion: '10.0.0', updateAvailable: true, installed: true },
       ]
       render(<UpdateCenter />)
-      const badge = document.querySelector('.notification-badge')
+      const badge = document.querySelector('.update-trigger-count')
       expect(badge).toBeInTheDocument()
       expect(badge?.textContent).toBe('2')
     })
@@ -141,7 +146,7 @@ describe('UpdateCenter', () => {
         { tool: 'node', scope: 'global', currentVersion: '18.0.0', latestVersion: '20.0.0', updateAvailable: true, installed: true },
       ]
       render(<UpdateCenter />)
-      const badge = document.querySelector('.notification-badge')
+      const badge = document.querySelector('.update-trigger-count')
       expect(badge?.textContent).toBe('2')
     })
   })
@@ -188,9 +193,7 @@ describe('UpdateCenter', () => {
       await user.click(screen.getByTitle('updates.updateCenterTooltip'))
 
       expect(screen.getByText('node')).toBeInTheDocument()
-      // Latest version is in a dedicated span
       expect(screen.getByText('20.0.0')).toBeInTheDocument()
-      // Current version is a text node — find via the item
       const nodeItem = screen.getByText('node').closest('.notification-item')
       expect(nodeItem?.textContent).toContain('18.0.0')
     })
@@ -207,22 +210,23 @@ describe('UpdateCenter', () => {
       expect(screen.getByText('updates.update')).toBeInTheDocument()
     })
 
-    it('affiche l entree Mirehub dans le panneau', async () => {
+    it('affiche l entree Kanbai dans le panneau', async () => {
       const user = userEvent.setup()
+      appUpdateStoreState.status = 'available'
       render(<UpdateCenter />)
 
       await user.click(screen.getByTitle('updates.updateCenterTooltip'))
 
-      expect(screen.getByText('Mirehub')).toBeInTheDocument()
+      expect(screen.getByText('Kanbai')).toBeInTheDocument()
     })
 
-    it('affiche le message a jour quand pas de mise a jour app', async () => {
+    it('affiche le message tout est a jour quand pas de mise a jour', async () => {
       const user = userEvent.setup()
       render(<UpdateCenter />)
 
       await user.click(screen.getByTitle('updates.updateCenterTooltip'))
 
-      expect(screen.getByText(/appUpdate\.upToDate/)).toBeInTheDocument()
+      expect(screen.getByText('updates.allUpToDate')).toBeInTheDocument()
     })
   })
 

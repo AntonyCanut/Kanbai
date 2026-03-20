@@ -12,8 +12,8 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock sub-components
-vi.mock('../../src/renderer/components/DatabaseSidebar', () => ({
+// Mock sub-components (updated paths)
+vi.mock('../../src/renderer/features/database/features/connection/sidebar', () => ({
   DatabaseSidebar: (props: any) => (
     <div data-testid="database-sidebar">
       <button data-testid="sidebar-add" onClick={props.onAddConnection}>
@@ -32,7 +32,7 @@ vi.mock('../../src/renderer/components/DatabaseSidebar', () => ({
   ),
 }))
 
-vi.mock('../../src/renderer/components/DatabaseQueryArea', () => ({
+vi.mock('../../src/renderer/features/database/features/query/query-area', () => ({
   DatabaseQueryArea: (props: any) => (
     <div data-testid="database-query-area">
       {props.connection ? props.connection.name : 'no-connection'}
@@ -40,7 +40,7 @@ vi.mock('../../src/renderer/components/DatabaseQueryArea', () => ({
   ),
 }))
 
-vi.mock('../../src/renderer/components/DatabaseConnectionModal', () => ({
+vi.mock('../../src/renderer/features/database/features/connection/connection-modal', () => ({
   DatabaseConnectionModal: (props: any) => (
     <div data-testid="connection-modal">
       <button data-testid="modal-save" onClick={() => props.onSave({
@@ -91,7 +91,7 @@ const mockConnectionStatuses: Record<string, DbConnectionStatus> = {
   'conn-1': 'connected',
 }
 
-vi.mock('../../src/renderer/lib/stores/databaseStore', () => ({
+vi.mock('../../src/renderer/features/database/database-store', () => ({
   useDatabaseStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -165,8 +165,8 @@ vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
   ),
 }))
 
-// Ensure window.mirehub.database and notify mocks exist
-const mirehub = window.mirehub as any
+// Ensure window.kanbai.database and notify mocks exist
+const mirehub = window.kanbai as any
 if (!mirehub.database) {
   mirehub.database = {
     testConnection: vi.fn().mockResolvedValue({ success: true }),

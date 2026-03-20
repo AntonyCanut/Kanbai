@@ -14,8 +14,8 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock ContextMenu
-vi.mock('../../src/renderer/components/ContextMenu', () => ({
+// Mock ContextMenu (new path: shared/ui/context-menu)
+vi.mock('../../src/renderer/shared/ui/context-menu', () => ({
   ContextMenu: ({ items, onClose }: { items: Array<{ label: string; action: () => void; separator?: boolean }>; onClose: () => void }) => (
     <div data-testid="context-menu">
       {items.filter((i) => !i.separator).map((item) => (
@@ -27,8 +27,8 @@ vi.mock('../../src/renderer/components/ContextMenu', () => ({
   ),
 }))
 
-// Mock ClaudeInfoPanel
-vi.mock('../../src/renderer/components/ClaudeInfoPanel', () => ({
+// Mock ClaudeInfoPanel (new path: features/claude)
+vi.mock('../../src/renderer/features/claude', () => ({
   ClaudeInfoPanel: ({ onClose }: { onClose: () => void }) => (
     <div data-testid="claude-info-panel">
       <button onClick={onClose}>close-claude-info</button>
@@ -36,8 +36,8 @@ vi.mock('../../src/renderer/components/ClaudeInfoPanel', () => ({
   ),
 }))
 
-// Mock ConfirmModal
-vi.mock('../../src/renderer/components/ConfirmModal', () => ({
+// Mock ConfirmModal (new path: shared/ui/confirm-modal)
+vi.mock('../../src/renderer/shared/ui/confirm-modal', () => ({
   ConfirmModal: ({ title, onConfirm, onCancel }: { title: string; onConfirm: () => void; onCancel: () => void }) => (
     <div data-testid="confirm-modal">
       <span>{title}</span>
@@ -47,8 +47,8 @@ vi.mock('../../src/renderer/components/ConfirmModal', () => ({
   ),
 }))
 
-// Mock SidebarFileTree
-vi.mock('../../src/renderer/components/SidebarFileTree', () => ({
+// Mock SidebarFileTree (new path: features/files)
+vi.mock('../../src/renderer/features/files', () => ({
   SidebarFileTree: ({ projectPath }: { projectPath: string }) => (
     <div data-testid="sidebar-file-tree">{projectPath}</div>
   ),
@@ -61,7 +61,8 @@ const mockRescanClaude = vi.fn()
 const mockClearPendingClaudeImport = vi.fn()
 const mockSetViewMode = vi.fn()
 
-vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
+// workspaceStore (used from ../../workspace-store relative to component)
+vi.mock('../../src/renderer/features/workspace/workspace-store', () => ({
   useWorkspaceStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -148,12 +149,12 @@ describe('ProjectItem', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Setup window.mirehub.project mocks
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
-    mirehub.project.checkClaude = vi.fn().mockResolvedValue(false)
-    mirehub.project.deployClaude = vi.fn().mockResolvedValue({ success: true })
-    mirehub.project.getNotes = vi.fn().mockResolvedValue('')
-    mirehub.project.saveNotes = vi.fn().mockResolvedValue(undefined)
+    // Setup window.kanbai.project mocks
+    const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    kanbai.project.checkClaude = vi.fn().mockResolvedValue(false)
+    kanbai.project.deployClaude = vi.fn().mockResolvedValue({ success: true })
+    kanbai.project.getNotes = vi.fn().mockResolvedValue('')
+    kanbai.project.saveNotes = vi.fn().mockResolvedValue(undefined)
   })
 
   describe('rendu du projet actif', () => {
@@ -169,7 +170,6 @@ describe('ProjectItem', () => {
     })
 
     it('affiche l arborescence quand le projet actif est deplie par defaut', () => {
-      // When isActive is true, expanded is initialized to true
       render(<ProjectItem project={mockProject} isActive={true} />)
       expect(screen.getByTestId('sidebar-file-tree')).toBeInTheDocument()
     })
@@ -230,7 +230,6 @@ describe('ProjectItem', () => {
   describe('affichage de l arborescence', () => {
     it('l arborescence est visible par defaut pour un projet actif', () => {
       render(<ProjectItem project={mockProject} isActive={true} />)
-      // expanded is initialized to isActive=true
       expect(screen.getByTestId('sidebar-file-tree')).toBeInTheDocument()
     })
 
@@ -238,10 +237,8 @@ describe('ProjectItem', () => {
       const user = userEvent.setup()
       render(<ProjectItem project={mockProject} isActive={true} />)
 
-      // Already expanded initially
       expect(screen.getByTestId('sidebar-file-tree')).toBeInTheDocument()
 
-      // First click collapses
       await user.click(screen.getByText('my-project'))
       expect(screen.queryByTestId('sidebar-file-tree')).not.toBeInTheDocument()
     })
@@ -250,11 +247,9 @@ describe('ProjectItem', () => {
       const user = userEvent.setup()
       render(<ProjectItem project={mockProject} isActive={true} />)
 
-      // Click once to collapse
       await user.click(screen.getByText('my-project'))
       expect(screen.queryByTestId('sidebar-file-tree')).not.toBeInTheDocument()
 
-      // Click again to expand
       await user.click(screen.getByText('my-project'))
       expect(screen.getByTestId('sidebar-file-tree')).toBeInTheDocument()
     })

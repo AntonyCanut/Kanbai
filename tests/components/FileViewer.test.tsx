@@ -17,8 +17,8 @@ vi.mock('@monaco-editor/react', () => ({
   __esModule: true,
 }))
 
-// Mock CopyableError
-vi.mock('../../src/renderer/components/CopyableError', () => ({
+// Mock CopyableError (new path: shared/ui/copyable-error)
+vi.mock('../../src/renderer/shared/ui/copyable-error', () => ({
   CopyableError: ({ error }: { error: string }) => <div data-testid="copyable-error">{error}</div>,
 }))
 
@@ -66,7 +66,7 @@ describe('FileViewer', () => {
     }
 
     // Add fs methods not present in the global setup
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.fs.readFile = vi.fn()
     mirehub.fs.readBase64 = vi.fn()
     mirehub.fs.writeFile = vi.fn()
@@ -79,7 +79,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche le chargement pendant la lecture du fichier', () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockReturnValue(new Promise(() => {}))
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -89,7 +89,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche le contenu du fichier texte apres chargement', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: 'const x = 42', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -102,7 +102,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche une image pour les fichiers image', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readBase64.mockResolvedValue({ data: 'data:image/png;base64,abc', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/logo.png' }
@@ -119,7 +119,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche le bouton de sauvegarde pour les fichiers texte', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: 'hello world', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -132,7 +132,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche l erreur quand la lecture echoue', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: null, error: 'Permission denied' })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/secret.txt' }
@@ -147,7 +147,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche le nom du fichier dans le header', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: '', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -163,7 +163,7 @@ describe('FileViewer', () => {
   describe('interactions', () => {
     it('toggle le bookmark au clic sur le bouton favori', async () => {
       const user = userEvent.setup()
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: 'content', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -181,7 +181,7 @@ describe('FileViewer', () => {
 
     it('ferme le viewer au clic sur le bouton close', async () => {
       const user = userEvent.setup()
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: 'content', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/src/index.ts' }
@@ -198,7 +198,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche le bouton preview pour les fichiers markdown', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: '# Hello', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/README.md' }
@@ -211,7 +211,7 @@ describe('FileViewer', () => {
     })
 
     it('affiche les boutons Format et Minify pour les fichiers JSON', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.fs.readFile.mockResolvedValue({ content: '{"key":"value"}', error: null })
 
       mockViewState = { ...mockViewState, selectedFilePath: '/project/config.json' }

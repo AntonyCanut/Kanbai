@@ -75,6 +75,13 @@ vi.mock('electron', () => ({
     },
   },
   shell: { openExternal: vi.fn() },
+  protocol: {
+    registerSchemesAsPrivileged: vi.fn(),
+    handle: vi.fn(),
+  },
+  net: {
+    fetch: vi.fn(() => Promise.resolve(new Response())),
+  },
 }))
 
 vi.mock('child_process', () => ({

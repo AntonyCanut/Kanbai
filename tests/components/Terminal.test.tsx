@@ -93,7 +93,7 @@ describe('Terminal', () => {
       }
     }) as unknown as typeof ResizeObserver
 
-    // Mock window.mirehub.terminal
+    // Mock window.kanbai.terminal
     Object.defineProperty(window, 'mirehub', {
       value: {
         terminal: {

@@ -27,8 +27,8 @@ vi.mock('../../src/renderer/components/ContextMenu', () => ({
 import { DatabaseSidebar } from '../../src/renderer/components/DatabaseSidebar'
 import type { DbConnection, DbConnectionStatus } from '../../src/shared/types'
 
-// Ensure window.mirehub.database mock exists
-const mirehub = window.mirehub as any
+// Ensure window.kanbai.database mock exists
+const mirehub = window.kanbai as any
 if (!mirehub.database) {
   mirehub.database = {
     testConnection: vi.fn().mockResolvedValue({ success: true }),

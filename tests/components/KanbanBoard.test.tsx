@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { KanbanTask } from '../../src/shared/types'
 
 // Mock CSS
-vi.mock('../../src/renderer/styles/kanban.css', () => ({}))
+vi.mock('../../src/renderer/features/kanban/kanban.css', () => ({}))
 
 // Mock i18n
 vi.mock('../../src/renderer/lib/i18n', () => ({
@@ -18,8 +18,25 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock ContextMenu
-vi.mock('../../src/renderer/components/ContextMenu', () => ({
+// Mock AI providers
+vi.mock('../../src/shared/types/ai-provider', () => ({
+  AI_PROVIDERS: {
+    claude: { id: 'claude', displayName: 'Claude', detectionColor: '#7c3aed' },
+    openai: { id: 'openai', displayName: 'OpenAI', detectionColor: '#10a37f' },
+  },
+}))
+
+vi.mock('../../src/shared/utils/ai-provider-resolver', () => ({
+  resolveFeatureProvider: () => 'claude',
+}))
+
+// Mock pdf-preview
+vi.mock('../../src/renderer/features/kanban/pdf-preview', () => ({
+  renderPdfFirstPage: vi.fn(),
+}))
+
+// Mock ContextMenu (new path)
+vi.mock('../../src/renderer/shared/ui/context-menu', () => ({
   ContextMenu: ({ items, onClose }: { items: Array<{ label: string; action: () => void; separator?: boolean }>; onClose: () => void }) => (
     <div data-testid="context-menu">
       {items.filter((i) => !i.separator).map((item) => (
@@ -96,7 +113,7 @@ const mockAttachFromClipboard = vi.fn()
 const mockRemoveAttachment = vi.fn()
 const mockSyncTasksFromFile = vi.fn()
 
-vi.mock('../../src/renderer/lib/stores/kanbanStore', () => ({
+vi.mock('../../src/renderer/features/kanban/kanban-store', () => ({
   useKanbanStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -129,8 +146,8 @@ vi.mock('../../src/renderer/lib/stores/kanbanStore', () => ({
   ),
 }))
 
-// Mock terminalTabStore
-vi.mock('../../src/renderer/lib/stores/terminalTabStore', () => ({
+// Mock terminalTabStore (imported from features/terminal)
+vi.mock('../../src/renderer/features/terminal', () => ({
   useTerminalTabStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -169,6 +186,9 @@ vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
         activeWorkspaceId: 'ws-1',
+        workspaces: [
+          { id: 'ws-1', name: 'My Workspace' },
+        ],
         projects: [
           { id: 'proj-1', name: 'Frontend', workspaceId: 'ws-1', path: '/frontend' },
           { id: 'proj-2', name: 'Backend', workspaceId: 'ws-1', path: '/backend' },
@@ -179,6 +199,9 @@ vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
     {
       getState: () => ({
         activeWorkspaceId: 'ws-1',
+        workspaces: [
+          { id: 'ws-1', name: 'My Workspace' },
+        ],
         projects: [
           { id: 'proj-1', name: 'Frontend', workspaceId: 'ws-1', path: '/frontend' },
         ],
@@ -189,7 +212,7 @@ vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
   ),
 }))
 
-// window.mirehub is provided by tests/components/setup.ts
+// window.kanbai is provided by tests/components/setup.ts
 
 import { KanbanBoard } from '../../src/renderer/components/KanbanBoard'
 
@@ -206,10 +229,10 @@ describe('KanbanBoard', () => {
 
     it('affiche les colonnes actives (TODO, WORKING, PENDING, DONE via archive)', () => {
       render(<KanbanBoard />)
-      // Active columns: TODO, WORKING, PENDING, FAILED (DONE is via archive section)
-      expect(screen.getByText('kanban.todo')).toBeInTheDocument()
-      expect(screen.getByText('kanban.working')).toBeInTheDocument()
-      expect(screen.getByText('kanban.pending')).toBeInTheDocument()
+      // Active columns appear in both column headers and task count tooltip
+      expect(screen.getAllByText('kanban.todo').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('kanban.working').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('kanban.pending').length).toBeGreaterThanOrEqual(1)
     })
 
     it('affiche les taches dans les bonnes colonnes', () => {
@@ -221,8 +244,10 @@ describe('KanbanBoard', () => {
 
     it('affiche le nombre de taches filtrees', () => {
       render(<KanbanBoard />)
-      // taskCount with count parameter
-      expect(screen.getByText(/kanban.taskCount/)).toBeInTheDocument()
+      // The task count wrapper contains "{count} {t('kanban.tasksLabel')}"
+      const countEl = document.querySelector('.kanban-task-count')
+      expect(countEl).toBeInTheDocument()
+      expect(countEl?.textContent).toContain('kanban.tasksLabel')
     })
 
     it('charge les taches au montage', () => {
@@ -234,14 +259,15 @@ describe('KanbanBoard', () => {
   describe('bouton de creation', () => {
     it('affiche le bouton de nouvelle tache', () => {
       render(<KanbanBoard />)
-      expect(screen.getByText('kanban.newTask')).toBeInTheDocument()
+      // The button text is "+ kanban.newTask"
+      expect(screen.getByText(/kanban\.newTask/)).toBeInTheDocument()
     })
 
     it('ouvre le formulaire de creation au clic', async () => {
       const user = userEvent.setup()
       render(<KanbanBoard />)
 
-      await user.click(screen.getByText('kanban.newTask'))
+      await user.click(screen.getByText(/kanban\.newTask/))
 
       expect(screen.getByPlaceholderText('kanban.taskTitlePlaceholder')).toBeInTheDocument()
       expect(screen.getByPlaceholderText('kanban.descriptionPlaceholder')).toBeInTheDocument()
@@ -272,57 +298,56 @@ describe('KanbanBoard', () => {
       expect(select).toBeInTheDocument()
     })
 
-    it('affiche les labels comme filtres cliquables', () => {
+    it('affiche le selecteur de type comme filtre', () => {
       render(<KanbanBoard />)
-      // Labels appear both as filter chips and on task cards, so use getAllByText
-      expect(screen.getAllByText('bug').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText('feature').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText('test').length).toBeGreaterThanOrEqual(1)
+      // The component now uses select elements for filtering, not label chips
+      const selects = screen.getAllByRole('combobox')
+      // There should be multiple filter selects (priority, type, scope)
+      expect(selects.length).toBeGreaterThanOrEqual(2)
     })
 
-    it('filtre par label au clic', async () => {
+    it('filtre les taches par recherche textuelle et affiche correctement', async () => {
       const user = userEvent.setup()
       render(<KanbanBoard />)
 
-      // Click the filter chip (the button element, not the span on a task card)
-      const bugButtons = screen.getAllByText('bug')
-      const filterChip = bugButtons.find((el) => el.tagName === 'BUTTON')!
-      await user.click(filterChip)
+      const searchInput = screen.getByPlaceholderText('common.search')
+      await user.type(searchInput, 'header')
 
-      // Only task-2 has label "bug"
       await waitFor(() => {
         expect(screen.getByText('Fix header bug')).toBeInTheDocument()
         expect(screen.queryByText('Implement login')).not.toBeInTheDocument()
       })
     })
 
-    it('affiche le bouton de suppression des filtres quand un filtre est actif', async () => {
+    it('affiche le bouton de suppression des filtres quand un filtre de recherche est actif', async () => {
       const user = userEvent.setup()
       render(<KanbanBoard />)
 
-      const bugButtons = screen.getAllByText('bug')
-      const filterChip = bugButtons.find((el) => el.tagName === 'BUTTON')!
-      await user.click(filterChip)
+      // Type in search to activate filter
+      const searchInput = screen.getByPlaceholderText('common.search')
+      await user.type(searchInput, 'login')
 
-      expect(screen.getByText('kanban.clearFilters')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('kanban.clearFilters')).toBeInTheDocument()
+      })
     })
   })
 
   describe('numeros de ticket', () => {
     it('affiche les numeros de ticket formates', () => {
       render(<KanbanBoard />)
-      // T-01, T-02, etc.
-      expect(screen.getByText(/T-01/)).toBeInTheDocument()
-      expect(screen.getByText(/T-02/)).toBeInTheDocument()
+      // Default type is 'feature' -> prefix 'F', so: F-01, F-02, etc.
+      expect(screen.getByText(/F-01/)).toBeInTheDocument()
+      expect(screen.getByText(/F-02/)).toBeInTheDocument()
     })
   })
 
   describe('labels', () => {
-    it('affiche les labels des taches', () => {
+    it('affiche les taches avec leurs titres', () => {
       render(<KanbanBoard />)
-      // task-2 has "bug" label, task-3 has "test" label
-      const allBugChips = screen.getAllByText('bug')
-      expect(allBugChips.length).toBeGreaterThanOrEqual(1)
+      // Tasks are displayed in their respective columns
+      expect(screen.getByText('Implement login')).toBeInTheDocument()
+      expect(screen.getByText('Fix header bug')).toBeInTheDocument()
     })
   })
 })

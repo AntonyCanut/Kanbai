@@ -26,8 +26,8 @@ describe('SettingsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Reset mocks on window.mirehub for this test suite
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    // Reset mocks on window.kanbai for this test suite
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.settings.get.mockResolvedValue({
       theme: 'dark',
       locale: 'fr',
@@ -57,7 +57,7 @@ describe('SettingsPanel', () => {
 
   describe('rendu initial', () => {
     it('affiche le chargement pendant le fetch des settings', () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.settings.get.mockReturnValue(new Promise(() => {}))
       render(<SettingsPanel />)
       expect(screen.getByText('common.loading')).toBeInTheDocument()
@@ -78,18 +78,20 @@ describe('SettingsPanel', () => {
         // "general" appears in nav + content header, so use getAllByText
         expect(screen.getAllByText('settings.general').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.appearance').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('settings.tabs').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.terminal').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('settings.kanban').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.git').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.ssh').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('settings.claude').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('settings.kanban').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('settings.ai').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('settings.tools').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.notifications').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('settings.about').length).toBeGreaterThanOrEqual(1)
       })
     })
 
     it('charge les settings depuis l API au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<SettingsPanel />)
 
       await waitFor(() => {
@@ -98,7 +100,7 @@ describe('SettingsPanel', () => {
     })
 
     it('charge la version de l app au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<SettingsPanel />)
 
       await waitFor(() => {
@@ -153,17 +155,35 @@ describe('SettingsPanel', () => {
 
   describe('chargement des donnees', () => {
     it('charge les namespaces pour la section git', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const user = userEvent.setup()
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<SettingsPanel />)
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.title')).toBeInTheDocument()
+      })
+
+      // Navigate to git section to trigger namespace loading
+      const gitButtons = screen.getAllByText('settings.git')
+      await user.click(gitButtons[0]!)
 
       await waitFor(() => {
         expect(mirehub.namespace.list).toHaveBeenCalled()
       })
     })
 
-    it('charge les cles SSH au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    it('charge les cles SSH quand la section SSH est active', async () => {
+      const user = userEvent.setup()
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<SettingsPanel />)
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.title')).toBeInTheDocument()
+      })
+
+      // Navigate to SSH section to trigger key loading
+      const sshButtons = screen.getAllByText('settings.ssh')
+      await user.click(sshButtons[0]!)
 
       await waitFor(() => {
         expect(mirehub.ssh.listKeys).toHaveBeenCalled()

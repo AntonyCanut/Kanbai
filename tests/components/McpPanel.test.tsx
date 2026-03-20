@@ -75,8 +75,8 @@ describe('McpPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Ensure window.mirehub.project.writeClaudeSettings is available
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    // Ensure window.kanbai.project.writeClaudeSettings is available
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     if (!mirehub.project) mirehub.project = {} as Record<string, ReturnType<typeof vi.fn>>
     mirehub.project.writeClaudeSettings = vi.fn().mockResolvedValue(undefined)
   })

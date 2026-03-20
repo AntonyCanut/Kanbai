@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock i18n
@@ -12,6 +12,18 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
     locale: 'fr',
     setLocale: vi.fn(),
   }),
+}))
+
+// Mock AI provider utilities
+vi.mock('../../src/shared/types/ai-provider', () => ({
+  AI_PROVIDERS: {
+    claude: { id: 'claude', displayName: 'Claude', detectionColor: '#7c3aed' },
+    openai: { id: 'openai', displayName: 'OpenAI', detectionColor: '#10a37f' },
+  },
+}))
+
+vi.mock('../../src/shared/utils/ai-provider-resolver', () => ({
+  resolveFeatureProvider: () => 'claude',
 }))
 
 // Mock packagesStore
@@ -32,8 +44,28 @@ let packagesStoreState = {
   selectedProjectId: 'proj-1',
 }
 
-vi.mock('../../src/renderer/lib/stores/packagesStore', () => ({
+vi.mock('../../src/renderer/features/packages/packages-store', () => ({
   usePackagesStore: () => packagesStoreState,
+}))
+
+// Mock workspaceStore
+vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
+  useWorkspaceStore: Object.assign(
+    () => ({
+      activeProjectId: 'proj-1',
+      activeWorkspaceId: 'ws-1',
+      projects: [{ id: 'proj-1', name: 'My Project', workspaceId: 'ws-1', path: '/my-project' }],
+      workspaces: [{ id: 'ws-1', name: 'My Workspace' }],
+    }),
+    {
+      getState: () => ({
+        activeProjectId: 'proj-1',
+        activeWorkspaceId: 'ws-1',
+        projects: [{ id: 'proj-1', name: 'My Project', workspaceId: 'ws-1', path: '/my-project' }],
+        workspaces: [{ id: 'ws-1', name: 'My Workspace' }],
+      }),
+    },
+  ),
 }))
 
 import { PackagesChat } from '../../src/renderer/components/PackagesChat'
@@ -53,9 +85,9 @@ describe('PackagesChat', () => {
       selectedProjectId: 'proj-1',
     }
 
-    // Setup window.mirehub.packages mock
-    const mirehub = window.mirehub as Record<string, unknown>
-    ;(mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>).packages = {
+    // Setup window.kanbai.packages mock
+    const kanbai = window.kanbai as Record<string, unknown>
+    ;(kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>).packages = {
       nlAsk: vi.fn().mockResolvedValue({ answer: 'Here is the answer', action: null }),
       nlCancel: vi.fn().mockResolvedValue(undefined),
     }
@@ -102,7 +134,6 @@ describe('PackagesChat', () => {
     })
 
     it('appelle nlAsk au clic sur le bouton envoyer', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       const user = userEvent.setup()
       render(<PackagesChat projectPath="/my-project" manager="npm" />)
 
@@ -152,6 +183,7 @@ describe('PackagesChat', () => {
       ]
       render(<PackagesChat projectPath="/my-project" manager="npm" />)
       expect(screen.getByText('Answer from Claude')).toBeInTheDocument()
+      // The component now uses providerConfig.displayName which is 'Claude' from the mock
       expect(screen.getByText('Claude')).toBeInTheDocument()
     })
 
@@ -191,14 +223,14 @@ describe('PackagesChat', () => {
     })
 
     it('appelle nlCancel au clic sur le bouton annuler', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       packagesStoreState.nlLoading = true
       const user = userEvent.setup()
       render(<PackagesChat projectPath="/my-project" manager="npm" />)
 
       await user.click(screen.getByText('packages.chatCancel'))
 
-      expect(mirehub.packages.nlCancel).toHaveBeenCalled()
+      expect(kanbai.packages.nlCancel).toHaveBeenCalled()
       expect(mockSetNlLoading).toHaveBeenCalledWith(false)
     })
 

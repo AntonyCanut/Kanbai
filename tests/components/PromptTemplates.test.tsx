@@ -62,8 +62,8 @@ describe('PromptTemplates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Setup window.mirehub.prompts mock
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    // Setup window.kanbai.prompts mock
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.prompts.list = vi.fn().mockResolvedValue(mockTemplates)
     mirehub.prompts.create = vi.fn().mockResolvedValue({
       id: 'tpl-new',
@@ -114,7 +114,7 @@ describe('PromptTemplates', () => {
 
   describe('chargement des templates', () => {
     it('appelle prompts.list au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<PromptTemplates />)
 
       await waitFor(() => {
@@ -206,7 +206,7 @@ describe('PromptTemplates', () => {
       await user.click(screen.getByText('Code Review'))
 
       await waitFor(() => {
-        expect(screen.getByText(/prompts.sendToClaude/)).toBeInTheDocument()
+        expect(screen.getByText(/prompts.sendToAi/)).toBeInTheDocument()
         expect(screen.getByText('common.copy')).toBeInTheDocument()
         expect(screen.getByText('common.edit')).toBeInTheDocument()
         expect(screen.getByText('common.delete')).toBeInTheDocument()
@@ -253,7 +253,7 @@ describe('PromptTemplates', () => {
 
   describe('suppression de template', () => {
     it('supprime le template au clic sur supprimer', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       const user = userEvent.setup()
       render(<PromptTemplates />)
 

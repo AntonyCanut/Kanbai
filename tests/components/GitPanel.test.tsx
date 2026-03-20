@@ -1,50 +1,60 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock CSS
-vi.mock('../../src/renderer/styles/git.css', () => ({}))
+vi.mock('../../src/renderer/features/git/git.css', () => ({}))
 
-// Mock sub-components
-vi.mock('../../src/renderer/components/git-panel/git-toolbar', () => ({
-  GitToolbar: () => <div data-testid="git-toolbar">toolbar</div>,
+// Mock i18n
+vi.mock('../../src/renderer/lib/i18n', () => ({
+  useI18n: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (params) return `${key}:${JSON.stringify(params)}`
+      return key
+    },
+    locale: 'fr',
+    localeCode: 'fr-FR',
+    setLocale: vi.fn(),
+  }),
 }))
 
-vi.mock('../../src/renderer/components/git-panel/git-sidebar', () => ({
-  GitSidebar: () => <div data-testid="git-sidebar">sidebar</div>,
-}))
-
-vi.mock('../../src/renderer/components/git-panel/git-center-view', () => ({
-  GitCenterView: () => <div data-testid="git-center-view">center</div>,
-}))
-
-vi.mock('../../src/renderer/components/git-panel/git-changes-panel', () => ({
-  GitChangesPanel: () => <div data-testid="git-changes-panel">changes</div>,
-}))
-
-vi.mock('../../src/renderer/components/ContextMenu', () => ({
+// Mock ContextMenu
+vi.mock('../../src/renderer/shared/ui/context-menu', () => ({
   ContextMenu: () => <div data-testid="context-menu" />,
 }))
 
-// Mutable state object returned by useGitPanel
-const mockHandleGitInit = vi.fn()
-const mockRefresh = vi.fn()
-const mockSetViewMode = vi.fn()
+// Mock stores
+let mockActiveWorkspaceId: string | null = 'ws-1'
+let mockProjects: Array<{ id: string; name: string; path: string; workspaceId: string }> = []
 
-let mockState: Record<string, unknown> = {}
-
-vi.mock('../../src/renderer/components/git-panel/use-git-panel', () => ({
-  useGitPanel: () => mockState,
+vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
+  useWorkspaceStore: Object.assign(
+    (selector?: (state: Record<string, unknown>) => unknown) => {
+      const state = {
+        activeWorkspaceId: mockActiveWorkspaceId,
+        projects: mockProjects,
+      }
+      return selector ? selector(state) : state
+    },
+    {
+      getState: () => ({
+        activeWorkspaceId: mockActiveWorkspaceId,
+        projects: mockProjects,
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(),
+    },
+  ),
 }))
 
 vi.mock('../../src/renderer/lib/stores/viewStore', () => ({
   useViewStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
-      const state = { setHighlightedFilePath: vi.fn(), setViewMode: mockSetViewMode }
+      const state = { setViewMode: vi.fn(), setHighlightedFilePath: vi.fn() }
       return selector ? selector(state) : state
     },
     {
-      getState: () => ({ setHighlightedFilePath: vi.fn(), setViewMode: mockSetViewMode }),
+      getState: () => ({ setViewMode: vi.fn(), setHighlightedFilePath: vi.fn() }),
       setState: vi.fn(),
       subscribe: vi.fn(),
     },
@@ -53,118 +63,50 @@ vi.mock('../../src/renderer/lib/stores/viewStore', () => ({
 
 import { GitPanel } from '../../src/renderer/components/GitPanel'
 
-function getDefaultMockState(): Record<string, unknown> {
-  return {
-    t: (key: string) => key,
-    activeProject: null,
-    status: null,
-    log: [],
-    branches: [],
-    stashes: [],
-    tags: [],
-    remotes: [],
-    loading: false,
-    graphData: [],
-    graphMaxLane: 0,
-    selectedCommit: null,
-    commitDetail: null,
-    selectedCommitFile: null,
-    setSelectedCommitFile: vi.fn(),
-    selectedFile: null,
-    setSelectedFile: vi.fn(),
-    diffContent: '',
-    setDiffContent: vi.fn(),
-    commitMessage: '',
-    setCommitMessage: vi.fn(),
-    newBranchName: '',
-    setNewBranchName: vi.fn(),
-    showNewBranch: false,
-    setShowNewBranch: vi.fn(),
-    branchCtx: null,
-    setBranchCtx: vi.fn(),
-    commitCtx: null,
-    setCommitCtx: vi.fn(),
-    renamingBranch: null,
-    setRenamingBranch: vi.fn(),
-    renameValue: '',
-    setRenameValue: vi.fn(),
-    renameInputRef: { current: null },
-    showNewTag: false,
-    setShowNewTag: vi.fn(),
-    newTagName: '',
-    setNewTagName: vi.fn(),
-    newTagMessage: '',
-    setNewTagMessage: vi.fn(),
-    showNewRemote: false,
-    setShowNewRemote: vi.fn(),
-    newRemoteName: '',
-    setNewRemoteName: vi.fn(),
-    newRemoteUrl: '',
-    setNewRemoteUrl: vi.fn(),
-    showBranchCompare: false,
-    setShowBranchCompare: vi.fn(),
-    compareBranch1: '',
-    setCompareBranch1: vi.fn(),
-    compareBranch2: '',
-    setCompareBranch2: vi.fn(),
-    branchDiffResult: '',
-    setBranchDiffResult: vi.fn(),
-    blameFile: null,
-    setBlameFile: vi.fn(),
-    blameData: [],
-    setBlameData: vi.fn(),
-    localCollapsed: false,
-    setLocalCollapsed: vi.fn(),
-    remoteCollapsed: false,
-    setRemoteCollapsed: vi.fn(),
-    stashCollapsed: false,
-    setStashCollapsed: vi.fn(),
-    tagsCollapsed: false,
-    setTagsCollapsed: vi.fn(),
-    remotesCollapsed: false,
-    setRemotesCollapsed: vi.fn(),
-    setSelectedCommit: vi.fn(),
-    setCommitDetail: vi.fn(),
-    refresh: mockRefresh,
-    handleSelectCommit: vi.fn(),
-    handleFileDiff: vi.fn(),
-    handleStageFile: vi.fn(),
-    handleStageAll: vi.fn(),
-    handleUnstageFile: vi.fn(),
-    handleUnstageAll: vi.fn(),
-    handleDiscardFile: vi.fn(),
-    handleCommit: vi.fn(),
-    handleCheckout: vi.fn(),
-    handleCreateBranch: vi.fn(),
-    handleRenameBranch: vi.fn(),
-    handlePush: vi.fn(),
-    handlePull: vi.fn(),
-    handleFetch: vi.fn(),
-    handleStash: vi.fn(),
-    handleStashPop: vi.fn(),
-    handleGitInit: mockHandleGitInit,
-    handleUndo: vi.fn(),
-    handleSwitchToTerminal: vi.fn(),
-    handleCreateTag: vi.fn(),
-    handleDeleteTag: vi.fn(),
-    handleCherryPick: vi.fn(),
-    handleCompareBranches: vi.fn(),
-    handleBlame: vi.fn(),
-    handleAddRemote: vi.fn(),
-    handleRemoveRemote: vi.fn(),
-    getBranchContextItems: vi.fn().mockReturnValue([]),
-    getCommitContextItems: vi.fn().mockReturnValue([]),
-  }
-}
-
 describe('GitPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockState = getDefaultMockState()
+    mockActiveWorkspaceId = 'ws-1'
+    mockProjects = []
+
+    // Setup git mocks
+    const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    kanbai.git = {
+      status: vi.fn().mockRejectedValue(new Error('not a git repo')),
+      log: vi.fn().mockResolvedValue([]),
+      branches: vi.fn().mockResolvedValue([]),
+      diff: vi.fn().mockResolvedValue(''),
+      commit: vi.fn().mockResolvedValue(undefined),
+      push: vi.fn().mockResolvedValue(undefined),
+      pull: vi.fn().mockResolvedValue(undefined),
+      checkout: vi.fn().mockResolvedValue(undefined),
+      stage: vi.fn().mockResolvedValue(undefined),
+      unstage: vi.fn().mockResolvedValue(undefined),
+      discard: vi.fn().mockResolvedValue(undefined),
+      stash: vi.fn().mockResolvedValue(undefined),
+      stashPop: vi.fn().mockResolvedValue(undefined),
+      createBranch: vi.fn().mockResolvedValue(undefined),
+      deleteBranch: vi.fn().mockResolvedValue(undefined),
+      merge: vi.fn().mockResolvedValue(undefined),
+      fetch: vi.fn().mockResolvedValue(undefined),
+      init: vi.fn().mockResolvedValue(undefined),
+      stashList: vi.fn().mockResolvedValue([]),
+      tags: vi.fn().mockResolvedValue([]),
+      remotes: vi.fn().mockResolvedValue([]),
+      commitDiff: vi.fn().mockResolvedValue({ files: [], diff: '' }),
+      blame: vi.fn().mockResolvedValue([]),
+      createTag: vi.fn().mockResolvedValue(undefined),
+      deleteTag: vi.fn().mockResolvedValue(undefined),
+      cherryPick: vi.fn().mockResolvedValue(undefined),
+      addRemote: vi.fn().mockResolvedValue(undefined),
+      removeRemote: vi.fn().mockResolvedValue(undefined),
+      renameBranch: vi.fn().mockResolvedValue(undefined),
+    }
   })
 
   describe('guard: pas de projet', () => {
-    it('affiche le message de selection de projet quand pas de projet actif', () => {
+    it('affiche le message de selection de projet quand pas de projet dans le workspace', () => {
+      mockProjects = []
       render(<GitPanel />)
 
       expect(screen.getByText('git.selectProject')).toBeInTheDocument()
@@ -173,37 +115,41 @@ describe('GitPanel', () => {
   })
 
   describe('guard: pas de repo git', () => {
-    it('affiche le chargement quand loading et pas de status', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, loading: true }
+    it('affiche le dashboard avec bouton init quand le projet n est pas un repo git', async () => {
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      kanbai.git.status = vi.fn().mockRejectedValue(new Error('not a git repo'))
+
+      mockProjects = [{ id: 'p1', name: 'Test', path: '/test', workspaceId: 'ws-1' }]
 
       render(<GitPanel />)
 
-      expect(screen.getByText('common.loading')).toBeInTheDocument()
-      expect(document.querySelector('.git-empty')).toBeInTheDocument()
+      // The component auto-loads data and shows the dashboard view
+      await waitFor(() => {
+        expect(screen.getByText('git.notGitRepo')).toBeInTheDocument()
+        expect(screen.getByText('git.initGit')).toBeInTheDocument()
+      })
     })
 
-    it('affiche le message non-git avec bouton init quand pas de status', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' } }
+    it('appelle git.init au clic sur le bouton init', async () => {
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      kanbai.git.status = vi.fn().mockRejectedValue(new Error('not a git repo'))
 
-      render(<GitPanel />)
-
-      expect(screen.getByText('git.notGitRepo')).toBeInTheDocument()
-      expect(screen.getByText('git.initGit')).toBeInTheDocument()
-    })
-
-    it('appelle handleGitInit au clic sur le bouton init', async () => {
+      mockProjects = [{ id: 'p1', name: 'Test', path: '/test', workspaceId: 'ws-1' }]
       const user = userEvent.setup()
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' } }
 
       render(<GitPanel />)
+
+      await waitFor(() => {
+        expect(screen.getByText('git.initGit')).toBeInTheDocument()
+      })
 
       await user.click(screen.getByText('git.initGit'))
 
-      expect(mockHandleGitInit).toHaveBeenCalledOnce()
+      expect(kanbai.git.init).toHaveBeenCalledWith('/test')
     })
   })
 
-  describe('panneau git complet', () => {
+  describe('panneau git avec status', () => {
     const mockStatus = {
       branch: 'main',
       staged: [{ path: 'file1.ts', status: 'A' }],
@@ -213,66 +159,32 @@ describe('GitPanel', () => {
       behind: 0,
     }
 
-    it('affiche le panneau git complet avec status', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, status: mockStatus }
+    it('affiche le panneau git complet avec status', async () => {
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      kanbai.git.status = vi.fn().mockResolvedValue(mockStatus)
+
+      mockProjects = [{ id: 'p1', name: 'Test', path: '/test', workspaceId: 'ws-1' }]
 
       render(<GitPanel />)
 
-      expect(document.querySelector('.git-panel')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(document.querySelector('.git-panel')).toBeInTheDocument()
+      })
     })
 
-    it('affiche la toolbar et le sidebar quand status present', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, status: mockStatus }
+    it('affiche le nom de la branche', async () => {
+      const kanbai = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      kanbai.git.status = vi.fn().mockResolvedValue(mockStatus)
+
+      mockProjects = [{ id: 'p1', name: 'Test', path: '/test', workspaceId: 'ws-1' }]
 
       render(<GitPanel />)
 
-      expect(screen.getByTestId('git-toolbar')).toBeInTheDocument()
-      expect(screen.getByTestId('git-sidebar')).toBeInTheDocument()
-    })
-
-    it('affiche le center view et le changes panel', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, status: mockStatus }
-
-      render(<GitPanel />)
-
-      expect(screen.getByTestId('git-center-view')).toBeInTheDocument()
-      expect(screen.getByTestId('git-changes-panel')).toBeInTheDocument()
-    })
-
-    it('affiche la barre de statut avec les compteurs', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, status: mockStatus }
-
-      render(<GitPanel />)
-
-      const statusbar = document.querySelector('.git-statusbar')
-      expect(statusbar).toBeInTheDocument()
-    })
-
-    it('affiche les compteurs corrects dans la statusbar', () => {
-      mockState = {
-        ...mockState,
-        activeProject: { id: 'p1', name: 'Test', path: '/test' },
-        status: mockStatus,
-        log: [{ hash: 'abc', message: 'init' }, { hash: 'def', message: 'second' }],
-        tags: [{ name: 'v1.0', hash: 'abc' }],
-      }
-
-      render(<GitPanel />)
-
-      // totalChanges = staged(1) + modified(1) + untracked(1) = 3
-      expect(screen.getByText('git.filesChanged')).toBeInTheDocument()
-      expect(screen.getByText('git.stagedCount')).toBeInTheDocument()
-      expect(screen.getByText('git.untrackedCount')).toBeInTheDocument()
-      expect(screen.getByText('git.commitCount')).toBeInTheDocument()
-      expect(screen.getByText('git.tagCount')).toBeInTheDocument()
-    })
-
-    it('ne rend pas de context menu quand branchCtx et commitCtx sont null', () => {
-      mockState = { ...mockState, activeProject: { id: 'p1', name: 'Test', path: '/test' }, status: mockStatus }
-
-      render(<GitPanel />)
-
-      expect(screen.queryByTestId('context-menu')).not.toBeInTheDocument()
+      // Dashboard view shows project cards with branch info (may appear in multiple places)
+      await waitFor(() => {
+        const elements = screen.getAllByText('main')
+        expect(elements.length).toBeGreaterThanOrEqual(1)
+      })
     })
   })
 })

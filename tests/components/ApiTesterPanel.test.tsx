@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 // Mock i18n
 vi.mock('../../src/renderer/lib/i18n', () => ({
@@ -14,57 +13,21 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock sub-components
-const mockHandleSend = vi.fn()
-const mockSelectRequest = vi.fn()
-const mockAddCollection = vi.fn()
-const mockToggleCollection = vi.fn()
+// Mock workspace store used by useApiTester
+vi.mock('../../src/renderer/features/workspace/workspace-store', () => ({
+  useWorkspaceStore: () => ({
+    activeProjectId: hookState.activeProject?.id ?? null,
+    projects: hookState.activeProject ? [hookState.activeProject] : [],
+  }),
+}))
 
-vi.mock('../../src/renderer/components/api-tester', () => ({
+// Mock the useApiTester hook
+vi.mock('../../src/renderer/features/api-tester/use-api-tester', () => ({
   useApiTester: () => hookState,
-  ApiSidebar: ({ data, onAddCollection, onSelectRequest, onToggleCollection }: Record<string, unknown>) => {
-    const typedData = data as { collections: Array<{ id: string; name: string; requests: Array<{ id: string; name: string; method: string; url: string }> }> }
-    return (
-      <div data-testid="api-sidebar">
-        <button onClick={onAddCollection as () => void}>add-collection</button>
-        {typedData.collections.map((col) => (
-          <div key={col.id} data-testid={`collection-${col.id}`}>
-            <button onClick={() => (onToggleCollection as (id: string) => void)(col.id)}>{col.name}</button>
-            {col.requests.map((req) => (
-              <button key={req.id} onClick={() => (onSelectRequest as (cId: string, rId: string) => void)(col.id, req.id)}>
-                {req.method} {req.name}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-    )
-  },
-  ApiRequestEditor: ({ request, sending, onSend }: Record<string, unknown>) => {
-    const typedReq = request as { method: string; url: string; name: string }
-    return (
-      <div data-testid="api-request-editor">
-        <span>{typedReq.method} {typedReq.url}</span>
-        <button onClick={onSend as () => void} disabled={sending as boolean}>
-          {(sending as boolean) ? 'sending...' : 'send'}
-        </button>
-      </div>
-    )
-  },
-  ApiResponseViewer: ({ response }: Record<string, unknown>) => (
-    <div data-testid="api-response-viewer">
-      {response ? 'response-loaded' : 'no-response'}
-    </div>
-  ),
-  ApiEnvironmentModal: ({ onClose }: Record<string, unknown>) => (
-    <div data-testid="api-env-modal">
-      <button onClick={onClose as () => void}>close-modal</button>
-    </div>
-  ),
 }))
 
 const defaultHookState = {
-  activeProject: { id: 'proj-1', name: 'My Project', path: '/my-project', workspaceId: 'ws-1' },
+  activeProject: { id: 'proj-1', name: 'My Project', path: '/my-project', workspaceId: 'ws-1' } as { id: string; name: string; path: string; workspaceId: string } | null,
   data: {
     version: 1,
     collections: [
@@ -72,39 +35,41 @@ const defaultHookState = {
         id: 'col-1',
         name: 'Users API',
         requests: [
-          { id: 'req-1', name: 'Get Users', method: 'GET', url: 'https://api.example.com/users', headers: [], queryParams: [], body: '', tests: '' },
-          { id: 'req-2', name: 'Create User', method: 'POST', url: 'https://api.example.com/users', headers: [], queryParams: [], body: '{}', tests: '' },
+          { id: 'req-1', name: 'Get Users', method: 'GET', url: 'https://api.example.com/users', headers: [], queryParams: [], body: '', bodyType: 'none' as const, tests: [] },
+          { id: 'req-2', name: 'Create User', method: 'POST', url: 'https://api.example.com/users', headers: [], queryParams: [], body: '{}', bodyType: 'json' as const, tests: [] },
         ],
       },
     ],
-    environments: [],
+    environments: [] as Array<{ id: string; name: string; variables: Record<string, string> }>,
+    chains: [],
+    healthChecks: [],
   },
   loading: false,
   selection: null as { type: string; collectionId: string; requestId: string } | null,
-  expandedCollections: new Set<string>(),
+  expandedCollections: new Set<string>(['col-1']),
   requestTab: 'headers' as const,
   setRequestTab: vi.fn(),
   responseTab: 'body' as const,
   setResponseTab: vi.fn(),
-  response: null,
-  testResults: [],
+  response: null as { status: number; statusText: string; time: number; size: number; body: string; headers: Record<string, string> } | null,
+  testResults: [] as Array<{ passed: boolean; assertion: { type: string; expected: string }; actual: string }>,
   sending: false,
-  selectedRequest: null as { request: { method: string; url: string; name: string }; collectionId: string } | null,
+  selectedRequest: null as { request: { id: string; method: string; url: string; name: string; headers: Array<{ key: string; value: string; enabled: boolean }>; body: string; bodyType: string; tests: Array<{ type: string; expected: string }> }; collectionId: string } | null,
   showEnvModal: false,
   setShowEnvModal: vi.fn(),
   showDoc: false,
   setShowDoc: vi.fn(),
-  activeEnv: null,
-  handleSend: mockHandleSend,
+  activeEnv: null as { id: string; name: string; variables: Record<string, string> } | null,
+  handleSend: vi.fn(),
   handleUrlKeyDown: vi.fn(),
   updateRequest: vi.fn(),
-  addCollection: mockAddCollection,
+  addCollection: vi.fn(),
   deleteCollection: vi.fn(),
   addRequest: vi.fn(),
   deleteRequest: vi.fn(),
   duplicateRequest: vi.fn(),
-  toggleCollection: mockToggleCollection,
-  selectRequest: mockSelectRequest,
+  toggleCollection: vi.fn(),
+  selectRequest: vi.fn(),
   addEnvironment: vi.fn(),
   deleteEnvironment: vi.fn(),
   setActiveEnvironment: vi.fn(),
@@ -120,18 +85,20 @@ import { ApiTesterPanel } from '../../src/renderer/components/ApiTesterPanel'
 describe('ApiTesterPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    hookState = { ...defaultHookState }
+    hookState = { ...defaultHookState, expandedCollections: new Set<string>(['col-1']) }
   })
 
   describe('rendu initial', () => {
     it('affiche la sidebar avec les collections', () => {
       render(<ApiTesterPanel />)
-      expect(screen.getByTestId('api-sidebar')).toBeInTheDocument()
-      expect(screen.getByTestId('collection-col-1')).toBeInTheDocument()
+      // The component renders collections inline in a .api-sidebar
+      expect(screen.getByText('Users API')).toBeInTheDocument()
     })
 
     it('affiche le message vide quand aucune requete n est selectionnee', () => {
+      hookState = { ...defaultHookState, selection: null, expandedCollections: new Set<string>(['col-1']) }
       render(<ApiTesterPanel />)
+      // When no selection, the main area shows api.noCollections
       expect(screen.getByText('api.noCollections')).toBeInTheDocument()
     })
 
@@ -149,16 +116,19 @@ describe('ApiTesterPanel', () => {
   })
 
   describe('affichage des collections', () => {
-    it('affiche le nom de la collection et ses requetes', () => {
+    it('affiche le nom de la collection et ses requetes quand la collection est expandue', () => {
       render(<ApiTesterPanel />)
       expect(screen.getByText('Users API')).toBeInTheDocument()
-      expect(screen.getByText('GET Get Users')).toBeInTheDocument()
-      expect(screen.getByText('POST Create User')).toBeInTheDocument()
+      // Requests are shown because expandedCollections has 'col-1'
+      expect(screen.getByText('GET')).toBeInTheDocument()
+      expect(screen.getByText('Get Users')).toBeInTheDocument()
     })
 
     it('affiche le bouton d ajout de collection', () => {
       render(<ApiTesterPanel />)
-      expect(screen.getByText('add-collection')).toBeInTheDocument()
+      // The add collection button displays '+'
+      const addBtn = screen.getByTitle('api.newCollection')
+      expect(addBtn).toBeInTheDocument()
     })
   })
 
@@ -166,28 +136,32 @@ describe('ApiTesterPanel', () => {
     it('affiche l editeur de requete quand une requete est selectionnee', () => {
       hookState = {
         ...defaultHookState,
+        expandedCollections: new Set<string>(['col-1']),
         selection: { type: 'request', collectionId: 'col-1', requestId: 'req-1' },
         selectedRequest: {
-          request: { method: 'GET', url: 'https://api.example.com/users', name: 'Get Users' },
+          request: { id: 'req-1', method: 'GET', url: 'https://api.example.com/users', name: 'Get Users', headers: [], body: '', bodyType: 'none', tests: [] },
           collectionId: 'col-1',
         },
       }
       render(<ApiTesterPanel />)
-      expect(screen.getByTestId('api-request-editor')).toBeInTheDocument()
-      expect(screen.getByText('GET https://api.example.com/users')).toBeInTheDocument()
+      // The URL input should have the url value
+      const urlInput = screen.getByPlaceholderText('api.urlPlaceholder')
+      expect(urlInput).toHaveValue('https://api.example.com/users')
     })
 
     it('affiche le viewer de reponse quand une requete est selectionnee', () => {
       hookState = {
         ...defaultHookState,
+        expandedCollections: new Set<string>(['col-1']),
         selection: { type: 'request', collectionId: 'col-1', requestId: 'req-1' },
         selectedRequest: {
-          request: { method: 'GET', url: 'https://api.example.com/users', name: 'Get Users' },
+          request: { id: 'req-1', method: 'GET', url: 'https://api.example.com/users', name: 'Get Users', headers: [], body: '', bodyType: 'none', tests: [] },
           collectionId: 'col-1',
         },
       }
       render(<ApiTesterPanel />)
-      expect(screen.getByTestId('api-response-viewer')).toBeInTheDocument()
+      // When no response yet, shows "no response" message
+      expect(screen.getByText('api.noResponse')).toBeInTheDocument()
     })
   })
 
@@ -195,30 +169,32 @@ describe('ApiTesterPanel', () => {
     it('affiche le bouton send actif quand pas en cours d envoi', () => {
       hookState = {
         ...defaultHookState,
+        expandedCollections: new Set<string>(['col-1']),
         selection: { type: 'request', collectionId: 'col-1', requestId: 'req-1' },
         selectedRequest: {
-          request: { method: 'GET', url: 'https://api.example.com/users', name: 'Get Users' },
+          request: { id: 'req-1', method: 'GET', url: 'https://api.example.com/users', name: 'Get Users', headers: [], body: '', bodyType: 'none', tests: [] },
           collectionId: 'col-1',
         },
         sending: false,
       }
       render(<ApiTesterPanel />)
-      const sendBtn = screen.getByText('send')
+      const sendBtn = screen.getByText('api.send')
       expect(sendBtn).not.toBeDisabled()
     })
 
     it('desactive le bouton send pendant l envoi', () => {
       hookState = {
         ...defaultHookState,
+        expandedCollections: new Set<string>(['col-1']),
         selection: { type: 'request', collectionId: 'col-1', requestId: 'req-1' },
         selectedRequest: {
-          request: { method: 'GET', url: 'https://api.example.com/users', name: 'Get Users' },
+          request: { id: 'req-1', method: 'GET', url: 'https://api.example.com/users', name: 'Get Users', headers: [], body: '', bodyType: 'none', tests: [] },
           collectionId: 'col-1',
         },
         sending: true,
       }
       render(<ApiTesterPanel />)
-      const sendBtn = screen.getByText('sending...')
+      const sendBtn = screen.getByText('api.sending')
       expect(sendBtn).toBeDisabled()
     })
   })
@@ -227,16 +203,18 @@ describe('ApiTesterPanel', () => {
     it('affiche le message vide quand il n y a pas de collections', () => {
       hookState = {
         ...defaultHookState,
-        data: { version: 1, collections: [], environments: [] },
+        data: { version: 1, collections: [], environments: [], chains: [], healthChecks: [] },
       }
       render(<ApiTesterPanel />)
-      expect(screen.getByText('api.noCollections')).toBeInTheDocument()
+      // Text appears in both sidebar empty state and main area empty state
+      const elements = screen.getAllByText('api.noCollections')
+      expect(elements.length).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('banniere de documentation', () => {
     it('affiche la banniere de doc quand showDoc est true', () => {
-      hookState = { ...defaultHookState, showDoc: true }
+      hookState = { ...defaultHookState, showDoc: true, expandedCollections: new Set<string>(['col-1']) }
       render(<ApiTesterPanel />)
       expect(screen.getByText('api.docTitle')).toBeInTheDocument()
     })

@@ -94,8 +94,8 @@ describe('TodoScanner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Setup window.mirehub.project mock
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    // Setup window.kanbai.project mock
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.project.scanTodos = vi.fn().mockResolvedValue(mockTodoEntries)
     mirehub.project.loadIgnoredTodos = vi.fn().mockResolvedValue([])
     mirehub.project.saveIgnoredTodos = vi.fn().mockResolvedValue(undefined)
@@ -122,7 +122,7 @@ describe('TodoScanner', () => {
 
   describe('scan des todos', () => {
     it('appelle scanTodos au montage', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<TodoScanner />)
 
       await waitFor(() => {
@@ -151,7 +151,7 @@ describe('TodoScanner', () => {
     })
 
     it('relance le scan au clic sur le bouton refresh', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       const user = userEvent.setup()
       render(<TodoScanner />)
 
@@ -230,7 +230,7 @@ describe('TodoScanner', () => {
     })
 
     it('affiche un message vide quand aucun resultat', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       mirehub.project.scanTodos.mockResolvedValue([])
       render(<TodoScanner />)
 

@@ -49,6 +49,7 @@ export default defineConfig({
             '@shared': path.resolve(__dirname, 'src/shared'),
             '@main': path.resolve(__dirname, 'src/main'),
             '@renderer': path.resolve(__dirname, 'src/renderer'),
+            'pdfjs-dist': path.resolve(__dirname, 'tests/mocks/pdfjs-dist.ts'),
           },
         },
       },

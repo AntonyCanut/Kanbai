@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // Mock i18n
@@ -14,20 +14,6 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock healthCheckStore
-const mockLoadData = vi.fn()
-const mockRefreshData = vi.fn()
-const mockAddCheck = vi.fn()
-const mockUpdateCheck = vi.fn()
-const mockDeleteCheck = vi.fn()
-const mockExecuteCheck = vi.fn().mockResolvedValue(null)
-const mockStartScheduler = vi.fn()
-const mockStopScheduler = vi.fn()
-const mockUpdateInterval = vi.fn()
-const mockHandleStatusUpdate = vi.fn()
-const mockClearHistory = vi.fn()
-const mockSelectCheck = vi.fn()
-
 const mockChecks = [
   {
     id: 'hc-1',
@@ -36,7 +22,7 @@ const mockChecks = [
     method: 'GET' as const,
     expectedStatus: 200,
     notifyOnDown: true,
-    headers: [],
+    headers: [] as Array<{ key: string; value: string; enabled: boolean }>,
     schedule: { enabled: true, interval: 30, unit: 'seconds' as const },
   },
   {
@@ -51,53 +37,57 @@ const mockChecks = [
   },
 ]
 
-let mockStoreState = {
-  data: { version: 1, checks: mockChecks, history: [], incidents: [] },
+const mockHandleAddCheck = vi.fn()
+const mockHandleDeleteCheck = vi.fn()
+const mockHandleUpdateCheck = vi.fn()
+const mockHandleRunSingleCheck = vi.fn()
+const mockHandleRunAllChecks = vi.fn()
+const mockHandleStartScheduler = vi.fn()
+const mockHandleStopScheduler = vi.fn()
+const mockHandleUpdateInterval = vi.fn()
+const mockHandleClearHistory = vi.fn()
+const mockHandleExport = vi.fn()
+const mockHandleImport = vi.fn()
+const mockSelectCheck = vi.fn()
+
+let hookState = {
+  activeWorkspace: { id: 'ws-1', name: 'My Workspace' } as { id: string; name: string } | undefined,
+  loading: false,
+  data: { version: 1, checks: mockChecks, history: [] as Array<unknown>, incidents: [] as Array<unknown> },
   statuses: {} as Record<string, { status: string; lastCheck?: number; nextCheck?: number }>,
   selectedCheckId: null as string | null,
+  selectedCheck: null as typeof mockChecks[0] | null,
+  selectedStatus: undefined as { status: string; lastCheck?: number; nextCheck?: number } | undefined,
   schedulerRunning: false,
-  loading: false,
-  loadData: mockLoadData,
-  refreshData: mockRefreshData,
-  addCheck: mockAddCheck,
-  updateCheck: mockUpdateCheck,
-  deleteCheck: mockDeleteCheck,
-  executeCheck: mockExecuteCheck,
-  startScheduler: mockStartScheduler,
-  stopScheduler: mockStopScheduler,
-  updateInterval: mockUpdateInterval,
-  handleStatusUpdate: mockHandleStatusUpdate,
-  clearHistory: mockClearHistory,
+  executingIds: new Set<string>(),
+  checkHistory: [] as Array<unknown>,
+  checkIncidents: [] as Array<unknown>,
+  paginatedHistory: [] as Array<unknown>,
+  historyPage: 0,
+  historyPageCount: 0,
   selectCheck: mockSelectCheck,
+  setHistoryPage: vi.fn(),
+  handleAddCheck: mockHandleAddCheck,
+  handleUpdateCheck: mockHandleUpdateCheck,
+  handleDeleteCheck: mockHandleDeleteCheck,
+  handleRunSingleCheck: mockHandleRunSingleCheck,
+  handleRunAllChecks: mockHandleRunAllChecks,
+  handleStartScheduler: mockHandleStartScheduler,
+  handleStopScheduler: mockHandleStopScheduler,
+  handleUpdateInterval: mockHandleUpdateInterval,
+  handleQuickCheck: vi.fn(),
+  handleClearHistory: mockHandleClearHistory,
+  handleExport: mockHandleExport,
+  handleImport: mockHandleImport,
+  handleAddHeader: vi.fn(),
+  handleUpdateHeader: vi.fn(),
+  handleRemoveHeader: vi.fn(),
 }
 
-vi.mock('../../src/renderer/lib/stores/healthCheckStore', () => ({
-  useHealthCheckStore: () => mockStoreState,
-}))
+const defaultHookState = { ...hookState }
 
-// Mock workspaceStore
-vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
-  useWorkspaceStore: Object.assign(
-    (selector?: (state: Record<string, unknown>) => unknown) => {
-      const state = {
-        activeProjectId: 'proj-1',
-        projects: [
-          { id: 'proj-1', name: 'My Project', workspaceId: 'ws-1', path: '/my-project' },
-        ],
-      }
-      return selector ? selector(state) : state
-    },
-    {
-      getState: () => ({
-        activeProjectId: 'proj-1',
-        projects: [
-          { id: 'proj-1', name: 'My Project', workspaceId: 'ws-1', path: '/my-project' },
-        ],
-      }),
-      setState: vi.fn(),
-      subscribe: vi.fn(),
-    },
-  ),
+vi.mock('../../src/renderer/features/healthcheck/use-healthcheck', () => ({
+  useHealthcheck: () => hookState,
 }))
 
 import { HealthCheckPanel } from '../../src/renderer/components/HealthCheckPanel'
@@ -105,36 +95,10 @@ import { HealthCheckPanel } from '../../src/renderer/components/HealthCheckPanel
 describe('HealthCheckPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Reset mock store state
-    mockStoreState = {
-      data: { version: 1, checks: mockChecks, history: [], incidents: [] },
-      statuses: {},
-      selectedCheckId: null,
-      schedulerRunning: false,
-      loading: false,
-      loadData: mockLoadData,
-      refreshData: mockRefreshData,
-      addCheck: mockAddCheck,
-      updateCheck: mockUpdateCheck,
-      deleteCheck: mockDeleteCheck,
-      executeCheck: mockExecuteCheck,
-      startScheduler: mockStartScheduler,
-      stopScheduler: mockStopScheduler,
-      updateInterval: mockUpdateInterval,
-      handleStatusUpdate: mockHandleStatusUpdate,
-      clearHistory: mockClearHistory,
-      selectCheck: mockSelectCheck,
-    }
-
-    // Ensure window.mirehub.healthcheck is available
-    const mirehub = window.mirehub as Record<string, unknown>
-    mirehub.healthcheck = {
-      onStatusUpdate: vi.fn().mockReturnValue(() => {}),
-      load: vi.fn().mockResolvedValue({ version: 1, checks: [], history: [], incidents: [] }),
-      save: vi.fn().mockResolvedValue(undefined),
-      export: vi.fn().mockResolvedValue(undefined),
-      import: vi.fn().mockResolvedValue({ success: false }),
+    hookState = {
+      ...defaultHookState,
+      data: { version: 1, checks: [...mockChecks], history: [], incidents: [] },
+      executingIds: new Set<string>(),
     }
   })
 
@@ -159,11 +123,6 @@ describe('HealthCheckPanel', () => {
       render(<HealthCheckPanel />)
       expect(screen.getByText('healthcheck.selectCheck')).toBeInTheDocument()
     })
-
-    it('charge les donnees au montage', () => {
-      render(<HealthCheckPanel />)
-      expect(mockLoadData).toHaveBeenCalledWith('/my-project')
-    })
   })
 
   describe('ajout de check', () => {
@@ -173,25 +132,25 @@ describe('HealthCheckPanel', () => {
       expect(addBtn).toBeInTheDocument()
     })
 
-    it('appelle addCheck au clic sur le bouton d ajout', async () => {
+    it('appelle handleAddCheck au clic sur le bouton d ajout', async () => {
       const user = userEvent.setup()
       render(<HealthCheckPanel />)
 
       await user.click(screen.getByTitle('healthcheck.addCheck'))
 
-      expect(mockAddCheck).toHaveBeenCalledWith('/my-project')
+      expect(mockHandleAddCheck).toHaveBeenCalled()
     })
   })
 
   describe('affichage de la liste des checks', () => {
-    it('affiche les informations de methode et interval pour chaque check', () => {
+    it('affiche les informations de methode pour chaque check', () => {
       render(<HealthCheckPanel />)
-      // API Production has schedule enabled: "GET · 30s"
+      // Each check shows its method in meta text
       expect(screen.getByText(/GET/)).toBeInTheDocument()
     })
 
     it('affiche un message vide quand il n y a pas de checks', () => {
-      mockStoreState.data = { version: 1, checks: [], history: [], incidents: [] }
+      hookState = { ...defaultHookState, data: { version: 1, checks: [], history: [], incidents: [] }, executingIds: new Set<string>() }
       render(<HealthCheckPanel />)
       expect(screen.getByText('healthcheck.empty')).toBeInTheDocument()
     })
@@ -204,14 +163,14 @@ describe('HealthCheckPanel', () => {
       expect(playButtons.length).toBe(2)
     })
 
-    it('appelle executeCheck au clic sur le bouton play', async () => {
+    it('appelle handleRunSingleCheck au clic sur le bouton play', async () => {
       const user = userEvent.setup()
       render(<HealthCheckPanel />)
 
       const playButtons = screen.getAllByTitle('healthcheck.executeNow')
       await user.click(playButtons[0]!)
 
-      expect(mockExecuteCheck).toHaveBeenCalledWith('/my-project', 'hc-1')
+      expect(mockHandleRunSingleCheck).toHaveBeenCalledWith('hc-1')
     })
   })
 
@@ -222,42 +181,58 @@ describe('HealthCheckPanel', () => {
     })
 
     it('affiche le bouton d arret quand le scheduler tourne', () => {
-      mockStoreState.schedulerRunning = true
+      hookState = { ...defaultHookState, schedulerRunning: true, data: { version: 1, checks: [...mockChecks], history: [], incidents: [] }, executingIds: new Set<string>() }
       render(<HealthCheckPanel />)
       expect(screen.getByText('healthcheck.stopScheduler')).toBeInTheDocument()
       expect(screen.getByText('healthcheck.schedulerActive')).toBeInTheDocument()
     })
 
-    it('appelle startScheduler au clic sur le bouton demarrer', async () => {
+    it('appelle handleStartScheduler au clic sur le bouton demarrer', async () => {
       const user = userEvent.setup()
       render(<HealthCheckPanel />)
 
       await user.click(screen.getByText('healthcheck.startScheduler'))
 
-      expect(mockStartScheduler).toHaveBeenCalledWith('/my-project')
+      expect(mockHandleStartScheduler).toHaveBeenCalled()
     })
 
-    it('appelle stopScheduler au clic sur le bouton arreter', async () => {
-      mockStoreState.schedulerRunning = true
+    it('appelle handleStopScheduler au clic sur le bouton arreter', async () => {
+      hookState = { ...defaultHookState, schedulerRunning: true, data: { version: 1, checks: [...mockChecks], history: [], incidents: [] }, executingIds: new Set<string>() }
       const user = userEvent.setup()
       render(<HealthCheckPanel />)
 
       await user.click(screen.getByText('healthcheck.stopScheduler'))
 
-      expect(mockStopScheduler).toHaveBeenCalledWith('/my-project')
+      expect(mockHandleStopScheduler).toHaveBeenCalled()
     })
   })
 
   describe('detail d un check selectionne', () => {
     it('affiche le formulaire de configuration quand un check est selectionne', () => {
-      mockStoreState.selectedCheckId = 'hc-1'
+      hookState = {
+        ...defaultHookState,
+        selectedCheckId: 'hc-1',
+        selectedCheck: mockChecks[0]!,
+        selectedStatus: { status: 'unknown' },
+        data: { version: 1, checks: [...mockChecks], history: [], incidents: [] },
+        executingIds: new Set<string>(),
+      }
       render(<HealthCheckPanel />)
       expect(screen.getByText('healthcheck.config')).toBeInTheDocument()
       expect(screen.getByText('healthcheck.schedule')).toBeInTheDocument()
     })
 
     it('affiche l etat vide de l historique pour un check sans historique', () => {
-      mockStoreState.selectedCheckId = 'hc-1'
+      hookState = {
+        ...defaultHookState,
+        selectedCheckId: 'hc-1',
+        selectedCheck: mockChecks[0]!,
+        selectedStatus: { status: 'unknown' },
+        checkHistory: [],
+        checkIncidents: [],
+        data: { version: 1, checks: [...mockChecks], history: [], incidents: [] },
+        executingIds: new Set<string>(),
+      }
       render(<HealthCheckPanel />)
       expect(screen.getByText('healthcheck.historyEmpty')).toBeInTheDocument()
     })
@@ -265,7 +240,7 @@ describe('HealthCheckPanel', () => {
 
   describe('etat de chargement', () => {
     it('affiche le message de chargement quand loading est true', () => {
-      mockStoreState.loading = true
+      hookState = { ...defaultHookState, loading: true, executingIds: new Set<string>() }
       render(<HealthCheckPanel />)
       expect(screen.getByText('common.loading')).toBeInTheDocument()
     })

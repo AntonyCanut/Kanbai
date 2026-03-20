@@ -11,16 +11,16 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
   }),
 }))
 
-// Mock CopyableError
-vi.mock('../../src/renderer/components/CopyableError', () => ({
+// Mock CopyableError (new path: shared/ui/copyable-error)
+vi.mock('../../src/renderer/shared/ui/copyable-error', () => ({
   CopyableError: ({ error }: { error: string }) => <div data-testid="copyable-error">{error}</div>,
 }))
 
 import { DatabaseConnectionModal } from '../../src/renderer/components/DatabaseConnectionModal'
 import type { DbConnection } from '../../src/shared/types'
 
-// Ensure window.mirehub.database mock exists
-const mirehub = window.mirehub as any
+// Ensure window.kanbai.database mock exists
+const mirehub = window.kanbai as any
 if (!mirehub.database) {
   mirehub.database = {
     testConnection: vi.fn().mockResolvedValue({ success: true }),

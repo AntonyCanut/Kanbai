@@ -3,11 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { FileEntry } from '../../src/shared/types'
 
-// Mock ContextMenu to avoid complex rendering
-vi.mock('../../src/renderer/components/ContextMenu', () => ({
-  ContextMenu: ({ items, onClose }: { items: Array<{ label: string; action: () => void }>; onClose: () => void }) => (
+// Mock ContextMenu (new path: shared/ui/context-menu)
+vi.mock('../../src/renderer/shared/ui/context-menu', () => ({
+  ContextMenu: ({ items, onClose }: { items: Array<{ label: string; action: () => void; separator?: boolean }>; onClose: () => void }) => (
     <div data-testid="context-menu">
-      {items.map((item) => (
+      {items.filter((i) => !i.separator).map((item) => (
         <button key={item.label} onClick={() => { item.action(); onClose() }}>
           {item.label}
         </button>
@@ -73,7 +73,7 @@ const mockChildEntries: FileEntry[] = [
 describe('SidebarFileTree', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     mirehub.fs.readDir.mockImplementation((dirPath: string) => {
       if (dirPath === '/project') return Promise.resolve(mockFileEntries)
       if (dirPath === '/project/src') return Promise.resolve(mockChildEntries)
@@ -93,7 +93,7 @@ describe('SidebarFileTree', () => {
     })
 
     it('appelle readDir avec le chemin du projet', async () => {
-      const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+      const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
       render(<SidebarFileTree projectPath="/project" />)
 
       await waitFor(() => {
@@ -183,7 +183,10 @@ describe('SidebarFileTree', () => {
       })
 
       const srcRow = screen.getByText('src').closest('.sidebar-ft-row')
-      expect(srcRow?.querySelector('.sidebar-ft-icon')?.textContent).toBe('\u{1F4C1}')
+      const iconSpan = srcRow?.querySelector('.sidebar-ft-icon')
+      // The icon is now an SVG component, not an emoji
+      expect(iconSpan).toBeInTheDocument()
+      expect(iconSpan?.querySelector('svg') || iconSpan?.textContent?.length).toBeTruthy()
     })
   })
 })

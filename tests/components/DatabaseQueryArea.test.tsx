@@ -23,8 +23,8 @@ vi.mock('@monaco-editor/react', () => ({
   ),
 }))
 
-// Mock sub-components
-vi.mock('../../src/renderer/components/DatabaseResultsTable', () => ({
+// Mock sub-components (updated paths for feature module structure)
+vi.mock('../../src/renderer/features/database/features/query/results-table', () => ({
   DatabaseResultsTable: (props: any) => (
     <div data-testid="results-table">
       <span>{props.result.columns.length} columns</span>
@@ -33,19 +33,19 @@ vi.mock('../../src/renderer/components/DatabaseResultsTable', () => ({
   ),
 }))
 
-vi.mock('../../src/renderer/components/DatabaseNLChat', () => ({
+vi.mock('../../src/renderer/features/database/features/nl-chat/nl-chat', () => ({
   DatabaseNLChat: () => <div data-testid="nl-chat">NL Chat</div>,
 }))
 
-vi.mock('../../src/renderer/components/ResizeDivider', () => ({
+vi.mock('../../src/renderer/shared/layout/resize-divider', () => ({
   ResizeDivider: () => <div data-testid="resize-divider" />,
 }))
 
-vi.mock('../../src/renderer/components/DatabaseTabBar', () => ({
+vi.mock('../../src/renderer/features/database/features/query/tab-bar', () => ({
   DatabaseTabBar: () => <div data-testid="tab-bar">Tab Bar</div>,
 }))
 
-vi.mock('../../src/renderer/components/CopyableError', () => ({
+vi.mock('../../src/renderer/shared/ui/copyable-error', () => ({
   CopyableError: ({ error }: { error: string }) => <div data-testid="copyable-error">{error}</div>,
 }))
 
@@ -58,7 +58,7 @@ const mockUpdateTabExecuting = vi.fn()
 const mockUpdateTabLimit = vi.fn()
 const mockUpdateTabPage = vi.fn()
 
-vi.mock('../../src/renderer/lib/stores/databaseTabStore', () => ({
+vi.mock('../../src/renderer/features/database/database-tab-store', () => ({
   useDatabaseTabStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -98,8 +98,8 @@ vi.mock('../../src/renderer/lib/stores/databaseTabStore', () => ({
   ),
 }))
 
-// Ensure window.mirehub.database mock exists
-const mirehub = window.mirehub as any
+// Ensure window.kanbai.database mock exists
+const mirehub = window.kanbai as any
 if (!mirehub.database) {
   mirehub.database = {
     testConnection: vi.fn().mockResolvedValue({ success: true }),

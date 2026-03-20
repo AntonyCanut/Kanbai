@@ -15,7 +15,7 @@ vi.mock('../../src/renderer/lib/i18n', () => ({
 }))
 
 // Mock WorkspaceItem to avoid complex sub-component rendering
-vi.mock('../../src/renderer/components/WorkspaceItem', () => ({
+vi.mock('../../src/renderer/features/workspace/workspace-item', () => ({
   WorkspaceItem: ({ workspace, isActive }: { workspace: { id: string; name: string }; isActive: boolean }) => (
     <div data-testid={`workspace-item-${workspace.id}`} data-active={isActive}>
       {workspace.name}
@@ -50,7 +50,7 @@ const mockProjects = [
   { id: 'p-1', name: 'Frontend', workspaceId: 'ws-1', path: '/projects/frontend' },
 ]
 
-vi.mock('../../src/renderer/lib/stores/workspaceStore', () => ({
+vi.mock('../../src/renderer/features/workspace/workspace-store', () => ({
   useWorkspaceStore: Object.assign(
     (selector?: (state: Record<string, unknown>) => unknown) => {
       const state = {
@@ -116,7 +116,7 @@ describe('Sidebar', () => {
     vi.clearAllMocks()
 
     // Add missing IPC mocks needed by Sidebar
-    const mirehub = window.mirehub as Record<string, Record<string, ReturnType<typeof vi.fn>>>
+    const mirehub = window.kanbai as Record<string, Record<string, ReturnType<typeof vi.fn>>>
     if (!mirehub.workspace.permanentDelete) {
       mirehub.workspace.permanentDelete = vi.fn().mockResolvedValue(undefined)
     }
