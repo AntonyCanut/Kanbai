@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { KanbanTask, KanbanTaskType, KanbanStatus, KanbanComment } from '../../../shared/types/index'
+import type { KanbanTask, KanbanTaskType, KanbanStatus, KanbanComment, PrequalifyError } from '../../../shared/types/index'
 import { AI_PROVIDERS, type AiProviderId } from '../../../shared/types/ai-provider'
 import { resolveFeatureProvider } from '../../../shared/utils/ai-provider-resolver'
 import { useTerminalTabStore } from '../terminal'
@@ -670,26 +670,53 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           hasAttachments: false,
           hasComments: false,
         })
+        if (result && 'error' in result && result.error === true) {
+          const errResult = result as PrequalifyError
+          const t = useI18n.getState().t
+          const ticketLabel = formatTicketLabel(task)
+          const errorDetail = errResult.code === 'PREQUALIFY_PARSE_ERROR'
+            ? `${errResult.message}\n${errResult.rawOutput ? `Sortie IA: ${errResult.rawOutput.slice(0, 100)}...` : ''}`
+            : errResult.message
+          pushNotification('error', ticketLabel, `${t('kanban.prequalifyFailed')}: ${errorDetail}`)
+          set((state) => ({
+            tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, isPrequalifying: false, prequalifyError: errResult } : t)),
+          }))
+          await window.kanbai.kanban.update({ id: task.id, workspaceId, prequalifyError: errResult })
+          if (!workspacePaused) {
+            const currentTasks = get().tasks
+            const slots = await availableSlots(currentTasks, workspaceId)
+            const remaining = currentTasks.filter((t) => t.status === 'TODO' && !t.disabled && !t.isPrequalifying)
+            for (let i = 0; i < slots; i++) {
+              const next = pickNextTask(remaining)
+              if (!next) break
+              remaining.splice(remaining.indexOf(next), 1)
+              get().sendToAi(next, workspaceId, { activate: false })
+            }
+          }
+          return
+        }
         if (!result) {
           const t = useI18n.getState().t
           const ticketLabel = formatTicketLabel(task)
           pushNotification('error', ticketLabel, t('kanban.prequalifyFailed'))
         }
         const updates: Partial<KanbanTask> = {}
-        if (result) {
-          if (result.suggestedType && result.suggestedType !== (type ?? 'feature')) {
-            updates.type = result.suggestedType as KanbanTaskType
+        // After error check above (with early return), result here is the success type or null
+        const successResult = result as { suggestedType: string; suggestedPriority: string; clarifiedDescription: string; isVague: boolean; splitSuggestions?: Array<{ title: string; description: string; type: string; priority: string }> } | null
+        if (successResult) {
+          if (successResult.suggestedType && successResult.suggestedType !== (type ?? 'feature')) {
+            updates.type = successResult.suggestedType as KanbanTaskType
           }
-          if (result.suggestedPriority && result.suggestedPriority !== priority) {
-            updates.priority = result.suggestedPriority as KanbanTask['priority']
+          if (successResult.suggestedPriority && successResult.suggestedPriority !== priority) {
+            updates.priority = successResult.suggestedPriority as KanbanTask['priority']
           }
-          if (result.clarifiedDescription && result.clarifiedDescription !== description) {
-            updates.aiClarification = result.clarifiedDescription
+          if (successResult.clarifiedDescription && successResult.clarifiedDescription !== description) {
+            updates.aiClarification = successResult.clarifiedDescription
           }
-          if (result.splitSuggestions && Array.isArray(result.splitSuggestions) && result.splitSuggestions.length > 0) {
+          if (successResult.splitSuggestions && Array.isArray(successResult.splitSuggestions) && successResult.splitSuggestions.length > 0) {
             // Auto-split: create child tickets inheriting metadata from the original
             const childIds: string[] = []
-            for (const suggestion of result.splitSuggestions) {
+            for (const suggestion of successResult.splitSuggestions) {
               const child = await window.kanbai.kanban.create({
                 workspaceId,
                 targetProjectId: task.targetProjectId,
@@ -754,14 +781,23 @@ export const useKanbanStore = create<KanbanStore>((set, get) => ({
           }
         }
       } catch (err) {
-        // On failure, clear prequalifying flag and store error on the task
         const errorMessage = err instanceof Error ? err.message : String(err)
+        const prequalifyError: PrequalifyError = {
+          error: true,
+          code: 'PREQUALIFY_ERROR',
+          message: errorMessage,
+          timestamp: Date.now(),
+          context: { title, description },
+        }
         set((state) => ({
-          tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, isPrequalifying: false } : t)),
+          tasks: state.tasks.map((t) => (t.id === task.id ? { ...t, isPrequalifying: false, prequalifyError } : t)),
         }))
+        try {
+          await window.kanbai.kanban.update({ id: task.id, workspaceId, prequalifyError })
+        } catch { /* ignore persistence error */ }
         const t = useI18n.getState().t
         const ticketLabel = formatTicketLabel(task)
-        pushNotification('error', ticketLabel, t('kanban.prequalifyFailed'))
+        pushNotification('error', ticketLabel, `${t('kanban.prequalifyFailed')}: ${errorMessage}`)
         console.error('[kanban-prequalify] Error:', errorMessage)
         // Still try to auto-send on failure
         if (!workspacePaused) {

@@ -1089,6 +1089,7 @@ export const en = {
   'kanban.prequalify': 'Pre-qualify',
   'kanban.prequalifyRunning': 'Pre-qualifying...',
   'kanban.prequalifyFailed': 'Pre-qualification failed',
+  'kanban.prequalifyErrorDetail': 'Click to view the error report',
   'kanban.prequalifySuggestions': 'AI Suggestions',
   'kanban.splitDetected': 'Split suggested',
   'kanban.splitDetectedHint': 'This ticket contains multiple distinct items. AI suggests splitting it:',

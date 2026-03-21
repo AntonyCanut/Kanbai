@@ -1456,6 +1456,14 @@ function KanbanCard({
         {task.isPrequalifying && (
           <span className="kanban-card-prequalifying">{t('kanban.prequalifyRunning')}</span>
         )}
+        {task.prequalifyError && !task.isPrequalifying && (
+          <span
+            className="kanban-card-prequalify-error"
+            title={task.prequalifyError.message}
+          >
+            {t('kanban.prequalifyFailed')}
+          </span>
+        )}
         {task.splitSuggestions && task.splitSuggestions.length > 0 && (
           <span className="kanban-card-split-badge">{t('kanban.splitDetected')}</span>
         )}

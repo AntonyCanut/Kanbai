@@ -1244,14 +1244,42 @@ Description: ${description || '(aucune)'}`
         const jsonMatch = output.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
           console.log('[kanban-prequalify] No JSON found in output')
-          return null
+          return {
+            error: true,
+            code: 'PREQUALIFY_PARSE_ERROR',
+            message: 'No valid JSON found in AI response',
+            rawOutput: output.slice(0, 500),
+            timestamp: Date.now(),
+            context: { title, description },
+          }
         }
-        const parsed = JSON.parse(jsonMatch[0])
-        console.log('[kanban-prequalify] Result:', parsed)
-        return parsed
+        try {
+          const parsed = JSON.parse(jsonMatch[0])
+          console.log('[kanban-prequalify] Result:', parsed)
+          return parsed
+        } catch (parseErr) {
+          console.error('[kanban-prequalify] JSON parse error:', parseErr)
+          return {
+            error: true,
+            code: 'PREQUALIFY_PARSE_ERROR',
+            message: `Failed to parse AI response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`,
+            rawOutput: output.slice(0, 500),
+            timestamp: Date.now(),
+            context: { title, description },
+          }
+        }
       } catch (err) {
-        console.error('[kanban-prequalify] Error:', err)
-        return null
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        const errorStack = err instanceof Error ? err.stack : undefined
+        console.error('[kanban-prequalify] Error:', errorMessage)
+        return {
+          error: true,
+          code: 'PREQUALIFY_ERROR',
+          message: errorMessage,
+          stack: errorStack,
+          timestamp: Date.now(),
+          context: { title, description },
+        }
       }
     },
   )

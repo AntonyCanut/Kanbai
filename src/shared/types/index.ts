@@ -185,6 +185,16 @@ export interface KanbanSplitSuggestion {
   priority: 'low' | 'medium' | 'high'
 }
 
+export interface PrequalifyError {
+  error: true
+  code: 'PREQUALIFY_ERROR' | 'PREQUALIFY_PARSE_ERROR'
+  message: string
+  rawOutput?: string
+  stack?: string
+  timestamp: number
+  context: { title: string; description: string }
+}
+
 export interface KanbanTask {
   id: string
   workspaceId: string
@@ -214,6 +224,7 @@ export interface KanbanTask {
   splitSuggestions?: KanbanSplitSuggestion[]
   originalDescription?: string
   aiClarification?: string
+  prequalifyError?: PrequalifyError
   worktreePath?: string
   worktreeBranch?: string
   worktreeBaseBranch?: string

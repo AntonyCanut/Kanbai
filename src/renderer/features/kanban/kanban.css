@@ -1152,6 +1152,23 @@
   50% { opacity: 1; }
 }
 
+.kanban-card-prequalify-error {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--danger, #e74c3c);
+  background: rgba(231, 76, 60, 0.1);
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 4px;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+
+.kanban-card-prequalify-error:hover {
+  background: rgba(231, 76, 60, 0.2);
+}
+
 .kanban-card-split-badge {
   display: inline-block;
   font-size: 9px;
